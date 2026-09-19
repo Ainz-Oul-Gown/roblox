@@ -563,6 +563,239 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             Color3.fromRGB(255, 40, 100),
             "🔥 АННИГИЛЯТОР АУРЫ"
         )
+
+    elseif item.id == "Rebirth_Portal" then
+        -- 1. Портал Перерождения Rebirth на 2 этаже
+        local portalModel = Instance.new("Model")
+        portalModel.Name = "Rebirth_Portal"
+        portalModel.Parent = itemsFolder
+
+        local postL = Instance.new("Part")
+        postL.Size = Vector3.new(1.8, 11, 1.8)
+        postL.CFrame = baseCF * CFrame.new(-5, 21.5, -22)
+        postL.Anchored = true
+        postL.Color = Color3.fromRGB(255, 215, 0)
+        postL.Material = Enum.Material.Neon
+        postL.Parent = portalModel
+
+        local postR = Instance.new("Part")
+        postR.Size = Vector3.new(1.8, 11, 1.8)
+        postR.CFrame = baseCF * CFrame.new(5, 21.5, -22)
+        postR.Anchored = true
+        postR.Color = Color3.fromRGB(255, 215, 0)
+        postR.Material = Enum.Material.Neon
+        postR.Parent = portalModel
+
+        local archTop = Instance.new("Part")
+        archTop.Size = Vector3.new(11.8, 1.8, 1.8)
+        archTop.CFrame = baseCF * CFrame.new(0, 27, -22)
+        archTop.Anchored = true
+        archTop.Color = Color3.fromRGB(255, 215, 0)
+        archTop.Material = Enum.Material.Neon
+        archTop.Parent = portalModel
+
+        local field = Instance.new("Part")
+        field.Name = "PortalField"
+        field.Size = Vector3.new(8.2, 9.2, 0.5)
+        field.CFrame = baseCF * CFrame.new(0, 21.5, -22)
+        field.Anchored = true
+        field.CanCollide = false
+        field.Material = Enum.Material.ForceField
+        field.Color = Color3.fromRGB(241, 196, 15)
+        field.Transparency = 0.3
+        field.Parent = portalModel
+
+        local rTier = TycoonConfig.getRebirthTier(TycoonService.getRebirths(owner) + 1)
+        local costTxt = if rTier then string.format("Цена: %d Aura | Множитель: x%.1f", rTier.cost, rTier.multiplier) else "MAX TIER"
+        createBillboard(field, "👑 АЛТАРЬ REBIRTH", costTxt, Color3.fromRGB(255, 215, 0), Vector3.new(0, 6, 0))
+
+        local debounce = false
+        field.Touched:Connect(function(hit)
+            if debounce then return end
+            local char = hit.Parent
+            local p = Players:GetPlayerFromCharacter(char)
+            if p == owner then
+                debounce = true
+                local success = TycoonService.performRebirth(p)
+                if success then
+                    local pIndex = PlotManager.getPlayerPlotIndex(p)
+                    if pIndex then
+                        PlotBuilder.activatePlot(p, pIndex)
+                    end
+                end
+                task.wait(1.5)
+                debounce = false
+            end
+        end)
+
+    elseif item.id == "FactionMonument" then
+        -- 2. Мега-Монумент Фракции на крыше
+        local monModel = Instance.new("Model")
+        monModel.Name = "FactionMonument"
+        monModel.Parent = itemsFolder
+
+        local ped = Instance.new("Part")
+        ped.Name = "MonumentPedestal"
+        ped.Size = Vector3.new(14, 2, 14)
+        ped.CFrame = baseCF * CFrame.new(0, 28, -6)
+        ped.Anchored = true
+        ped.Material = Enum.Material.DiamondPlate
+        ped.Color = Color3.fromRGB(20, 20, 25)
+        ped.Parent = monModel
+
+        local beacon = Instance.new("Part")
+        beacon.Name = "SkyBeacon"
+        beacon.Size = Vector3.new(2.5, 400, 2.5)
+        beacon.CFrame = baseCF * CFrame.new(0, 228, -6)
+        beacon.Anchored = true
+        beacon.CanCollide = false
+        beacon.Material = Enum.Material.Neon
+        beacon.Color = faction.color
+        beacon.Transparency = 0.45
+        beacon.Parent = monModel
+
+        local fId = faction.id
+        local centerCF = baseCF * CFrame.new(0, 31, -6)
+
+        if fId == "Skibidi" then
+            local bowl = Instance.new("Part")
+            bowl.Size = Vector3.new(6, 4, 7)
+            bowl.CFrame = centerCF
+            bowl.Anchored = true
+            bowl.Material = Enum.Material.Neon
+            bowl.Color = Color3.fromRGB(241, 196, 15)
+            bowl.Parent = monModel
+
+            local tank = Instance.new("Part")
+            tank.Size = Vector3.new(6, 6, 2.5)
+            tank.CFrame = centerCF * CFrame.new(0, 3, -3)
+            tank.Anchored = true
+            tank.Material = Enum.Material.Neon
+            tank.Color = Color3.fromRGB(255, 215, 0)
+            tank.Parent = monModel
+
+        elseif fId == "Mewing" then
+            local head = Instance.new("Part")
+            head.Size = Vector3.new(6, 8, 5)
+            head.CFrame = centerCF
+            head.Anchored = true
+            head.Material = Enum.Material.Slate
+            head.Color = Color3.fromRGB(120, 120, 130)
+            head.Parent = monModel
+
+            local jaw = Instance.new("Part")
+            jaw.Size = Vector3.new(7.5, 3, 4)
+            jaw.CFrame = centerCF * CFrame.new(0, -3.5, 1)
+            jaw.Anchored = true
+            jaw.Material = Enum.Material.Slate
+            jaw.Color = Color3.fromRGB(150, 150, 160)
+            jaw.Parent = monModel
+
+            for _, eyeX in ipairs({ -1.5, 1.5 }) do
+                local eye = Instance.new("Part")
+                eye.Size = Vector3.new(0.8, 0.4, 0.4)
+                eye.CFrame = centerCF * CFrame.new(eyeX, 1.5, 2.6)
+                eye.Anchored = true
+                eye.Material = Enum.Material.Neon
+                eye.Color = Color3.fromRGB(0, 255, 255)
+                eye.Parent = monModel
+            end
+
+        elseif fId == "Sigma" then
+            local glassL = Instance.new("Part")
+            glassL.Size = Vector3.new(4, 2.5, 0.6)
+            glassL.CFrame = centerCF * CFrame.new(-2.5, 0, 0)
+            glassL.Anchored = true
+            glassL.Material = Enum.Material.Neon
+            glassL.Color = Color3.fromRGB(142, 68, 173)
+            glassL.Parent = monModel
+
+            local glassR = Instance.new("Part")
+            glassR.Size = Vector3.new(4, 2.5, 0.6)
+            glassR.CFrame = centerCF * CFrame.new(2.5, 0, 0)
+            glassR.Anchored = true
+            glassR.Material = Enum.Material.Neon
+            glassR.Color = Color3.fromRGB(142, 68, 173)
+            glassR.Parent = monModel
+
+        elseif fId == "FanumTax" then
+            local patty = Instance.new("Part")
+            patty.Size = Vector3.new(7, 2, 7)
+            patty.CFrame = centerCF
+            patty.Anchored = true
+            patty.Color = Color3.fromRGB(100, 50, 20)
+            patty.Parent = monModel
+
+            local cheese = Instance.new("Part")
+            cheese.Size = Vector3.new(7.2, 0.5, 7.2)
+            cheese.CFrame = centerCF * CFrame.new(0, 1, 0) * CFrame.Angles(0, math.rad(45), 0)
+            cheese.Anchored = true
+            cheese.Material = Enum.Material.Neon
+            cheese.Color = Color3.fromRGB(241, 196, 15)
+            cheese.Parent = monModel
+
+        elseif fId == "Grimace" then
+            local cup = Instance.new("Part")
+            cup.Size = Vector3.new(5, 7, 5)
+            cup.CFrame = centerCF
+            cup.Anchored = true
+            cup.Material = Enum.Material.Neon
+            cup.Color = Color3.fromRGB(155, 89, 182)
+            cup.Parent = monModel
+
+        elseif fId == "CaseOh" then
+            local hole = Instance.new("Part")
+            hole.Shape = Enum.PartType.Ball
+            hole.Size = Vector3.new(5, 5, 5)
+            hole.CFrame = centerCF
+            hole.Anchored = true
+            hole.Color = Color3.fromRGB(10, 10, 15)
+            hole.Parent = monModel
+
+            local ring = Instance.new("Part")
+            ring.Size = Vector3.new(10, 0.4, 10)
+            ring.CFrame = centerCF * CFrame.Angles(math.rad(25), 0, math.rad(15))
+            ring.Anchored = true
+            ring.Material = Enum.Material.Neon
+            ring.Color = Color3.fromRGB(0, 220, 255)
+            ring.Parent = monModel
+
+        elseif fId == "Rizzler" then
+            local heartL = Instance.new("Part")
+            heartL.Size = Vector3.new(4, 5, 2.5)
+            heartL.CFrame = centerCF * CFrame.new(-1.6, 1, 0) * CFrame.Angles(0, 0, math.rad(28))
+            heartL.Anchored = true
+            heartL.Material = Enum.Material.Neon
+            heartL.Color = Color3.fromRGB(231, 76, 60)
+            heartL.Parent = monModel
+
+            local heartR = Instance.new("Part")
+            heartR.Size = Vector3.new(4, 5, 2.5)
+            heartR.CFrame = centerCF * CFrame.new(1.6, 1, 0) * CFrame.Angles(0, 0, math.rad(-28))
+            heartR.Anchored = true
+            heartR.Material = Enum.Material.Neon
+            heartR.Color = Color3.fromRGB(231, 76, 60)
+            heartR.Parent = monModel
+
+        elseif fId == "TungTung" then
+            local anvil = Instance.new("Part")
+            anvil.Size = Vector3.new(5, 3.5, 3)
+            anvil.CFrame = centerCF * CFrame.new(0, -2, 0)
+            anvil.Anchored = true
+            anvil.Material = Enum.Material.DiamondPlate
+            anvil.Color = Color3.fromRGB(60, 60, 70)
+            anvil.Parent = monModel
+
+            local hammerHead = Instance.new("Part")
+            hammerHead.Size = Vector3.new(6.5, 3, 3)
+            hammerHead.CFrame = centerCF * CFrame.new(0, 2.5, 0)
+            hammerHead.Anchored = true
+            hammerHead.Material = Enum.Material.Neon
+            hammerHead.Color = Color3.fromRGB(39, 174, 96)
+            hammerHead.Parent = monModel
+        end
+
+        createBillboard(ped, string.format("⭐ МОНУМЕНТ: %s", faction.name), "СИЛА ФРАКЦИИ АЛЬФА", faction.color, Vector3.new(0, 12, 0))
     end
 end
 
@@ -582,6 +815,8 @@ local BUTTON_CONFIGS: { [string]: Vector3 } = {
     Dropper_Galactic = Vector3.new(10, 16.5, -16),
     AbilityStand_Ultimate = Vector3.new(14, 16.5, -8),
     Upgrader_Annihilator = Vector3.new(8, 16.5, 4),
+    Rebirth_Portal = Vector3.new(-8, 16.5, 12),
+    FactionMonument = Vector3.new(8, 16.5, 12),
 }
 
 local function buildButtonsForPlot(plotModel: Model, owner: Player, plotIndex: number, baseCF: CFrame, faction: TycoonConfig.Faction)

@@ -105,6 +105,17 @@ else
     print("[SERVER] All 8 Bases ready for player selection!")
 end
 
+-- 3.1 Лидерборды и динамические события AirDrop
+local LeaderboardService = require(script:WaitForChild("LeaderboardService", 10))
+LeaderboardService.init()
+
+TycoonService.onPvPKill = function(killer: Player, victim: Player, amount: number)
+    LeaderboardService.recordPvPKill(killer, victim, amount)
+end
+
+local AirDropService = require(script:WaitForChild("AirDropService", 10))
+AirDropService.init()
+
 -- Связываем PlotManager.hasAnyBase в TycoonService (нужно CentralArena)
 TycoonService.hasAnyBase = function(player: Player): boolean
     return PlotManager.getPlayerPlotIndex(player) ~= nil

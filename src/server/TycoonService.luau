@@ -114,6 +114,10 @@ function TycoonService.handlePlayerDeath(victim: Player)
             end
         end
 
+        if TycoonService.onPvPKill then
+            TycoonService.onPvPKill(killer, victim, stolenCash)
+        end
+
         print(string.format("[PvP] %s killed %s and LOOTED %d Aura!", killer.Name, victim.Name, stolenCash))
         pvpKillEvent:FireClient(killer, { type = "kill", targetName = victim.Name, amount = stolenCash })
         pvpKillEvent:FireClient(victim, { type = "death", killerName = killer.Name, amount = stolenCash })

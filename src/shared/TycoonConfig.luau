@@ -491,6 +491,22 @@ local TycoonConfig = {
             multiplier = 5,
             floor = 2,
         },
+        {
+            id = "Rebirth_Portal",
+            name = "👑 Портал Перерождения (Rebirth)",
+            cost = 50000,
+            category = "Structure",
+            dependsOn = "Floor2_Walls",
+            floor = 2,
+        },
+        {
+            id = "FactionMonument",
+            name = "🏆 Мега-Монумент Фракции (Крыша)",
+            cost = 250000,
+            category = "Structure",
+            dependsOn = "Dropper_Galactic",
+            floor = 2,
+        },
     } :: { TycoonItem },
 }
 

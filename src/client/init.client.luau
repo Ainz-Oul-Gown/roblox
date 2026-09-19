@@ -15,6 +15,9 @@ local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent", 15) :: R
 local vaultUpdatedEvent = ReplicatedStorage:WaitForChild("VaultUpdatedEvent", 15) :: RemoteEvent?
 local withdrawEvent = ReplicatedStorage:WaitForChild("WithdrawEvent", 15) :: RemoteEvent?
 local pvpKillEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15) :: RemoteEvent?
+local airDropEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15) :: RemoteEvent?
+
+local JuiceEffects = require(script.Parent:WaitForChild("JuiceEffects", 10))
 
 -- 1. Создание Gen Alpha Brainrot HUD
 local screenGui = Instance.new("ScreenGui")
@@ -493,8 +496,20 @@ if pvpKillEvent then
         if type(data) ~= "table" then return end
         if data.type == "kill" then
             showPvPBanner(true, data.targetName or "Врага", data.amount or 0)
+            JuiceEffects.playSound("powerup", 0.9)
+            JuiceEffects.screenFlash(Color3.fromRGB(255, 215, 0), 0.35)
+            local char = localPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                JuiceEffects.showFloatingText((char:FindFirstChild("HumanoidRootPart") :: BasePart).Position + Vector3.new(0, 3, 0), string.format("+$%d AURA! 💀", data.amount or 0), Color3.fromRGB(255, 215, 0), 1.6)
+            end
         elseif data.type == "death" then
             showPvPBanner(false, data.killerName or "Враг", data.amount or 0)
+            JuiceEffects.playSound("error", 0.8)
+            JuiceEffects.screenFlash(Color3.fromRGB(231, 76, 60), 0.4)
+            local char = localPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                JuiceEffects.showFloatingText((char:FindFirstChild("HumanoidRootPart") :: BasePart).Position + Vector3.new(0, 3, 0), string.format("-$%d AURA ☠️", data.amount or 0), Color3.fromRGB(255, 80, 80), 1.6)
+            end
         end
     end)
 end
@@ -514,6 +529,27 @@ if withdrawEvent then
     withdrawEvent.OnClientEvent:Connect(function(amount: number)
         vaultLabel.Text = "🏦 СЕЙФ БАЗЫ: +0 🛡️"
         showToast(string.format("💰 Забрано из сейфа базы: +%d AURA в кошелёк!", amount), Color3.fromRGB(46, 204, 113))
+        JuiceEffects.playSound("cash", 0.9)
+        JuiceEffects.screenFlash(Color3.fromRGB(255, 215, 0), 0.25)
+        local char = localPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            JuiceEffects.showFloatingText((char:FindFirstChild("HumanoidRootPart") :: BasePart).Position + Vector3.new(0, 3, 0), string.format("+$%d AURA 💸", amount), Color3.fromRGB(46, 204, 113), 1.4)
+        end
+    end)
+end
+
+-- Слушатель динамических событий AirDrop
+if airDropEvent then
+    airDropEvent.OnClientEvent:Connect(function(eventType: string, data: any)
+        if eventType == "spawn" then
+            JuiceEffects.playSound("siren", 0.9)
+            showToast("⚠️ ЗОЛОТОЙ АИРДРОП ПАДАЕТ НА ОСТРОВ! (+$10,000 AURA)", Color3.fromRGB(255, 215, 0))
+        elseif eventType == "captured" then
+            JuiceEffects.playSound("fanfare", 0.85)
+            local winner = if data and data.winnerName then data.winnerName else "Игрок"
+            local rew = if data and data.reward then data.reward else 10000
+            showToast(string.format("🎉 %s ЗАХВАТИЛ АИРДРОП И ПОЛУЧИЛ +$%d AURA!", winner, rew), Color3.fromRGB(46, 204, 113))
+        end
     end)
 end
 
