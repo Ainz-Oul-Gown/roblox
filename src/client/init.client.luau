@@ -9,6 +9,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui") :: PlayerGui
 
+-- 1. Создание Gen Alpha Brainrot HUD (создается сразу, без блокирующих ожиданий!)
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "BrainrotHUD"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
 local abilityEvent = ReplicatedStorage:WaitForChild("AbilityEvent", 15) :: RemoteEvent?
 local claimPlotEvent = ReplicatedStorage:WaitForChild("ClaimPlotEvent", 15) :: RemoteEvent?
 local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent", 15) :: RemoteEvent?
@@ -18,14 +24,33 @@ local pvpKillEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15) :: Remot
 local airDropEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15) :: RemoteEvent?
 local adminGiveCashEvent = ReplicatedStorage:WaitForChild("AdminGiveCashEvent", 15) :: RemoteEvent?
 
-local JuiceEffects = require(script.Parent:WaitForChild("JuiceEffects", 10))
-local showToast: (string, Color3?) -> ()
+-- Безопасная загрузка JuiceEffects (поддержка как script, так и script.Parent)
+local juiceModule = script:FindFirstChild("JuiceEffects")
+    or (script.Parent and script.Parent:FindFirstChild("JuiceEffects"))
+    or script:WaitForChild("JuiceEffects", 3)
+    or (script.Parent and script.Parent:WaitForChild("JuiceEffects", 1))
 
--- 1. Создание Gen Alpha Brainrot HUD
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "BrainrotHUD"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
+local JuiceEffects: any = nil
+if juiceModule and juiceModule:IsA("ModuleScript") then
+    local ok, res = pcall(require, juiceModule)
+    if ok and res then
+        JuiceEffects = res
+    else
+        warn("[CLIENT] JuiceEffects load warning:", res)
+    end
+end
+
+if not JuiceEffects then
+    JuiceEffects = {
+        playSound = function(...) end,
+        showFloatingText = function(...) end,
+        animateButtonSuccess = function(...) end,
+        animateButtonFailure = function(...) end,
+        screenFlash = function(...) end,
+    }
+end
+
+local showToast: (string, Color3?) -> ()
 
 -- Индикатор статуса карты в центре экрана
 local statusBanner = Instance.new("TextLabel")
@@ -830,36 +855,52 @@ localPlayer.CharacterAdded:Connect(setupCharacter)
 
 -- 5. Привязка к leaderstats
 local function bindStats()
-    local leaderstats = localPlayer:WaitForChild("leaderstats", 15)
-    if not leaderstats then return end
+    local function hookLeaderstats(leaderstats: Instance)
+        local auraVal = leaderstats:WaitForChild("Aura", 10) :: IntValue?
+        local rebirthVal = leaderstats:WaitForChild("Rebirths", 10) :: IntValue?
 
-    local auraVal = leaderstats:WaitForChild("Aura", 10) :: IntValue?
-    local rebirthVal = leaderstats:WaitForChild("Rebirths", 10) :: IntValue?
+        local function updateStats()
+            local aura = if auraVal then auraVal.Value else 0
+            local rebirths = if rebirthVal then rebirthVal.Value else 0
 
-    local function updateStats()
-        local aura = if auraVal then auraVal.Value else 0
-        local rebirths = if rebirthVal then rebirthVal.Value else 0
+            auraLabel.Text = string.format("AURA: +%s 🔥", tostring(aura))
 
-        auraLabel.Text = string.format("AURA: +%s 🔥", tostring(aura))
+            local rankNames = {
+                [0] = "🗿 Новичок Мьюинга",
+                [1] = "🚽 Скибиди Сигма",
+                [2] = "🕶️ Ризз Мастер",
+                [3] = "📱 Айпад Повелитель",
+                [4] = "🪐 КейсОх Гигачад",
+                [5] = "👑 БОГ АЛЬФА ПОКОЛЕНИЯ",
+            }
+            rankLabel.Text = rankNames[math.min(rebirths, 5)] or "👑 БОГ АЛЬФА ПОКОЛЕНИЯ"
 
-        local rankNames = {
-            [0] = "🗿 Новичок Мьюинга",
-            [1] = "🚽 Скибиди Сигма",
-            [2] = "🕶️ Ризз Мастер",
-            [3] = "📱 Айпад Повелитель",
-            [4] = "🪐 КейсОх Гигачад",
-            [5] = "👑 БОГ АЛЬФА ПОКОЛЕНИЯ",
-        }
-        rankLabel.Text = rankNames[math.min(rebirths, 5)] or "👑 БОГ АЛЬФА ПОКОЛЕНИЯ"
+            local mults = { [0] = 1.0, [1] = 1.5, [2] = 2.2, [3] = 3.5, [4] = 5.5, [5] = 10.0 }
+            local mult = mults[math.min(rebirths, 5)] or (10.0 + (rebirths - 5) * 2.0)
+            infoLabel.Text = string.format("Множитель: x%.1f | Rebirths: %d", mult, rebirths)
+        end
 
-        local mults = { [0] = 1.0, [1] = 1.5, [2] = 2.2, [3] = 3.5, [4] = 5.5, [5] = 10.0 }
-        local mult = mults[math.min(rebirths, 5)] or (10.0 + (rebirths - 5) * 2.0)
-        infoLabel.Text = string.format("Множитель: x%.1f | Rebirths: %d", mult, rebirths)
+        if auraVal then auraVal.Changed:Connect(updateStats) end
+        if rebirthVal then rebirthVal.Changed:Connect(updateStats) end
+        updateStats()
     end
 
-    if auraVal then auraVal.Changed:Connect(updateStats) end
-    if rebirthVal then rebirthVal.Changed:Connect(updateStats) end
-    updateStats()
+    local existingLs = localPlayer:FindFirstChild("leaderstats")
+    if existingLs then
+        hookLeaderstats(existingLs)
+    else
+        task.spawn(function()
+            local ls = localPlayer:WaitForChild("leaderstats", 30)
+            if ls then
+                hookLeaderstats(ls)
+            end
+        end)
+        localPlayer.ChildAdded:Connect(function(child)
+            if child.Name == "leaderstats" then
+                hookLeaderstats(child)
+            end
+        end)
+    end
 end
 
 task.spawn(bindStats)
