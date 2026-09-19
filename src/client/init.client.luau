@@ -12,6 +12,9 @@ local playerGui = localPlayer:WaitForChild("PlayerGui") :: PlayerGui
 local abilityEvent = ReplicatedStorage:WaitForChild("AbilityEvent", 15) :: RemoteEvent?
 local claimPlotEvent = ReplicatedStorage:WaitForChild("ClaimPlotEvent", 15) :: RemoteEvent?
 local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent", 15) :: RemoteEvent?
+local vaultUpdatedEvent = ReplicatedStorage:WaitForChild("VaultUpdatedEvent", 15) :: RemoteEvent?
+local withdrawEvent = ReplicatedStorage:WaitForChild("WithdrawEvent", 15) :: RemoteEvent?
+local pvpKillEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15) :: RemoteEvent?
 
 -- 1. Создание Gen Alpha Brainrot HUD
 local screenGui = Instance.new("ScreenGui")
@@ -103,7 +106,7 @@ end)
 -- Контейнер статистики слева вверху
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 240, 0, 110)
+mainFrame.Size = UDim2.new(0, 250, 0, 140)
 mainFrame.Position = UDim2.new(0, 20, 0, 20)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.BackgroundTransparency = 0.15
@@ -121,8 +124,8 @@ stroke.Parent = mainFrame
 
 local auraLabel = Instance.new("TextLabel")
 auraLabel.Name = "AuraLabel"
-auraLabel.Size = UDim2.new(1, -20, 0, 45)
-auraLabel.Position = UDim2.new(0, 10, 0, 8)
+auraLabel.Size = UDim2.new(1, -20, 0, 42)
+auraLabel.Position = UDim2.new(0, 10, 0, 6)
 auraLabel.BackgroundTransparency = 1
 auraLabel.Text = "AURA: +0 🔥"
 auraLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
@@ -134,8 +137,8 @@ auraLabel.Parent = mainFrame
 
 local rankLabel = Instance.new("TextLabel")
 rankLabel.Name = "RankLabel"
-rankLabel.Size = UDim2.new(1, -20, 0, 25)
-rankLabel.Position = UDim2.new(0, 10, 0, 52)
+rankLabel.Size = UDim2.new(1, -20, 0, 24)
+rankLabel.Position = UDim2.new(0, 10, 0, 48)
 rankLabel.BackgroundTransparency = 1
 rankLabel.Text = "🗿 Ранг: Новичок Мьюинга"
 rankLabel.TextColor3 = Color3.fromRGB(189, 195, 199)
@@ -146,7 +149,7 @@ rankLabel.Parent = mainFrame
 local infoLabel = Instance.new("TextLabel")
 infoLabel.Name = "InfoLabel"
 infoLabel.Size = UDim2.new(1, -20, 0, 22)
-infoLabel.Position = UDim2.new(0, 10, 0, 80)
+infoLabel.Position = UDim2.new(0, 10, 0, 74)
 infoLabel.BackgroundTransparency = 1
 infoLabel.Text = "Множитель: x1.0 | Rebirths: 0"
 infoLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
@@ -154,18 +157,28 @@ infoLabel.TextScaled = true
 infoLabel.Font = Enum.Font.FredokaOne
 infoLabel.Parent = mainFrame
 
+local vaultLabel = Instance.new("TextLabel")
+vaultLabel.Name = "VaultLabel"
+vaultLabel.Size = UDim2.new(1, -20, 0, 24)
+vaultLabel.Position = UDim2.new(0, 10, 0, 104)
+vaultLabel.BackgroundTransparency = 1
+vaultLabel.Text = "🏦 СЕЙФ БАЗЫ: +0 🛡️"
+vaultLabel.TextColor3 = Color3.fromRGB(52, 152, 219)
+vaultLabel.TextScaled = true
+vaultLabel.Font = Enum.Font.FredokaOne
+vaultLabel.Parent = mainFrame
+
 -- Кнопка открытия меню (ТОЛЬКО для смены базы если она уже есть)
--- Убираем эту кнопку — базу теперь выбирают физически
 local openSelectBtn = Instance.new("TextButton")
 openSelectBtn.Name = "OpenSelectBtn"
 openSelectBtn.Size = UDim2.new(0, 200, 0, 40)
-openSelectBtn.Position = UDim2.new(0, 20, 0, 140)
+openSelectBtn.Position = UDim2.new(0, 20, 0, 170)
 openSelectBtn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
 openSelectBtn.Text = "🗺️ СМЕНИТЬ БАЗУ"
 openSelectBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 openSelectBtn.TextScaled = true
 openSelectBtn.Font = Enum.Font.FredokaOne
-openSelectBtn.Visible = false -- скрыта пока нет базы; появится после захвата
+openSelectBtn.Visible = false
 openSelectBtn.Parent = screenGui
 
 local openBtnCorner = Instance.new("UICorner")
@@ -402,11 +415,113 @@ local function showToast(message: string, color: Color3?)
     end)
 end
 
--- 3. Кнопка активации способности на экране (справа внизу)
+-- 3. Центр уведомлений PvP (Лут при убийстве / Потеря при смерти)
+local pvpBanner = Instance.new("Frame")
+pvpBanner.Name = "PvPBanner"
+pvpBanner.Size = UDim2.new(0, 520, 0, 78)
+pvpBanner.Position = UDim2.new(0.5, -260, 0, -100)
+pvpBanner.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+pvpBanner.BorderSizePixel = 0
+pvpBanner.Visible = false
+pvpBanner.Parent = screenGui
+
+local pvpCorner = Instance.new("UICorner")
+pvpCorner.CornerRadius = UDim.new(0, 14)
+pvpCorner.Parent = pvpBanner
+
+local pvpStroke = Instance.new("UIStroke")
+pvpStroke.Thickness = 3
+pvpStroke.Parent = pvpBanner
+
+local pvpTitle = Instance.new("TextLabel")
+pvpTitle.Name = "Title"
+pvpTitle.Size = UDim2.new(1, -20, 0, 42)
+pvpTitle.Position = UDim2.new(0, 10, 0, 6)
+pvpTitle.BackgroundTransparency = 1
+pvpTitle.TextScaled = true
+pvpTitle.Font = Enum.Font.FredokaOne
+pvpTitle.Parent = pvpBanner
+
+local pvpSubtitle = Instance.new("TextLabel")
+pvpSubtitle.Name = "Subtitle"
+pvpSubtitle.Size = UDim2.new(1, -20, 0, 26)
+pvpSubtitle.Position = UDim2.new(0, 10, 0, 46)
+pvpSubtitle.BackgroundTransparency = 1
+pvpSubtitle.TextScaled = true
+pvpSubtitle.Font = Enum.Font.FredokaOne
+pvpSubtitle.Parent = pvpBanner
+
+local function showPvPBanner(isKill: boolean, enemyName: string, amount: number)
+    pvpBanner.Visible = true
+    if isKill then
+        pvpStroke.Color = Color3.fromRGB(241, 196, 15)
+        pvpTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
+        pvpTitle.Text = string.format("💀 ВЫ УНИЧТОЖИЛИ: %s!", string.upper(enemyName))
+        pvpSubtitle.TextColor3 = Color3.fromRGB(46, 204, 113)
+        pvpSubtitle.Text = string.format("💰 ЛУТ С ЖЕРТВЫ: +%d AURA В КОШЕЛЁК!", amount)
+    else
+        pvpStroke.Color = Color3.fromRGB(231, 76, 60)
+        pvpTitle.TextColor3 = Color3.fromRGB(255, 80, 80)
+        pvpTitle.Text = string.format("☠️ ВАС УНИЧТОЖИЛ: %s!", string.upper(enemyName))
+        pvpSubtitle.TextColor3 = Color3.fromRGB(241, 196, 15)
+        pvpSubtitle.Text = string.format("💸 Потеряно -%d Aura (СЕЙФ НА БАЗЕ ЦЕЛ! 🛡️)", amount)
+    end
+
+    pvpBanner.Position = UDim2.new(0.5, -260, 0, -100)
+    local tweenIn = TweenService:Create(pvpBanner, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0.5, -260, 0, 70)
+    })
+    tweenIn:Play()
+
+    task.delay(4, function()
+        if pvpBanner.Parent then
+            local tweenOut = TweenService:Create(pvpBanner, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Position = UDim2.new(0.5, -260, 0, -100)
+            })
+            tweenOut:Play()
+            tweenOut.Completed:Connect(function()
+                if pvpBanner.Position.Y.Offset <= -90 then
+                    pvpBanner.Visible = false
+                end
+            end)
+        end
+    end)
+end
+
+if pvpKillEvent then
+    pvpKillEvent.OnClientEvent:Connect(function(data)
+        if type(data) ~= "table" then return end
+        if data.type == "kill" then
+            showPvPBanner(true, data.targetName or "Врага", data.amount or 0)
+        elseif data.type == "death" then
+            showPvPBanner(false, data.killerName or "Враг", data.amount or 0)
+        end
+    end)
+end
+
+-- Слушатели сейфа базы и вывода в кошелек
+if vaultUpdatedEvent then
+    vaultUpdatedEvent.OnClientEvent:Connect(function(plotIndex: number, newVaultTotal: number)
+        vaultLabel.Text = string.format("🏦 СЕЙФ БАЗЫ: +%s 🛡️", tostring(newVaultTotal))
+        local tPulse = TweenService:Create(vaultLabel, TweenInfo.new(0.2, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out, 0, true), {
+            TextColor3 = Color3.fromRGB(46, 204, 113)
+        })
+        tPulse:Play()
+    end)
+end
+
+if withdrawEvent then
+    withdrawEvent.OnClientEvent:Connect(function(amount: number)
+        vaultLabel.Text = "🏦 СЕЙФ БАЗЫ: +0 🛡️"
+        showToast(string.format("💰 Забрано из сейфа базы: +%d AURA в кошелёк!", amount), Color3.fromRGB(46, 204, 113))
+    end)
+end
+
+-- 4. Способности фракций (Инвентарь, хоткей [E] для активного предмета)
 local abilityBtn = Instance.new("TextButton")
 abilityBtn.Name = "AbilityButton"
-abilityBtn.Size = UDim2.new(0, 150, 0, 60)
-abilityBtn.Position = UDim2.new(1, -170, 1, -80)
+abilityBtn.Size = UDim2.new(0, 180, 0, 64)
+abilityBtn.Position = UDim2.new(1, -200, 1, -85)
 abilityBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
 abilityBtn.Text = "⚡ СПОСОБНОСТЬ\n[E]"
 abilityBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -415,7 +530,7 @@ abilityBtn.Font = Enum.Font.FredokaOne
 abilityBtn.Parent = screenGui
 
 local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 12)
+btnCorner.CornerRadius = UDim.new(0, 14)
 btnCorner.Parent = abilityBtn
 
 local btnStroke = Instance.new("UIStroke")
@@ -423,48 +538,134 @@ btnStroke.Color = Color3.fromRGB(255, 255, 255)
 btnStroke.Thickness = 2
 btnStroke.Parent = abilityBtn
 
-local isAbilityOnCooldown = false
+-- Панель горячих клавиш способностей
+local hintsLabel = Instance.new("TextLabel")
+hintsLabel.Name = "AbilityHints"
+hintsLabel.Size = UDim2.new(0, 260, 0, 22)
+hintsLabel.Position = UDim2.new(1, -270, 1, -112)
+hintsLabel.BackgroundTransparency = 1
+hintsLabel.Text = "[1 / E] База  •  [2 / R] Тактика  •  [3 / Q] Ульт"
+hintsLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+hintsLabel.TextScaled = true
+hintsLabel.Font = Enum.Font.FredokaOne
+hintsLabel.Parent = screenGui
+
+local cooldownsRemaining: { [string]: number } = {
+    base = 0,
+    tactical = 0,
+    ultimate = 0,
+}
 local currentCooldownRemaining = 0
 
-local function castAbility()
-    if isAbilityOnCooldown then
-        showToast(string.format("⏳ Перезарядка: %d сек!", currentCooldownRemaining), Color3.fromRGB(230, 126, 34))
+local currentEquippedSlot: "base" | "tactical" | "ultimate" = "base"
+local currentEquippedToolName: string? = nil
+
+local function getEquippedAbilitySlot(): "base" | "tactical" | "ultimate"
+    local char = localPlayer.Character
+    if char then
+        local tool = char:FindFirstChildOfClass("Tool")
+        if tool then
+            local slot = tool:GetAttribute("AbilitySlot")
+            if slot == "base" or slot == "tactical" or slot == "ultimate" then
+                return slot
+            end
+        end
+    end
+    return "base"
+end
+
+local function updateButtonDisplay()
+    local char = localPlayer.Character
+    local equippedTool = if char then char:FindFirstChildOfClass("Tool") else nil
+    if equippedTool and equippedTool:GetAttribute("AbilitySlot") then
+        local slot = equippedTool:GetAttribute("AbilitySlot") :: string
+        currentEquippedSlot = slot :: any
+        currentEquippedToolName = equippedTool.Name
+        local cd = cooldownsRemaining[currentEquippedSlot] or 0
+        if cd > 0 then
+            abilityBtn.Text = string.format("⏳ %dс [КД]\n%s", cd, equippedTool.Name)
+            abilityBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+        else
+            abilityBtn.Text = string.format("⚡ АКТИВИРОВАТЬ\n%s [E]", equippedTool.Name)
+            abilityBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+        end
+    else
+        currentEquippedToolName = nil
+        local cd = cooldownsRemaining[currentEquippedSlot] or 0
+        if cd > 0 then
+            abilityBtn.Text = string.format("⏳ %dс [КД]\n[E]", cd)
+            abilityBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+        else
+            abilityBtn.Text = "⚡ СПОСОБНОСТЬ\n[E]"
+            abilityBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+        end
+    end
+end
+
+local function castAbility(slot: "base" | "tactical" | "ultimate")
+    local cd = cooldownsRemaining[slot] or 0
+    if cd > 0 then
+        showToast(string.format("⏳ Способность на перезарядке: %d сек!", cd), Color3.fromRGB(230, 126, 34))
         return
     end
 
     if abilityEvent then
-        abilityEvent:FireServer()
-        local tIn = TweenService:Create(abilityBtn, TweenInfo.new(0.1), { Size = UDim2.new(0, 135, 0, 50) })
-        local tOut = TweenService:Create(abilityBtn, TweenInfo.new(0.2), { Size = UDim2.new(0, 150, 0, 60) })
+        abilityEvent:FireServer(slot)
+        local tIn = TweenService:Create(abilityBtn, TweenInfo.new(0.1), { Size = UDim2.new(0, 165, 0, 56) })
+        local tOut = TweenService:Create(abilityBtn, TweenInfo.new(0.2), { Size = UDim2.new(0, 180, 0, 64) })
         tIn:Play()
         tIn.Completed:Connect(function() tOut:Play() end)
     end
 end
 
-abilityBtn.MouseButton1Click:Connect(castAbility)
+abilityBtn.MouseButton1Click:Connect(function()
+    castAbility(getEquippedAbilitySlot())
+end)
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if input.KeyCode == Enum.KeyCode.E then
-        castAbility()
+        castAbility(getEquippedAbilitySlot())
+    elseif input.KeyCode == Enum.KeyCode.R then
+        castAbility("tactical")
+    elseif input.KeyCode == Enum.KeyCode.Q then
+        castAbility("ultimate")
     end
 end)
 
--- Обработка ответа сервера на применение способности
+-- Отслеживание экипировки инструмента
+local function watchTools(char: Model)
+    char.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") then
+            task.wait(0.05)
+            updateButtonDisplay()
+        end
+    end)
+    char.ChildRemoved:Connect(function(child)
+        if child:IsA("Tool") then
+            task.wait(0.05)
+            updateButtonDisplay()
+        end
+    end)
+end
+
+if localPlayer.Character then watchTools(localPlayer.Character) end
+localPlayer.CharacterAdded:Connect(watchTools)
+
+-- Обработка ответа сервера на способность
 if abilityEvent then
-    abilityEvent.OnClientEvent:Connect(function(status: string, messageOrName: string, duration: number, factionId: string?)
-        if status == "SUCCESS" then
-            isAbilityOnCooldown = true
-            currentCooldownRemaining = duration or 12
-            abilityBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
-            btnStroke.Color = Color3.fromRGB(150, 150, 150)
+    abilityEvent.OnClientEvent:Connect(function(status: string, messageOrName: string, duration: number, slot: string?)
+        local s = slot or "base"
+        if status == "CAST_SUCCESS" or status == "SUCCESS" then
+            cooldownsRemaining[s] = duration or 12
+            updateButtonDisplay()
             showToast(string.format("⚡ %s АКТИВИРОВАНА!", messageOrName), Color3.fromRGB(46, 204, 113))
 
-            -- Локальные визуальные спецэффекты для игрока
+            -- Локальные визуальные спецэффекты
             local char = localPlayer.Character
             if char then
                 local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
-                if root and factionId == "Skibidi" then
+                if root and string.find(string.lower(messageOrName), "spin") then
                     task.spawn(function()
                         for _ = 1, 15 do
                             root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(24), 0)
@@ -474,18 +675,14 @@ if abilityEvent then
                 end
             end
 
-            -- Таймер обратного отсчета на кнопке
+            -- Таймер обратного отсчета для слота
             task.spawn(function()
-                while currentCooldownRemaining > 0 do
-                    abilityBtn.Text = string.format("⏳ %dс\n[КД]", currentCooldownRemaining)
+                while (cooldownsRemaining[s] or 0) > 0 do
                     task.wait(1.0)
-                    currentCooldownRemaining -= 1
+                    cooldownsRemaining[s] = math.max(0, (cooldownsRemaining[s] or 0) - 1)
+                    updateButtonDisplay()
                 end
-                isAbilityOnCooldown = false
-                abilityBtn.Text = "⚡ СПОСОБНОСТЬ\n[E]"
-                abilityBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
-                btnStroke.Color = Color3.fromRGB(255, 255, 255)
-                showToast("⚡ Способность снова готова к бою!", Color3.fromRGB(241, 196, 15))
+                showToast(string.format("⚡ %s снова готова к бою!", messageOrName), Color3.fromRGB(241, 196, 15))
             end)
 
         elseif status == "COOLDOWN" then
@@ -493,7 +690,9 @@ if abilityEvent then
 
         elseif status == "ERROR" then
             showToast(string.format("⚠️ %s", messageOrName), Color3.fromRGB(231, 76, 60))
-            selectModal.Visible = true
+            if string.find(messageOrName, "выбери базу") then
+                selectModal.Visible = true
+            end
         end
     end)
 end

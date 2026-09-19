@@ -14,7 +14,7 @@ local TycoonConfig = require(Shared:WaitForChild("TycoonConfig"))
 
 local WorldBuilder = {}
 
-local ISLAND_RADIUS = TycoonConfig.ARENA_RADIUS + 55 -- немного больше чем кольцо баз
+local ISLAND_RADIUS = TycoonConfig.ARENA_RADIUS + 70 -- достаточно места для баз 48x64
 local BASE_RADIUS = TycoonConfig.ARENA_RADIUS
 local ROAD_WIDTH = 10
 local GROUND_Y = 3 -- уровень земли острова (верхняя поверхность IslandBase)
