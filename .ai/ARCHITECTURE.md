@@ -1,33 +1,36 @@
 # Архитектура проекта roblox (Tycoon)
 
 ## Принципы организации кода
-Проект использует клиент-серверное разделение Roblox с синхронизацией через Rojo и процедурной генерацией 3D-мира базы.
+Проект использует строгую клиент-серверную архитектуру Roblox, синхронизацию через Rojo, сохранение в облачном DataStore и динамическую 3D-генерацию мира.
 
 ### Сервисы и модули
 1. **ReplicatedStorage (Shared)**:
-   - `MathUtils.luau`: Чистые математические вычисления (`clamp`, `lerp`, расчет уровней).
-   - `TycoonConfig.luau`: Конфигурация предметов тайкуна, стоимости, категорий, зависимостей, интервалов дропа и скоростей конвейера.
+   - `MathUtils.luau`: Математические утилиты (`clamp`, `lerp`).
+   - `TycoonConfig.luau`: Конфигурация предметов, параметров, зависимостей, цен и интервалов дропа.
    - `EconomyManager.luau`: Валидация покупок, проверка достаточного баланса, расчет множителей.
 
 2. **ServerScriptService (Server)**:
-   - `init.server.luau`: Серверная точка входа. Назначает базы входящим игрокам и запускает их жизненный цикл.
-   - `PlotBuilder.luau`: Процедурный 3D-генератор базы. Создает платформу, вывеску с ником игрока, конвейерную ленту с физической скоростью, неоновый сборщик монет и динамические интерактивные кнопки покупок. Запускает цикл спавна физической руды из дропперов.
-   - `TycoonService.luau`: Серверная служба игровых профилей, валюты `Cash` в `leaderstats`, безопасного списания и начисления дохода.
+   - `init.server.luau`: Серверная точка входа, подключение событий игроков, таймер автосохранения (каждые 60 с), перехват `game:BindToClose`.
+   - `DataStoreManager.luau`: Инкапсуляция `DataStoreService:GetDataStore("TycoonSave_v1")`, безопасные вызовы через `pcall`, повторные попытки (retries), валидация и дефолтные профили.
+   - `PlotBuilder.luau`: Процедурный генератор 3D-базы: восстанавливает сохраненные постройки при входе, проигрывает звуки сбора монет (`Sound`) и частицы (`ParticleEmitter`), создает кнопку Rebirth.
+   - `TycoonService.luau`: Управление профилями игроков, начисление дохода с множителем Rebirth (`1 + rebirths * 0.5`), списание баланса, логика сброса при перерождении.
 
 3. **StarterPlayer.StarterPlayerScripts (Client)**:
-   - `init.client.luau`: Клиентский скрипт инициализации.
+   - `init.client.luau`: TycoonHUD — современный темный интерфейс в левом верхнем углу с балансом, множителем и счетчиком перерождений с микроанимациями через `TweenService`.
 
-## Потоки данных тайкуна
+## Потоки данных
 ```mermaid
 graph TD
-    Player[Player Avatar] -->|Steps on Pad| Button[Purchase Button in Plot]
-    Button -->|Trigger Purchase| TycoonService[TycoonService: Server]
-    TycoonService -->|Validate| EconomyManager[EconomyManager: Shared]
-    TycoonService -->|Deduct Cash & Unlock| PlotBuilder[PlotBuilder: Server]
-    PlotBuilder -->|Spawn 3D Structure| World[Workspace.TycoonPlots]
-    PlotBuilder -->|Spawn Ore Loop| Dropper[Active Dropper]
-    Dropper -->|Drop Ore| Conveyor[Conveyor: AssemblyLinearVelocity]
-    Conveyor -->|Move Ore| Collector[Collector]
-    Collector -->|Award Cash| TycoonService
-    TycoonService -->|Update Value| Leaderstats[Player.leaderstats.Cash]
+    DataStore[Roblox DataStoreService] <-->|Load on Join / Save on Exit & Autosave| DSM[DataStoreManager]
+    DSM <--> TycoonService[TycoonService]
+    TycoonService -->|Rebuild Owned Items| PlotBuilder[PlotBuilder]
+    Player[Player Avatar] -->|Steps on Pad| Button[Purchase / Rebirth Button]
+    Button -->|Trigger Action| TycoonService
+    TycoonService -->|Spawn Structure| World[Workspace.TycoonPlots]
+    Dropper[Active Dropper] -->|Drop Ore| Conveyor[Conveyor: LinearVelocity]
+    Conveyor --> Collector[Collector]
+    Collector -->|Play Coin SFX & Emit VFX| Player
+    Collector -->|Award Cash * RebirthMult| TycoonService
+    TycoonService --> Leaderstats[Player.leaderstats]
+    Leaderstats -->|Changed Event| ClientHUD[Client TycoonHUD: ScreenGui]
 ```

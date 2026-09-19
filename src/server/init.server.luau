@@ -38,4 +38,19 @@ Players.PlayerRemoving:Connect(function(player: Player)
     TycoonService.onPlayerRemoving(player)
 end)
 
+-- Автосохранение каждые 60 секунд
+task.spawn(function()
+    while true do
+        task.wait(60)
+        TycoonService.saveAllPlayers()
+    end
+end)
+
+-- Сохранение данных всех игроков при выключении сервера
+game:BindToClose(function()
+    print("[SERVER] Server shutting down, saving all players data...")
+    TycoonService.saveAllPlayers()
+    task.wait(1)
+end)
+
 print("[SERVER] Roblox Tycoon Server Ready!")

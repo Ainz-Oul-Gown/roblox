@@ -3,7 +3,7 @@
 --[=[
     TycoonService
     Серверная служба управления состоянием тайкуна, начислением валюты,
-    обработкой покупок и инициализацией таблицы лидеров (leaderstats).
+    обработкой покупок, сохранением в DataStore и таблицей лидеров (leaderstats).
 ]=]
 
 local Players = game:GetService("Players")
@@ -12,39 +12,78 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local TycoonConfig = require(Shared:WaitForChild("TycoonConfig"))
 local EconomyManager = require(Shared:WaitForChild("EconomyManager"))
+local DataStoreManager = require(script.Parent:WaitForChild("DataStoreManager"))
 
 local TycoonService = {}
 
-type PlayerData = {
+export type PlayerData = {
     cash: number,
+    rebirths: number,
     ownedItems: { [string]: boolean },
 }
 
 local playerDataMap: { [number]: PlayerData } = {}
 
--- Инициализация данных и leaderstats для вошедшего игрока
-function TycoonService.onPlayerAdded(player: Player)
+-- Инициализация данных и leaderstats для вошедшего игрока с загрузкой из DataStore
+function TycoonService.onPlayerAdded(player: Player): PlayerData
     local leaderstats = Instance.new("Folder")
     leaderstats.Name = "leaderstats"
     leaderstats.Parent = player
 
+    local savedData = DataStoreManager.loadData(player.UserId)
+
     local cashValue = Instance.new("IntValue")
     cashValue.Name = "Cash"
-    cashValue.Value = TycoonConfig.STARTING_CASH
+    cashValue.Value = savedData.cash
     cashValue.Parent = leaderstats
 
-    playerDataMap[player.UserId] = {
-        cash = TycoonConfig.STARTING_CASH,
-        ownedItems = {},
+    local rebirthValue = Instance.new("IntValue")
+    rebirthValue.Name = "Rebirths"
+    rebirthValue.Value = savedData.rebirths
+    rebirthValue.Parent = leaderstats
+
+    local currentData: PlayerData = {
+        cash = savedData.cash,
+        rebirths = savedData.rebirths,
+        ownedItems = savedData.ownedItems,
     }
 
-    print(string.format("[TycoonService] Profile created for %s (UserId: %d)", player.Name, player.UserId))
+    playerDataMap[player.UserId] = currentData
+    print(string.format("[TycoonService] Profile loaded for %s: Cash=$%d, Rebirths=%d", player.Name, currentData.cash, currentData.rebirths))
+    return currentData
 end
 
--- Очистка данных при выходе игрока
+-- Сохранение данных при выходе игрока
 function TycoonService.onPlayerRemoving(player: Player)
-    playerDataMap[player.UserId] = nil
-    print(string.format("[TycoonService] Cleaned up profile for %s", player.Name))
+    local data = playerDataMap[player.UserId]
+    if data then
+        DataStoreManager.saveData(player.UserId, {
+            version = 1,
+            cash = data.cash,
+            rebirths = data.rebirths,
+            ownedItems = data.ownedItems,
+            lastSaved = os.time(),
+        })
+        playerDataMap[player.UserId] = nil
+        print(string.format("[TycoonService] Saved & cleaned profile for %s", player.Name))
+    end
+end
+
+-- Сохранение всех активных игроков (автосейв и BindToClose)
+function TycoonService.saveAllPlayers()
+    print("[TycoonService] Saving all players...")
+    for _, player in ipairs(Players:GetPlayers()) do
+        local data = playerDataMap[player.UserId]
+        if data then
+            DataStoreManager.saveData(player.UserId, {
+                version = 1,
+                cash = data.cash,
+                rebirths = data.rebirths,
+                ownedItems = data.ownedItems,
+                lastSaved = os.time(),
+            })
+        end
+    end
 end
 
 -- Получение текущего баланса
@@ -53,12 +92,25 @@ function TycoonService.getCash(player: Player): number
     return if data then data.cash else 0
 end
 
--- Начисление денег игроку
+-- Получение количества перерождений
+function TycoonService.getRebirths(player: Player): number
+    local data = playerDataMap[player.UserId]
+    return if data then data.rebirths else 0
+end
+
+-- Получение всех купленных предметов
+function TycoonService.getOwnedItems(player: Player): { [string]: boolean }
+    local data = playerDataMap[player.UserId]
+    return if data then data.ownedItems else {}
+end
+
+-- Начисление денег игроку с учетом множителя Rebirth
 function TycoonService.addCash(player: Player, amount: number)
     local data = playerDataMap[player.UserId]
     if not data then return end
 
-    data.cash = EconomyManager.addCash(data.cash, amount)
+    local mult = 1.0 + (data.rebirths * 0.5) -- +50% дохода за каждое перерождение
+    data.cash = EconomyManager.addCash(data.cash, amount, mult)
 
     local leaderstats = player:FindFirstChild("leaderstats")
     if leaderstats then
@@ -69,7 +121,7 @@ function TycoonService.addCash(player: Player, amount: number)
     end
 end
 
--- Попытка покупки предмета
+-- Покупка предмета
 function TycoonService.purchaseItem(player: Player, itemId: string): boolean
     local data = playerDataMap[player.UserId]
     if not data then return false end
@@ -86,7 +138,6 @@ function TycoonService.purchaseItem(player: Player, itemId: string): boolean
     data.cash = EconomyManager.deductCash(data.cash, item.cost)
     data.ownedItems[itemId] = true
 
-    -- Синхронизация leaderstats
     local leaderstats = player:FindFirstChild("leaderstats")
     if leaderstats then
         local cashVal = leaderstats:FindFirstChild("Cash") :: IntValue?
@@ -95,7 +146,35 @@ function TycoonService.purchaseItem(player: Player, itemId: string): boolean
         end
     end
 
-    print(string.format("[TycoonService] %s purchased %s! Remaining Cash: %d", player.Name, item.name, data.cash))
+    print(string.format("[TycoonService] %s purchased %s! Remaining: $%d", player.Name, item.name, data.cash))
+    return true
+end
+
+-- Выполнение перерождения (Rebirth)
+function TycoonService.performRebirth(player: Player): boolean
+    local data = playerDataMap[player.UserId]
+    if not data then return false end
+
+    -- Для Rebirth требуется построить SecondFloor и иметь $1000
+    local REBIRTH_COST = 1000
+    if not data.ownedItems["SecondFloor"] or data.cash < REBIRTH_COST then
+        return false
+    end
+
+    data.cash = 0
+    data.rebirths += 1
+    data.ownedItems = {} -- Сброс всех улучшений
+
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if leaderstats then
+        local cashVal = leaderstats:FindFirstChild("Cash") :: IntValue?
+        if cashVal then cashVal.Value = 0 end
+
+        local rebirthVal = leaderstats:FindFirstChild("Rebirths") :: IntValue?
+        if rebirthVal then rebirthVal.Value = data.rebirths end
+    end
+
+    print(string.format("[TycoonService] %s performed REBIRTH! Total Rebirths: %d", player.Name, data.rebirths))
     return true
 end
 

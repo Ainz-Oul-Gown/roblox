@@ -3,7 +3,8 @@
 --[=[
     PlotBuilder
     Процедурный генератор 3D-мира тайкуна: создает базу, конвейерную ленту,
-    коллектор монет, интерактивные кнопки покупок и активные дропперы руды.
+    коллектор монет, интерактивные кнопки покупок, активные дропперы руды,
+    звуковые эффекты (SFX), частицы (VFX) и поддержку сохранения/перерождений.
 ]=]
 
 local Workspace = game:GetService("Workspace")
@@ -25,6 +26,8 @@ local BUTTON_OFFSETS: { [string]: Vector3 } = {
     GoldDropper = Vector3.new(-8, 0.6, 10),
     SecondFloor = Vector3.new(-8, 0.6, 15),
 }
+
+local REBIRTH_BUTTON_OFFSET = Vector3.new(-8, 0.6, 20)
 
 -- Создание информационного BillboardGui над деталью
 local function createBillboard(parent: Instance, title: string, subtitle: string, textColor: Color3)
@@ -99,7 +102,6 @@ local function spawnPurchasedStructure(plotModel: Model, owner: Player, item: Ty
                 ore:SetAttribute("Value", val)
                 ore.Parent = Workspace
                 
-                -- Удаление упавшей в пустоту руды через 15 сек
                 task.delay(15, function()
                     if ore.Parent then ore:Destroy() end
                 end)
@@ -148,20 +150,18 @@ local function spawnPurchasedStructure(plotModel: Model, owner: Player, item: Ty
     end
 end
 
--- Обновление доступных кнопок покупок на базе
+-- Обновление доступных кнопок покупок и Rebirth
 local function updateButtons(plotModel: Model, owner: Player, origin: Vector3)
     local buttonsFolder = plotModel:FindFirstChild("Buttons") :: Folder
     if not buttonsFolder then return end
 
     for _, item in ipairs(TycoonConfig.ITEMS) do
-        -- Если уже куплен, кнопка не нужна
         if TycoonService.hasItem(owner, item.id) then
             local existing = buttonsFolder:FindFirstChild("Button_" .. item.id)
             if existing then existing:Destroy() end
             continue
         end
 
-        -- Проверяем выполнено ли условие (пререквизит)
         local isUnlocked = true
         if item.dependsOn and not TycoonService.hasItem(owner, item.dependsOn) then
             isUnlocked = false
@@ -172,7 +172,6 @@ local function updateButtons(plotModel: Model, owner: Player, origin: Vector3)
         if isUnlocked and not existing then
             local offset = BUTTON_OFFSETS[item.id] or Vector3.new(-8, 0.6, 0)
             
-            -- Подставка кнопки
             local buttonStand = Instance.new("Part")
             buttonStand.Name = "Button_" .. item.id
             buttonStand.Size = Vector3.new(3.5, 0.4, 3.5)
@@ -182,7 +181,6 @@ local function updateButtons(plotModel: Model, owner: Player, origin: Vector3)
             buttonStand.Color = Color3.fromRGB(40, 40, 40)
             buttonStand.Parent = buttonsFolder
 
-            -- Нажимная пластина
             local pad = Instance.new("Part")
             pad.Name = "Pad"
             pad.Size = Vector3.new(2.8, 0.3, 2.8)
@@ -195,7 +193,6 @@ local function updateButtons(plotModel: Model, owner: Player, origin: Vector3)
             local priceText = if item.cost == 0 then "Бесплатно" else string.format("$%d", item.cost)
             createBillboard(pad, item.name, priceText, pad.Color)
 
-            -- Обработка наступления на кнопку
             local debounce = false
             pad.Touched:Connect(function(hit: BasePart)
                 if debounce then return end
@@ -209,7 +206,7 @@ local function updateButtons(plotModel: Model, owner: Player, origin: Vector3)
                         spawnPurchasedStructure(plotModel, owner, item, origin)
                         updateButtons(plotModel, owner, origin)
                     else
-                        task.wait(1)
+                        task.wait(0.8)
                         debounce = false
                     end
                 end
@@ -218,9 +215,56 @@ local function updateButtons(plotModel: Model, owner: Player, origin: Vector3)
             existing:Destroy()
         end
     end
+
+    -- Кнопка Rebirth (появляется при покупке SecondFloor)
+    local hasSecondFloor = TycoonService.hasItem(owner, "SecondFloor")
+    local existingRebirth = buttonsFolder:FindFirstChild("Button_Rebirth")
+
+    if hasSecondFloor and not existingRebirth then
+        local rebirthStand = Instance.new("Part")
+        rebirthStand.Name = "Button_Rebirth"
+        rebirthStand.Size = Vector3.new(4, 0.5, 4)
+        rebirthStand.Position = origin + REBIRTH_BUTTON_OFFSET
+        rebirthStand.Anchored = true
+        rebirthStand.Color = Color3.fromRGB(20, 20, 20)
+        rebirthStand.Parent = buttonsFolder
+
+        local pad = Instance.new("Part")
+        pad.Name = "Pad"
+        pad.Size = Vector3.new(3.4, 0.4, 3.4)
+        pad.Position = rebirthStand.Position + Vector3.new(0, 0.3, 0)
+        pad.Anchored = true
+        pad.Material = Enum.Material.Neon
+        pad.Color = Color3.fromRGB(155, 89, 182) -- Фиолетовый неон для Rebirth
+        pad.Parent = rebirthStand
+
+        createBillboard(pad, "ПЕРЕРОЖДЕНИЕ (REBIRTH)", "Требуется $1000\n+50% ДОХОДА НАВСЕГДА!", pad.Color)
+
+        local debounce = false
+        pad.Touched:Connect(function(hit: BasePart)
+            if debounce then return end
+            local character = hit.Parent
+            local player = Players:GetPlayerFromCharacter(character)
+            if player and player == owner then
+                debounce = true
+                local success = TycoonService.performRebirth(player)
+                if success then
+                    -- Очищаем все купленные структуры
+                    local itemsFolder = plotModel:FindFirstChild("PurchasedItems")
+                    if itemsFolder then itemsFolder:ClearAllChildren() end
+                    updateButtons(plotModel, owner, origin)
+                else
+                    task.wait(1)
+                    debounce = false
+                end
+            end
+        end)
+    elseif not hasSecondFloor and existingRebirth then
+        existingRebirth:Destroy()
+    end
 end
 
--- Создание базы для игрока
+-- Создание базы для игрока с восстановлением сохраненного прогресса
 function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
     local plotsContainer = Workspace:FindFirstChild("TycoonPlots")
     if not plotsContainer then
@@ -229,14 +273,12 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
         plotsContainer.Parent = Workspace
     end
 
-    -- Располагаем базу перед спавном (Z = 30)
     local origin = Vector3.new(0, 0.5, 30 + (plotIndex - 1) * 70)
 
     local plotModel = Instance.new("Model")
     plotModel.Name = string.format("Plot_%s", player.Name)
     plotModel.Parent = plotsContainer
 
-    -- Папки для структуры
     local purchasedItems = Instance.new("Folder")
     purchasedItems.Name = "PurchasedItems"
     purchasedItems.Parent = plotModel
@@ -255,7 +297,7 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
     baseFloor.Color = Color3.fromRGB(30, 30, 35)
     baseFloor.Parent = plotModel
 
-    -- Вывеска владельца базы перед входом
+    -- Вывеска
     local sign = Instance.new("Part")
     sign.Name = "OwnerSign"
     sign.Size = Vector3.new(14, 3, 1)
@@ -266,7 +308,7 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
     sign.Parent = plotModel
     createBillboard(sign, string.format("База: %s", player.Name), "Тайкун Запущен!", Color3.fromRGB(255, 255, 255))
 
-    -- 2. Конвейерная лента
+    -- 2. Конвейер
     local conveyor = Instance.new("Part")
     conveyor.Name = "Conveyor"
     conveyor.Size = Vector3.new(4, 0.8, 32)
@@ -277,7 +319,6 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
     conveyor.AssemblyLinearVelocity = Vector3.new(0, 0, TycoonConfig.CONVEYOR_SPEED)
     conveyor.Parent = plotModel
 
-    -- Бортики конвейера
     local borderLeft = Instance.new("Part")
     borderLeft.Name = "BorderLeft"
     borderLeft.Size = Vector3.new(0.5, 1.6, 32)
@@ -294,7 +335,7 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
     borderRight.Color = Color3.fromRGB(20, 20, 20)
     borderRight.Parent = plotModel
 
-    -- 3. Сборщик монет (Collector)
+    -- 3. Сборщик монет (Collector) с визуальными эффектами
     local collector = Instance.new("Part")
     collector.Name = "Collector"
     collector.Size = Vector3.new(5, 1.5, 3)
@@ -305,18 +346,44 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
     collector.Parent = plotModel
     createBillboard(collector, "СБОРЩИК", "Дропни сюда руду!", Color3.fromRGB(46, 204, 113))
 
-    -- Фиксация сбора руды
+    -- Звук сбора монет
+    local coinSound = Instance.new("Sound")
+    coinSound.Name = "CoinSound"
+    coinSound.SoundId = "rbxassetid://9114223177"
+    coinSound.Volume = 0.6
+    coinSound.Parent = collector
+
+    -- Эффект частиц при сдаче руды
+    local particles = Instance.new("ParticleEmitter")
+    particles.Name = "CashParticles"
+    particles.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+    particles.Rate = 0
+    particles.Speed = NumberRange.new(5, 10)
+    particles.Lifetime = NumberRange.new(0.4, 0.8)
+    particles.Color = ColorSequence.new(Color3.fromRGB(46, 204, 113))
+    particles.Parent = collector
+
     collector.Touched:Connect(function(hit: BasePart)
         if hit.Name == "Ore" then
             local val = hit:GetAttribute("Value")
             if val and typeof(val) == "number" then
                 TycoonService.addCash(player, val)
+                coinSound:Play()
+                particles:Emit(6)
                 hit:Destroy()
             end
         end
     end)
 
-    -- Спавним стартовый комплект кнопок
+    -- Восстановление сохраненных построек
+    local owned = TycoonService.getOwnedItems(player)
+    for _, item in ipairs(TycoonConfig.ITEMS) do
+        if owned[item.id] then
+            spawnPurchasedStructure(plotModel, player, item, origin)
+        end
+    end
+
+    -- Спавним подходящие кнопки покупок
     updateButtons(plotModel, player, origin)
 
     print(string.format("[PlotBuilder] Created Tycoon Plot for %s at %s", player.Name, tostring(origin)))
