@@ -1,0 +1,21 @@
+# Node / Testing
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Rojo & Roblox build artifacts
+*.rbxl
+*.rbxm
+*.rbxlx
+.rojo/
+
+# OS and Editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/

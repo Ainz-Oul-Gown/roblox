@@ -1,0 +1,16 @@
+{
+  "name": "roblox",
+  "version": "1.0.0",
+  "description": "Roblox game project with Rojo and Luau",
+  "main": "src/server/init.server.luau",
+  "scripts": {
+    "test": "node --test tests/**/*.test.js"
+  },
+  "keywords": [
+    "roblox",
+    "rojo",
+    "luau"
+  ],
+  "author": "Ainz-Oul-Gown",
+  "license": "MIT"
+}
