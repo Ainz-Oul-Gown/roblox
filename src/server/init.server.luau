@@ -48,7 +48,15 @@ statusVal.Value = "📦 Загрузка AbilityService..."
 local AbilityService = require(script:WaitForChild("AbilityService", 10))
 
 statusVal.Value = "📦 Загрузка PlotBuilder..."
-local PlotBuilder = require(script:WaitForChild("PlotBuilder", 10))
+local PlotBuilder: any = nil
+local reqOk, reqErr = pcall(function()
+    PlotBuilder = require(script:WaitForChild("PlotBuilder", 10))
+end)
+if not reqOk or not PlotBuilder then
+    statusVal.Value = "❌ Ошибка require PlotBuilder: " .. tostring(reqErr)
+    warn("[SERVER] Error loading PlotBuilder:", reqErr)
+    return
+end
 
 -- Перемещаем стандартный SpawnLocation в центр острова
 local defaultSpawn = Workspace:FindFirstChild("SpawnLocation") :: SpawnLocation?

@@ -14,11 +14,15 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local TycoonConfig = require(Shared:WaitForChild("TycoonConfig"))
-local EconomyManager = require(Shared:WaitForChild("EconomyManager"))
-local TycoonService = require(script.Parent:WaitForChild("TycoonService"))
-local PlotManager = require(script.Parent:WaitForChild("PlotManager"))
+local Shared = ReplicatedStorage:WaitForChild("Shared", 5)
+if not Shared then error("[PlotBuilder] ReplicatedStorage.Shared not found!") end
+
+local TycoonConfig = require(Shared:WaitForChild("TycoonConfig", 5))
+local EconomyManager = require(Shared:WaitForChild("EconomyManager", 5))
+
+local serverScript = script.Parent or game:GetService("ServerScriptService"):WaitForChild("Server", 5)
+local TycoonService = require(serverScript:WaitForChild("TycoonService", 5))
+local PlotManager = require(serverScript:WaitForChild("PlotManager", 5))
 
 local PlotBuilder = {}
 

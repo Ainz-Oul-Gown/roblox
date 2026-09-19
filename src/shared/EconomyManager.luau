@@ -5,7 +5,7 @@
     Управляет расчетами валюты (Aura), проверкой покупок и 5-уровневой системой Rebirth.
 ]=]
 
-local TycoonConfig = require(script.Parent.TycoonConfig)
+local TycoonConfig = require(script.Parent:WaitForChild("TycoonConfig", 5))
 
 local EconomyManager = {}
 
