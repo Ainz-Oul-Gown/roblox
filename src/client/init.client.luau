@@ -24,6 +24,7 @@ local pvpKillEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15) :: Remot
 local airDropEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15) :: RemoteEvent?
 local adminGiveCashEvent = ReplicatedStorage:WaitForChild("AdminGiveCashEvent", 15) :: RemoteEvent?
 local rebirthEvent = ReplicatedStorage:WaitForChild("RebirthEvent", 15) :: RemoteEvent?
+local abilityVFXEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15) :: RemoteEvent?
 
 -- Безопасная загрузка JuiceEffects (поддержка как script, так и script.Parent)
 local juiceModule = script:FindFirstChild("JuiceEffects")
@@ -49,6 +50,22 @@ if not JuiceEffects then
         animateButtonFailure = function(...) end,
         screenFlash = function(...) end,
     }
+end
+
+-- Безопасная загрузка AbilityVFX
+local abilityVfxModule = script:FindFirstChild("AbilityVFX")
+    or (script.Parent and script.Parent:FindFirstChild("AbilityVFX"))
+    or script:WaitForChild("AbilityVFX", 3)
+    or (script.Parent and script.Parent:WaitForChild("AbilityVFX", 1))
+
+local AbilityVFX: any = nil
+if abilityVfxModule and abilityVfxModule:IsA("ModuleScript") then
+    local ok, res = pcall(require, abilityVfxModule)
+    if ok and res then
+        AbilityVFX = res
+    else
+        warn("[CLIENT] AbilityVFX load warning:", res)
+    end
 end
 
 local showToast: (string, Color3?) -> ()
@@ -839,6 +856,15 @@ if abilityEvent then
             if string.find(messageOrName, "выбери базу") then
                 selectModal.Visible = true
             end
+        end
+    end)
+end
+
+-- Обработка спецэффектов и звука способностей для всех игроков вокруг
+if abilityVFXEvent then
+    abilityVFXEvent.OnClientEvent:Connect(function(caster: Player, fId: string, slot: string, originPos: Vector3, lookVector: Vector3)
+        if AbilityVFX and AbilityVFX.play then
+            AbilityVFX.play(caster, fId, slot, originPos, lookVector)
         end
     end)
 end

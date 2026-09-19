@@ -25,10 +25,25 @@ local SOUND_IDS: { [string]: string } = {
     fanfare = "rbxassetid://6534947588",    -- Торжественная фанфара Rebirth
     powerup = "rbxassetid://9114223175",    -- Активация способности
     slam = "rbxassetid://9114223175",       -- Удар / землетрясение
+    laser = "rbxassetid://9114223175",      -- Лазерный луч
+    dash = "rbxassetid://9114223175",       -- Свистящий рывок
+    explosion = "rbxassetid://9114223175",  -- Мощный взрыв
+    electric = "rbxassetid://9114223175",   -- Электрический разряд
+    magic = "rbxassetid://9114223175",      -- Магическое сияние
+    teleport = "rbxassetid://9114223175",   -- Теневой телепорт
+    meteor = "rbxassetid://9114223175",     -- Падение метеорита
+    hammer = "rbxassetid://9114223175",     -- Удар банхаммера
+    splash = "rbxassetid://9114223175",     -- Всплеск / смыв
+    whoosh = "rbxassetid://9114223175",     -- Быстрый свист
+    chime = "rbxassetid://9114223175",      -- Ризз-колокольчик
+    horn = "rbxassetid://9114223175",       -- Мемный горн / фанфара
+    parry = "rbxassetid://9069609200",      -- Парирование / металлический лязг
+    snatch = "rbxassetid://6895079853",     -- Налог / звон монет
+    anvil = "rbxassetid://9069609200",      -- Звон наковальни
 }
 
 function JuiceEffects.playSound(soundName: string, volume: number?)
-    local assetId = SOUND_IDS[soundName]
+    local assetId = SOUND_IDS[soundName] or SOUND_IDS.powerup
     if not assetId then return end
 
     local sound = Instance.new("Sound")
@@ -37,6 +52,75 @@ function JuiceEffects.playSound(soundName: string, volume: number?)
     sound.Parent = SoundService
     sound:Play()
     Debris:AddItem(sound, 4)
+end
+
+-- Пространственный 3D-звук в заданной точке мира (слышен всем в радиусе)
+function JuiceEffects.play3DSound(soundName: string, position: Vector3, volume: number?, maxDist: number?)
+    local assetId = SOUND_IDS[soundName] or SOUND_IDS.powerup
+    if not assetId then return end
+
+    local soundPart = Instance.new("Part")
+    soundPart.Name = "SoundSource"
+    soundPart.Size = Vector3.new(0.1, 0.1, 0.1)
+    soundPart.Position = position
+    soundPart.Transparency = 1
+    soundPart.CanCollide = false
+    soundPart.Anchored = true
+    soundPart.Parent = Workspace
+
+    local sound = Instance.new("Sound")
+    sound.SoundId = assetId
+    sound.Volume = volume or 0.85
+    sound.RollOffMode = Enum.RollOffMode.InverseTapered
+    sound.RollOffMinDistance = 10
+    sound.RollOffMaxDistance = maxDist or 120
+    sound.Parent = soundPart
+    sound:Play()
+
+    Debris:AddItem(soundPart, 5)
+end
+
+-- Динамическая тряска камеры (Screen Shake) при мощных ударах
+function JuiceEffects.screenShake(intensity: number?, duration: number?)
+    local dur = duration or 0.45
+    local str = intensity or 0.7
+    local camera = Workspace.CurrentCamera
+    if not camera then return end
+
+    local startTime = tick()
+    task.spawn(function()
+        while tick() - startTime < dur do
+            local elapsed = tick() - startTime
+            local decay = 1 - (elapsed / dur)
+            local rx = (math.random() - 0.5) * 2 * str * decay
+            local ry = (math.random() - 0.5) * 2 * str * decay
+            local rz = (math.random() - 0.5) * 2 * str * decay * 0.5
+
+            camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(rx), math.rad(ry), math.rad(rz))
+            task.wait(0.02)
+        end
+    end)
+end
+
+-- Импульс угла обзора (FOV Kick) при рывках мобильности
+function JuiceEffects.fovPulse(fovKick: number?, duration: number?)
+    local camera = Workspace.CurrentCamera
+    if not camera then return end
+    local kick = fovKick or 12
+    local dur = duration or 0.4
+    local origFOV = camera.FieldOfView
+
+    local tUp = TweenService:Create(camera, TweenInfo.new(dur * 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        FieldOfView = math.min(105, origFOV + kick)
+    })
+    local tDown = TweenService:Create(camera, TweenInfo.new(dur * 0.65, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        FieldOfView = origFOV
+    })
+
+    tUp:Play()
+    tUp.Completed:Connect(function()
+        tDown:Play()
+    end)
 end
 
 -- Всплывающий 3D-текст (+$$$ / урон / лут) в мировом пространстве

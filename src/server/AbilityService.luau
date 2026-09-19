@@ -39,6 +39,7 @@ local function getOrCreateRemote(name: string): RemoteEvent
 end
 
 local abilityEvent = getOrCreateRemote("AbilityEvent")
+local abilityVFXEvent = getOrCreateRemote("AbilityVFXEvent")
 
 -- Кулдауны хранятся по ключу: userId_slot
 local cooldowns: { [string]: number } = {}
@@ -184,6 +185,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
 
     -- Запуск визуала на клиенте
     abilityEvent:FireClient(player, "CAST_SUCCESS", abilityInfo.name, abilityInfo.cooldown, slot)
+    abilityVFXEvent:FireAllClients(player, fId, slot, root.Position, root.CFrame.LookVector)
 
     local fId = faction.id
 
