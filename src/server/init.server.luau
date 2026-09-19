@@ -15,6 +15,13 @@ local WorldBuilder = require(script:WaitForChild("WorldBuilder"))
 
 print("[SERVER] Initializing 8-Base Gen Alpha Brainrot Tycoon World...")
 
+-- Удаляем стандартный Baseplate из Studio (мешает виду острова)
+local existingBaseplate = Workspace:FindFirstChild("Baseplate")
+if existingBaseplate then
+    existingBaseplate:Destroy()
+    print("[SERVER] Removed default Baseplate")
+end
+
 -- 0. Строим карту острова (пол, дороги, океан, фонари)
 WorldBuilder.buildWorld()
 

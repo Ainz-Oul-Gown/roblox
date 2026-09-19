@@ -2,26 +2,6 @@
   "name": "roblox",
   "tree": {
     "$className": "DataModel",
-    "Workspace": {
-      "$className": "Workspace",
-      "$properties": {
-        "Gravity": 196.2
-      },
-      "Baseplate": {
-        "$className": "Part",
-        "$properties": {
-          "Name": "Baseplate",
-          "Size": { "X": 512, "Y": 20, "Z": 512 },
-          "Position": { "X": 0, "Y": -10, "Z": 0 },
-          "Anchored": true,
-          "Color": [0.388235, 0.372549, 0.384314],
-          "Material": "Grass",
-          "Locked": true,
-          "TopSurface": "Smooth",
-          "BottomSurface": "Smooth"
-        }
-      }
-    },
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "Shared": {
