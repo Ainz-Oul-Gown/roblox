@@ -144,8 +144,9 @@ test('PlotBuilder: Window transparency, unobstructed conveyor chute, and zero bu
     assert.ok(content.includes('wHeader'), 'BrainrotWalls must have upper header part');
     assert.ok(content.includes('rFrontSill'), 'Floor2_Walls must have lower sill part');
     assert.ok(content.includes('rFrontHeader'), 'Floor2_Walls must have upper header part');
-    assert.ok(content.includes('glass.Transparency = 0.55'), 'Floor 1 windows must be transparent (0.55)');
-    assert.ok(content.includes('glassFront.Transparency = 0.55'), 'Floor 2 windows must be transparent (0.55)');
+    assert.ok(content.includes('glass.Transparency = 0.38'), 'Floor 1 windows must be transparent (0.38)');
+    assert.ok(content.includes('glassFront.Transparency = 0.38'), 'Floor 2 windows must be transparent (0.38)');
+    assert.ok(content.includes('glassFront.Reflectance = 0.28'), 'Floor 2 windows must have reflections (0.28)');
 
     // 2. Chute elevated above conveyor (does not cut into conveyor)
     assert.ok(content.includes('math.rad(46.0)'), 'OreDropChute must use elevated 46 degree slope');

@@ -572,15 +572,26 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         winModel.Name = "Windows_Floor1"
         winModel.Parent = itemsFolder
 
+        -- Удаляем временные глухие панели стен 1-го этажа, если они были
+        local wallsF1 = itemsFolder:FindFirstChild("BrainrotWalls")
+        if wallsF1 then
+            for _, child in ipairs(wallsF1:GetChildren()) do
+                if child.Name == "WindowCover_Floor1" then
+                    child:Destroy()
+                end
+            end
+        end
+
         for _, sideX in ipairs({ -28, 28 }) do
             local glass = Instance.new("Part")
             glass.Name = "WallWindow"
-            glass.Size = Vector3.new(0.6, 6, 24)
+            glass.Size = Vector3.new(0.4, 6, 24)
             glass.CFrame = baseCF * CFrame.new(sideX, 7, 6)
             glass.Anchored = true
             glass.Material = Enum.Material.Glass
-            glass.Color = Color3.fromRGB(180, 220, 255)
-            glass.Transparency = 0.55
+            glass.Color = Color3.fromRGB(90, 165, 230)
+            glass.Transparency = 0.38
+            glass.Reflectance = 0.28
             glass.Parent = winModel
 
             -- Верхняя и нижняя неоновые планки рамы
@@ -595,16 +606,34 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
                 trim.Parent = winModel
             end
 
-            -- Вертикальные стойки рамы
-            for _, zOff in ipairs({ -12, 0, 12 }) do
+            -- Центральный горизонтальный импост (разделитель фрамуги)
+            local transom = Instance.new("Part")
+            transom.Size = Vector3.new(1.2, 0.35, 24.2)
+            transom.CFrame = baseCF * CFrame.new(sideX, 7, 6)
+            transom.Anchored = true
+            transom.Material = Enum.Material.SmoothPlastic
+            transom.Color = Color3.fromRGB(28, 28, 35)
+            transom.Parent = winModel
+
+            -- Вертикальные стойки рамы (импосты)
+            for _, zOff in ipairs({ -12, -4, 4, 12 }) do
                 local post = Instance.new("Part")
-                post.Size = Vector3.new(1.2, 6, 0.3)
+                post.Size = Vector3.new(1.2, 6, 0.4)
                 post.CFrame = baseCF * CFrame.new(sideX, 7, 6 + zOff)
                 post.Anchored = true
                 post.CanCollide = false
-                post.Material = Enum.Material.Neon
-                post.Color = faction.color
+                post.Material = Enum.Material.SmoothPlastic
+                post.Color = Color3.fromRGB(28, 28, 35)
                 post.Parent = winModel
+
+                local pNeon = Instance.new("Part")
+                pNeon.Size = Vector3.new(1.25, 6, 0.15)
+                pNeon.CFrame = baseCF * CFrame.new(sideX, 7, 6 + zOff)
+                pNeon.Anchored = true
+                pNeon.CanCollide = false
+                pNeon.Material = Enum.Material.Neon
+                pNeon.Color = faction.color
+                pNeon.Parent = winModel
             end
         end
 
@@ -707,15 +736,53 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         rRight.Parent = f2Walls
 
         -- Левая стена 2 этажа
-        local rLeft = Instance.new("Part")
-        rLeft.Size = Vector3.new(1, 10, 76)
-        rLeft.CFrame = baseCF * CFrame.new(-28, 19, 0)
-        rLeft.Anchored = true
-        rLeft.Color = Color3.fromRGB(40, 40, 48)
-        rLeft.Parent = f2Walls
+        -- 1. Левая и Правая стены 2 этажа (с панорамными оконными проемами Z = -6..18, Y = 16..22)
+        for _, sideX in ipairs({ -28, 28 }) do
+            -- Задняя секция (Z = -38..-6, длина 32)
+            local sBack = Instance.new("Part")
+            sBack.Size = Vector3.new(1, 10, 32)
+            sBack.CFrame = baseCF * CFrame.new(sideX, 19, -22)
+            sBack.Anchored = true
+            sBack.Color = Color3.fromRGB(40, 40, 48)
+            sBack.Parent = f2Walls
 
-        -- Передний фасад 2 этажа с панорамным оконным проемом (X = -18..18, Y = 16..22)
-        -- Левая колонна фасада (X = -28..-18, ширина 10)
+            -- Передняя секция (Z = 18..38, длина 20)
+            local sFront = Instance.new("Part")
+            sFront.Size = Vector3.new(1, 10, 20)
+            sFront.CFrame = baseCF * CFrame.new(sideX, 19, 28)
+            sFront.Anchored = true
+            sFront.Color = Color3.fromRGB(40, 40, 48)
+            sFront.Parent = f2Walls
+
+            -- Нижний парапет окна (Z = -6..18, длина 24, Y = 14..16)
+            local sSill = Instance.new("Part")
+            sSill.Size = Vector3.new(1, 2, 24)
+            sSill.CFrame = baseCF * CFrame.new(sideX, 15, 6)
+            sSill.Anchored = true
+            sSill.Color = Color3.fromRGB(40, 40, 48)
+            sSill.Parent = f2Walls
+
+            -- Верхняя балка окна (Z = -6..18, длина 24, Y = 22..24)
+            local sHeader = Instance.new("Part")
+            sHeader.Size = Vector3.new(1, 2, 24)
+            sHeader.CFrame = baseCF * CFrame.new(sideX, 23, 6)
+            sHeader.Anchored = true
+            sHeader.Color = Color3.fromRGB(40, 40, 48)
+            sHeader.Parent = f2Walls
+
+            -- Временная глухая панель стены (исчезает при покупке Windows_Floor2)
+            if not TycoonService.hasItem(owner, "Windows_Floor2") then
+                local sCover = Instance.new("Part")
+                sCover.Name = "WindowCover_F2_Side"
+                sCover.Size = Vector3.new(1, 6, 24)
+                sCover.CFrame = baseCF * CFrame.new(sideX, 19, 6)
+                sCover.Anchored = true
+                sCover.Color = Color3.fromRGB(40, 40, 48)
+                sCover.Parent = f2Walls
+            end
+        end
+
+        -- 2. Передний фасад 2 этажа с панорамным оконным проемом (X = -18..18, Y = 16..22)
         local rFrontL = Instance.new("Part")
         rFrontL.Size = Vector3.new(10, 10, 1)
         rFrontL.CFrame = baseCF * CFrame.new(-23, 19, 36)
@@ -723,7 +790,6 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         rFrontL.Color = Color3.fromRGB(40, 40, 48)
         rFrontL.Parent = f2Walls
 
-        -- Правая колонна фасада (X = 18..28, ширина 10)
         local rFrontR = Instance.new("Part")
         rFrontR.Size = Vector3.new(10, 10, 1)
         rFrontR.CFrame = baseCF * CFrame.new(23, 19, 36)
@@ -746,6 +812,17 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         rFrontHeader.Anchored = true
         rFrontHeader.Color = Color3.fromRGB(40, 40, 48)
         rFrontHeader.Parent = f2Walls
+
+        -- Временная глухая панель фасада (исчезает при покупке Windows_Floor2, чтобы не было дыры в стене)
+        if not TycoonService.hasItem(owner, "Windows_Floor2") then
+            local rFrontCover = Instance.new("Part")
+            rFrontCover.Name = "WindowCover_F2_Front"
+            rFrontCover.Size = Vector3.new(36, 6, 1)
+            rFrontCover.CFrame = baseCF * CFrame.new(0, 19, 36)
+            rFrontCover.Anchored = true
+            rFrontCover.Color = Color3.fromRGB(40, 40, 48)
+            rFrontCover.Parent = f2Walls
+        end
 
         -- Защитные перила вокруг лестничного проема (боковые вдоль X = -14)
         local stairGuard = Instance.new("Part")
@@ -937,24 +1014,37 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         end
 
     elseif item.id == "Windows_Floor2" then
-        -- Панорамное фасадное остекление 2-го этажа с видом на арену
+        -- Панорамный пентхаус 2-го этажа: остекление фасада с видом на арену + боковые панорамные окна
         local winModel = Instance.new("Model")
         winModel.Name = "Windows_Floor2"
         winModel.Parent = itemsFolder
 
+        -- Удаляем временные глухие панели стен 2-го этажа
+        local wallsF2 = itemsFolder:FindFirstChild("Floor2_Walls")
+        if wallsF2 then
+            for _, child in ipairs(wallsF2:GetChildren()) do
+                if child.Name == "WindowCover_F2_Front" or child.Name == "WindowCover_F2_Side" then
+                    child:Destroy()
+                end
+            end
+        end
+
+        -- 1. ГЛАВНЫЙ ФАСАДНЫЙ ПАНОРАМНЫЙ ВИТРАЖ (Z = 36, ширина 36, высота 6)
         local glassFront = Instance.new("Part")
         glassFront.Name = "PanoramaWindow"
-        glassFront.Size = Vector3.new(36, 6, 0.6)
+        glassFront.Size = Vector3.new(36, 6, 0.4)
         glassFront.CFrame = baseCF * CFrame.new(0, 19, 36)
         glassFront.Anchored = true
         glassFront.Material = Enum.Material.Glass
-        glassFront.Color = Color3.fromRGB(180, 220, 255)
-        glassFront.Transparency = 0.55
+        glassFront.Color = Color3.fromRGB(90, 165, 230)
+        glassFront.Transparency = 0.38
+        glassFront.Reflectance = 0.28
         glassFront.Parent = winModel
 
+        -- Верхняя и нижняя планки неоновой рамы фасада
         for _, yOff in ipairs({ -3, 3 }) do
             local trim = Instance.new("Part")
-            trim.Size = Vector3.new(36.2, 0.3, 1.2)
+            trim.Size = Vector3.new(36.4, 0.3, 1.2)
             trim.CFrame = baseCF * CFrame.new(0, 19 + yOff, 36)
             trim.Anchored = true
             trim.CanCollide = false
@@ -963,15 +1053,95 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             trim.Parent = winModel
         end
 
-        for _, xOff in ipairs({ -18, 0, 18 }) do
+        -- Центральный горизонтальный металлический импост фасада (разделитель фрамуги на Y = 19)
+        local transomFront = Instance.new("Part")
+        transomFront.Size = Vector3.new(36.2, 0.4, 0.8)
+        transomFront.CFrame = baseCF * CFrame.new(0, 19, 36)
+        transomFront.Anchored = true
+        transomFront.Material = Enum.Material.SmoothPlastic
+        transomFront.Color = Color3.fromRGB(28, 28, 35)
+        transomFront.Parent = winModel
+
+        -- Подоконник / парапетная стойка со стороны интерьера
+        local sillLedge = Instance.new("Part")
+        sillLedge.Size = Vector3.new(36.4, 0.4, 1.6)
+        sillLedge.CFrame = baseCF * CFrame.new(0, 15.8, 35.8)
+        sillLedge.Anchored = true
+        sillLedge.Color = Color3.fromRGB(32, 32, 40)
+        sillLedge.Parent = winModel
+
+        -- Архитектурные вертикальные стойки фасада через каждые 6 стадов (6 панорамных секций)
+        for _, xOff in ipairs({ -18, -12, -6, 0, 6, 12, 18 }) do
             local post = Instance.new("Part")
-            post.Size = Vector3.new(0.3, 6, 1.2)
+            post.Size = Vector3.new(0.5, 6, 0.8)
             post.CFrame = baseCF * CFrame.new(xOff, 19, 36)
             post.Anchored = true
             post.CanCollide = false
-            post.Material = Enum.Material.Neon
-            post.Color = faction.color
+            post.Material = Enum.Material.SmoothPlastic
+            post.Color = Color3.fromRGB(28, 28, 35)
             post.Parent = winModel
+
+            local postNeon = Instance.new("Part")
+            postNeon.Size = Vector3.new(0.18, 6, 0.85)
+            postNeon.CFrame = baseCF * CFrame.new(xOff, 19, 36)
+            postNeon.Anchored = true
+            postNeon.CanCollide = false
+            postNeon.Material = Enum.Material.Neon
+            postNeon.Color = faction.color
+            postNeon.Parent = winModel
+        end
+
+        -- 2. БОКОВЫЕ ПАНОРАМНЫЕ ОКНА 2-ГО ЭТАЖА (Левое и Правое крылья: X = -28 и 28)
+        for _, sideX in ipairs({ -28, 28 }) do
+            local glassSide = Instance.new("Part")
+            glassSide.Name = "SideWindow_F2"
+            glassSide.Size = Vector3.new(0.4, 6, 24)
+            glassSide.CFrame = baseCF * CFrame.new(sideX, 19, 6)
+            glassSide.Anchored = true
+            glassSide.Material = Enum.Material.Glass
+            glassSide.Color = Color3.fromRGB(90, 165, 230)
+            glassSide.Transparency = 0.38
+            glassSide.Reflectance = 0.28
+            glassSide.Parent = winModel
+
+            for _, yOff in ipairs({ -3, 3 }) do
+                local trim = Instance.new("Part")
+                trim.Size = Vector3.new(1.2, 0.3, 24.2)
+                trim.CFrame = baseCF * CFrame.new(sideX, 19 + yOff, 6)
+                trim.Anchored = true
+                trim.CanCollide = false
+                trim.Material = Enum.Material.Neon
+                trim.Color = faction.color
+                trim.Parent = winModel
+            end
+
+            local transomSide = Instance.new("Part")
+            transomSide.Size = Vector3.new(1.2, 0.35, 24.2)
+            transomSide.CFrame = baseCF * CFrame.new(sideX, 19, 6)
+            transomSide.Anchored = true
+            transomSide.Material = Enum.Material.SmoothPlastic
+            transomSide.Color = Color3.fromRGB(28, 28, 35)
+            transomSide.Parent = winModel
+
+            for _, zOff in ipairs({ -12, -4, 4, 12 }) do
+                local sPost = Instance.new("Part")
+                sPost.Size = Vector3.new(1.2, 6, 0.4)
+                sPost.CFrame = baseCF * CFrame.new(sideX, 19, 6 + zOff)
+                sPost.Anchored = true
+                sPost.CanCollide = false
+                sPost.Material = Enum.Material.SmoothPlastic
+                sPost.Color = Color3.fromRGB(28, 28, 35)
+                sPost.Parent = winModel
+
+                local sNeon = Instance.new("Part")
+                sNeon.Size = Vector3.new(1.25, 6, 0.15)
+                sNeon.CFrame = baseCF * CFrame.new(sideX, 19, 6 + zOff)
+                sNeon.Anchored = true
+                sNeon.CanCollide = false
+                sNeon.Material = Enum.Material.Neon
+                sNeon.Color = faction.color
+                sNeon.Parent = winModel
+            end
         end
 
     elseif item.id == "AbilityStand_Godmode" then
