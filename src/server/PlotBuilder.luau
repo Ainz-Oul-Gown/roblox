@@ -517,7 +517,9 @@ function PlotBuilder.activatePlot(player: Player, plotIndex: number)
     if char then
         local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
         if root then
-            root.CFrame = baseCF * CFrame.new(0, 3, 12)
+            -- Телепортируем игрока ВНУТРЬ базы (в сторону дроппера/конвейера)
+            -- ClaimPad на +Z, но дроппер на -Z, поэтому игрок идёт в центр базы
+            root.CFrame = baseCF * CFrame.new(0, 4, 0)
         end
     end
 

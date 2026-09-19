@@ -49,19 +49,31 @@ local function initPlots()
         local posX = radius * math.cos(angle)
         local posZ = radius * math.sin(angle)
         local pos = Vector3.new(posX, 0.5, posZ)
-        
-        -- Поворот базы лицом к центру карты (0, 0, 0)
-        local lookAtCenter = CFrame.new(pos, Vector3.new(0, pos.Y, 0))
+
+        -- База смотрит ВГЛУБЬ (от центра наружу).
+        -- LookVector = направление К центру (entrée лицом к центру).
+        -- CFrame.new(pos, target): LookVector = normalize(target - pos) = к центру.
+        -- Поскольку коллектор на +Z (локальный), а дроппер на -Z,
+        -- база должна смотреть ОТ центра (LookVector к центру = вход у нас),
+        -- но в Roblox CFrame.new(pos, lookTarget) строит CFrame где -Z = lookTarget.
+        -- Значит -Z направлен к центру => вход (Z=+14) направлен НАРУЖУ от центра.
+        -- Чтобы вход был к ЦЕНТРУ, нам нужно ориентировать базу:
+        --   LookVector (==+Z локальный) указывает К ЦЕНТРУ
+        -- => используем lookAt = pos (не centre), т.е. разворачиваем на 180°
+        local lookAwayFromCenter = CFrame.new(pos, Vector3.new(0, pos.Y, 0))
+        -- Разворачиваем на 180° чтобы +Z (вход/клаймпад) смотрел к центру
+        local lookTowardCenter = lookAwayFromCenter * CFrame.Angles(0, math.rad(180), 0)
 
         plots[i] = {
             index = i,
             owner = nil,
             position = pos,
-            cframe = lookAtCenter,
+            cframe = lookTowardCenter,
             faction = TycoonConfig.getFaction(i),
         }
     end
 end
+
 
 initPlots()
 
@@ -129,6 +141,41 @@ function PlotManager.releasePlot(player: Player): number?
     end
     return nil
 end
+
+-- Смена базы: освобождает текущую и занимает новую
+function PlotManager.switchPlot(player: Player, newPlotIndex: number): boolean
+    local currentIndex = playerPlotMap[player.UserId]
+    if currentIndex == newPlotIndex then
+        warn(string.format("[PlotManager] %s is already at Plot %d!", player.Name, newPlotIndex))
+        return false
+    end
+
+    -- Освобождаем текущую если есть
+    if currentIndex then
+        plots[currentIndex].owner = nil
+        playerPlotMap[player.UserId] = nil
+        print(string.format("[PlotManager] %s released Plot %d to switch to %d", player.Name, currentIndex, newPlotIndex))
+    end
+
+    -- Занимаем новую
+    local newPlot = plots[newPlotIndex]
+    if not newPlot or newPlot.owner ~= nil then
+        warn(string.format("[PlotManager] Plot %d is unavailable for switch!", newPlotIndex))
+        -- Если новая занята, нужно вернуть старую (восстановить)
+        if currentIndex then
+            plots[currentIndex].owner = player
+            playerPlotMap[player.UserId] = currentIndex
+        end
+        return false
+    end
+
+    newPlot.owner = player
+    playerPlotMap[player.UserId] = newPlotIndex
+    print(string.format("[PlotManager] %s switched to Plot %d: %s", player.Name, newPlotIndex, newPlot.faction.name))
+    plotStateEvent:FireAllClients(PlotManager.getPlotStatuses())
+    return true, currentIndex
+end
+
 
 function PlotManager.getPlayerPlotIndex(player: Player): number?
     return playerPlotMap[player.UserId]

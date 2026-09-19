@@ -201,4 +201,8 @@ function TycoonService.hasItem(player: Player, itemId: string): boolean
     return if data then (data.ownedItems[itemId] == true) else false
 end
 
+-- Проверяет, захватил ли игрок хоть какую-то базу (используется CentralArena)
+-- Требует доступа к PlotManager. Устанавливается извне через TycoonService.hasAnyBase
+TycoonService.hasAnyBase = nil :: ((player: Player) -> boolean)?
+
 return TycoonService

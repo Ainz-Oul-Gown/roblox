@@ -64,6 +64,7 @@ function CentralArena.init()
     auraParticles.Parent = pad
 
     -- Цикл начисления награды лидеру зоны
+    -- Только игрокам у которых есть своя база!
     task.spawn(function()
         while true do
             task.wait(1.0)
@@ -79,8 +80,12 @@ function CentralArena.init()
                     if root and hum and hum.Health > 0 then
                         local dist = (root.Position - centerPos).Magnitude
                         if dist <= closestDist then
-                            closestDist = dist
-                            currentKing = player
+                            -- Только если у игрока есть база!
+                            local hasBase = TycoonService.hasAnyBase and TycoonService.hasAnyBase(player)
+                            if hasBase then
+                                closestDist = dist
+                                currentKing = player
+                            end
                         end
                     end
                 end
@@ -94,6 +99,7 @@ function CentralArena.init()
             end
         end
     end)
+
 
     print("[CentralArena] King of Aura Arena initialized at (0, 0, 0)")
 end

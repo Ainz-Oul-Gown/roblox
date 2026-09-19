@@ -38,7 +38,7 @@ export type RebirthTier = {
 local TycoonConfig = {
     STARTING_AURA = 0,
     TOTAL_PLOTS = 8,
-    ARENA_RADIUS = 90, -- Радиус кольца баз от центра (0, 0, 0)
+    ARENA_RADIUS = 160, -- Радиус кольца баз от центра (0, 0, 0)
     CONVEYOR_SPEED = 15,
     AUTOSAVE_INTERVAL_SEC = 60,
 

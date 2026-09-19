@@ -73,30 +73,32 @@ infoLabel.TextScaled = true
 infoLabel.Font = Enum.Font.FredokaOne
 infoLabel.Parent = mainFrame
 
--- Кнопка открытия меню выбора базы
+-- Кнопка открытия меню (ТОЛЬКО для смены базы если она уже есть)
+-- Убираем эту кнопку — базу теперь выбирают физически
 local openSelectBtn = Instance.new("TextButton")
 openSelectBtn.Name = "OpenSelectBtn"
-openSelectBtn.Size = UDim2.new(0, 180, 0, 40)
+openSelectBtn.Size = UDim2.new(0, 200, 0, 40)
 openSelectBtn.Position = UDim2.new(0, 20, 0, 140)
 openSelectBtn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
-openSelectBtn.Text = "🗺️ ВЫБРАТЬ БАЗУ"
+openSelectBtn.Text = "🗺️ СМЕНИТЬ БАЗУ"
 openSelectBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 openSelectBtn.TextScaled = true
 openSelectBtn.Font = Enum.Font.FredokaOne
+openSelectBtn.Visible = false -- скрыта пока нет базы; появится после захвата
 openSelectBtn.Parent = screenGui
 
 local openBtnCorner = Instance.new("UICorner")
 openBtnCorner.CornerRadius = UDim.new(0, 10)
 openBtnCorner.Parent = openSelectBtn
 
--- 2. Окно выбора базы (Модалка)
+-- 2. Окно СМЕНЫ базы (изначально скрыто)
 local selectModal = Instance.new("Frame")
 selectModal.Name = "SelectModal"
 selectModal.Size = UDim2.new(0, 680, 0, 480)
 selectModal.Position = UDim2.new(0.5, -340, 0.5, -240)
 selectModal.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 selectModal.BorderSizePixel = 0
-selectModal.Visible = true -- Показывается при старте
+selectModal.Visible = false -- Не показывается при старте! Базу выбирают ногами.
 selectModal.Parent = screenGui
 
 local modalCorner = Instance.new("UICorner")
@@ -229,6 +231,8 @@ for _, item in ipairs(FACTION_CARDS) do
 end
 
 -- Синхронизация статусов занятости баз
+local localHasBase = false
+
 if plotStateEvent then
     plotStateEvent.OnClientEvent:Connect(function(statuses)
         if type(statuses) == "table" then
@@ -237,12 +241,22 @@ if plotStateEvent then
                 local btn = cardButtons[plotIndex]
                 if btn and status then
                     if status.isClaimed then
-                        btn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-                        btn.Text = string.format("🔒 ЗАНЯТО: %s", status.ownerName or "Игроком")
-                        btn.Active = false
+                        local isOwnBase = status.ownerName == localPlayer.Name
+                        if isOwnBase then
+                            btn.BackgroundColor3 = Color3.fromRGB(39, 174, 96)
+                            btn.Text = "✅ МОЯ БАЗА"
+                            btn.Active = false
+                            -- Показываем кнопку смены базы и обновляем HUD
+                            openSelectBtn.Visible = true
+                            localHasBase = true
+                        else
+                            btn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+                            btn.Text = string.format("🔒 ЗАНЯТО: %s", status.ownerName or "Игроком")
+                            btn.Active = false
+                        end
                     else
                         btn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-                        btn.Text = "👉 ВЫБРАТЬ ЭТУ БАЗУ"
+                        btn.Text = "👉 ЗАНЯТЬ ЭТУ БАЗУ"
                         btn.Active = true
                     end
                 end
@@ -471,4 +485,17 @@ local function bindStats()
 end
 
 task.spawn(bindStats)
-print("[CLIENT] Gen Alpha BrainrotHUD with Faction Selection ready!")
+
+-- 6. Приветственная подсказка при спавне (как выбрать базу)
+task.delay(1.5, function()
+    if not localHasBase then
+        showToast("🏃 БЕГИ К ЛЮБОЙ БАЗЕ И ВСТАНЬ НА КВАДРАТ!", Color3.fromRGB(52, 152, 219))
+        task.delay(4, function()
+            if not localHasBase then
+                showToast("👀 Смотри на фонари — они ведут к 8 базам по дороге!", Color3.fromRGB(241, 196, 15))
+            end
+        end)
+    end
+end)
+
+print("[CLIENT] Gen Alpha BrainrotHUD ready! Physical base selection active.")

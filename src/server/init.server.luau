@@ -11,24 +11,50 @@ local PlotManager = require(script:WaitForChild("PlotManager"))
 local PlotBuilder = require(script:WaitForChild("PlotBuilder"))
 local AbilityService = require(script:WaitForChild("AbilityService"))
 local CentralArena = require(script:WaitForChild("CentralArena"))
+local WorldBuilder = require(script:WaitForChild("WorldBuilder"))
 
 print("[SERVER] Initializing 8-Base Gen Alpha Brainrot Tycoon World...")
+
+-- 0. Строим карту острова (пол, дороги, океан, фонари)
+WorldBuilder.buildWorld()
 
 -- 1. Центральная арена (0, 0, 0)
 CentralArena.init()
 
--- 2. Обработчик захвата базы
+-- 2. Обработчик захвата/смены базы
 local function onClaimBase(player: Player, plotIndex: number)
-    local success = PlotManager.claimSpecificPlot(player, plotIndex)
-    if success then
-        PlotBuilder.activatePlot(player, plotIndex)
+    local currentPlotIndex = PlotManager.getPlayerPlotIndex(player)
+
+    if currentPlotIndex == plotIndex then
+        -- Уже на этой базе
+        return
+    end
+
+    if currentPlotIndex then
+        -- Смена базы: сначала сбрасываем старую
+        local switched, oldIndex = PlotManager.switchPlot(player, plotIndex)
+        if switched and oldIndex then
+            PlotBuilder.resetPlotToUnclaimed(oldIndex, onClaimBase)
+            PlotBuilder.activatePlot(player, plotIndex)
+        end
+    else
+        -- Первый захват
+        local success = PlotManager.claimSpecificPlot(player, plotIndex)
+        if success then
+            PlotBuilder.activatePlot(player, plotIndex)
+        end
     end
 end
 
 -- 3. Строим все 8 баз по кругу арены
 PlotBuilder.initAllBases(onClaimBase)
 
--- 4. Удаленный вызов выбора базы из GUI
+-- Связываем PlotManager.hasAnyBase в TycoonService (нужно CentralArena)
+TycoonService.hasAnyBase = function(player: Player): boolean
+    return PlotManager.getPlayerPlotIndex(player) ~= nil
+end
+
+-- 4. Удаленный вызов смены базы из GUI (для совместимости)
 local claimPlotEvent = ReplicatedStorage:WaitForChild("ClaimPlotEvent") :: RemoteEvent
 claimPlotEvent.OnServerEvent:Connect(function(player: Player, plotIndex: any)
     if type(plotIndex) == "number" and plotIndex >= 1 and plotIndex <= 8 then
@@ -40,6 +66,15 @@ end)
 local function onPlayerAdded(player: Player)
     print(string.format("[SERVER] Player connected: %s (UserId: %d)", player.Name, player.UserId))
     TycoonService.onPlayerAdded(player)
+
+    -- Телепортируем игрока в центр при спавне
+    player.CharacterAdded:Connect(function(char)
+        local root = char:WaitForChild("HumanoidRootPart", 5) :: BasePart?
+        if root then
+            task.wait(0.2)
+            root.CFrame = CFrame.new(0, 8, 0) -- Центр арены, над землёй
+        end
+    end)
 
     -- Отправляем новому игроку актуальные статусы 8 баз
     local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent") :: RemoteEvent
