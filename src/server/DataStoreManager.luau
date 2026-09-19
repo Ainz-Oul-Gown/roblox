@@ -22,20 +22,23 @@ local CURRENT_VERSION = 1
 
 local DataStoreManager = {}
 
--- Попытка безопасно получить DataStore
 local tycoonDataStore: any = nil
+local dataStoreChecked = false
 local dataStoreAvailable = false
 
-local success, result = pcall(function()
-    return DataStoreService:GetDataStore(DATASTORE_NAME)
-end)
-
-if success and result then
-    tycoonDataStore = result
-    dataStoreAvailable = true
-    print("[DataStoreManager] Connected to Roblox DataStore successfully.")
-else
-    warn("[DataStoreManager] DataStore unavailable (likely Studio API access disabled). Running in local session mode.")
+local function ensureDataStore()
+    if dataStoreChecked then return end
+    dataStoreChecked = true
+    local success, result = pcall(function()
+        return DataStoreService:GetDataStore(DATASTORE_NAME)
+    end)
+    if success and result then
+        tycoonDataStore = result
+        dataStoreAvailable = true
+        print("[DataStoreManager] Connected to Roblox DataStore successfully.")
+    else
+        warn("[DataStoreManager] DataStore unavailable (likely Studio API access disabled). Running in local session mode.")
+    end
 end
 
 -- Дефолтные данные для нового игрока
@@ -71,6 +74,7 @@ end
 
 -- Загрузка данных игрока
 function DataStoreManager.loadData(userId: number): PlayerSaveData
+    ensureDataStore()
     if not dataStoreAvailable or not tycoonDataStore then
         return DataStoreManager.getDefaultData()
     end
@@ -93,6 +97,7 @@ end
 
 -- Сохранение данных игрока с повторными попытками
 function DataStoreManager.saveData(userId: number, data: PlayerSaveData): boolean
+    ensureDataStore()
     if not dataStoreAvailable or not tycoonDataStore then
         return true -- В режиме сессии считаем успешно
     end

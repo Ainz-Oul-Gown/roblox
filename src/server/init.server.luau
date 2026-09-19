@@ -6,6 +6,15 @@ local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+-- Индикатор инициализации сервера для передачи на клиент
+local statusVal = ReplicatedStorage:FindFirstChild("ServerInitStatus") :: StringValue?
+if not statusVal then
+    statusVal = Instance.new("StringValue")
+    statusVal.Name = "ServerInitStatus"
+    statusVal.Parent = ReplicatedStorage
+end
+statusVal.Value = "🔨 Удаление Baseplate..."
+
 -- Удаляем стандартный Baseplate из Studio (мешает виду острова)
 local existingBaseplate = Workspace:FindFirstChild("Baseplate") or Workspace:FindFirstChild("baseplate")
 if existingBaseplate then
@@ -13,30 +22,30 @@ if existingBaseplate then
     print("[SERVER] Removed default Baseplate")
 end
 
-local Shared = ReplicatedStorage:WaitForChild("Shared", 10)
-if not Shared then
-    error("[SERVER] FATAL: ReplicatedStorage.Shared not found!")
-end
-
-local TycoonService = require(script:WaitForChild("TycoonService", 10))
-local PlotManager = require(script:WaitForChild("PlotManager", 10))
-local PlotBuilder = require(script:WaitForChild("PlotBuilder", 10))
-local AbilityService = require(script:WaitForChild("AbilityService", 10))
-local CentralArena = require(script:WaitForChild("CentralArena", 10))
+statusVal.Value = "🏝️ Постройка острова (WorldBuilder)..."
 local WorldBuilder = require(script:WaitForChild("WorldBuilder", 10))
-
--- 0. Строим карту острова (пол, дороги, океан, фонари)
 local wbOk, wbErr = pcall(function()
     WorldBuilder.buildWorld()
 end)
 if not wbOk then
-    warn("[SERVER] WorldBuilder.buildWorld error: " .. tostring(wbErr))
+    statusVal.Value = "❌ Ошибка WorldBuilder: " .. tostring(wbErr)
+    warn("[SERVER] WorldBuilder error: " .. tostring(wbErr))
 else
     print("[SERVER] WorldBuilder.buildWorld completed successfully")
 end
 
--- 1. Центральная арена (0, 0, 0)
+statusVal.Value = "📦 Загрузка PlotManager..."
+local PlotManager = require(script:WaitForChild("PlotManager", 10))
+
+statusVal.Value = "📦 Загрузка TycoonService..."
+local TycoonService = require(script:WaitForChild("TycoonService", 10))
+
+statusVal.Value = "👑 Постройка Центральной Арены..."
+local CentralArena = require(script:WaitForChild("CentralArena", 10))
 CentralArena.init()
+
+statusVal.Value = "📦 Загрузка AbilityService..."
+local AbilityService = require(script:WaitForChild("AbilityService", 10))
 
 -- 2. Обработчик захвата/смены базы
 local function onClaimBase(player: Player, plotIndex: number)
@@ -64,7 +73,10 @@ local function onClaimBase(player: Player, plotIndex: number)
 end
 
 -- 3. Строим все 8 баз по кругу арены
+statusVal.Value = "🏗️ Постройка 8 баз (PlotBuilder)..."
+local PlotBuilder = require(script:WaitForChild("PlotBuilder", 10))
 PlotBuilder.initAllBases(onClaimBase)
+statusVal.Value = "✅ Остров и 8 баз активны! Выбери базу"
 
 -- Связываем PlotManager.hasAnyBase в TycoonService (нужно CentralArena)
 TycoonService.hasAnyBase = function(player: Player): boolean

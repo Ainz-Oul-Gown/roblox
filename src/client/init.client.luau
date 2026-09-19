@@ -41,24 +41,57 @@ sbStroke.Color = Color3.fromRGB(241, 196, 15)
 sbStroke.Thickness = 1.5
 sbStroke.Parent = statusBanner
 
-local function updateWorldStatus()
-    local wm = game.Workspace:FindFirstChild("WorldMap")
-    local tp = game.Workspace:FindFirstChild("TycoonPlots")
-    if wm and tp then
-        statusBanner.Text = "✅ Остров и 8 баз активны! Выбери базу"
+local function applyStatusText(txt: string)
+    statusBanner.Text = txt
+    if string.find(txt, "✅") then
         statusBanner.TextColor3 = Color3.fromRGB(46, 204, 113)
         sbStroke.Color = Color3.fromRGB(46, 204, 113)
         task.delay(4, function()
             statusBanner.Visible = false
         end)
-    else
-        statusBanner.Text = "⚠️ Сервер ещё не загрузился (нажми Stop [Shift+F5] → Play [F5])"
+    elseif string.find(txt, "❌") or string.find(txt, "⚠️") then
         statusBanner.TextColor3 = Color3.fromRGB(231, 76, 60)
         sbStroke.Color = Color3.fromRGB(231, 76, 60)
+    else
+        statusBanner.TextColor3 = Color3.fromRGB(241, 196, 15)
+        sbStroke.Color = Color3.fromRGB(241, 196, 15)
+    end
+end
+
+local function updateWorldStatus()
+    local wm = game.Workspace:FindFirstChild("WorldMap")
+    local tp = game.Workspace:FindFirstChild("TycoonPlots")
+    if wm and tp then
+        applyStatusText("✅ Остров и 8 баз активны! Выбери базу")
+        return
+    end
+
+    local statusVal = ReplicatedStorage:FindFirstChild("ServerInitStatus") :: StringValue?
+    if statusVal and statusVal.Value ~= "" then
+        applyStatusText(statusVal.Value)
+    else
+        applyStatusText("⚠️ Сервер ещё не загрузился (нажми Stop [Shift+F5] → Play [F5])")
     end
 end
 
 updateWorldStatus()
+
+-- Слушаем изменения ServerInitStatus от сервера
+local function listenToStatusVal(sv: Instance)
+    if sv.Name == "ServerInitStatus" and sv:IsA("StringValue") then
+        applyStatusText(sv.Value)
+        sv.Changed:Connect(function(newVal)
+            applyStatusText(newVal)
+        end)
+    end
+end
+
+local existingSv = ReplicatedStorage:FindFirstChild("ServerInitStatus")
+if existingSv then
+    listenToStatusVal(existingSv)
+end
+ReplicatedStorage.ChildAdded:Connect(listenToStatusVal)
+
 game.Workspace.ChildAdded:Connect(function(child)
     if child.Name == "WorldMap" or child.Name == "TycoonPlots" then
         updateWorldStatus()
