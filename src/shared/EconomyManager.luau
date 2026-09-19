@@ -56,8 +56,10 @@ function EconomyManager.canPurchaseItem(
         return false, "Item not found in config"
     end
 
-    if item.dependsOn and not ownedItemIds[item.dependsOn] then
-        return false, string.format("Requires prerequisite: %s", item.dependsOn)
+    if item.dependsOn and item.dependsOn ~= "Collector" and item.dependsOn ~= "FactionDropper" then
+        if not ownedItemIds[item.dependsOn] then
+            return false, string.format("Requires prerequisite: %s", item.dependsOn)
+        end
     end
 
     if not EconomyManager.canAfford(currentBalance, item.cost) then
@@ -73,7 +75,8 @@ function EconomyManager.canPerformRebirth(
     currentRebirths: number,
     ownedItemIds: { [string]: boolean }
 ): (boolean, string?, number?)
-    if not ownedItemIds["SecondFloor"] then
+    local has2ndFloor = ownedItemIds["Floor2_Foundation"] or ownedItemIds["SecondFloor"]
+    if not has2ndFloor then
         return false, "Требуется построить Второй этаж", nil
     end
 

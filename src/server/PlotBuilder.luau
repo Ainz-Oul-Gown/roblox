@@ -568,27 +568,32 @@ end
 
 -- Позиции кнопок покупки для всех предметов
 local BUTTON_CONFIGS: { [string]: Vector3 } = {
-    LaserGate = Vector3.new(-8, 0.5, 26),
-    BrainrotWalls = Vector3.new(8, 0.5, 26),
-    Upgrader_Laser = Vector3.new(-8, 0.5, 0),
-    AbilityStand_1 = Vector3.new(-16, 0.5, 2),
-    Dropper_Prime = Vector3.new(8, 0.5, -12),
-    AbilityStand_Tactical = Vector3.new(16, 0.5, 2),
-    Stairs_To_Floor2 = Vector3.new(-18, 0.5, 20),
-    Floor2_Foundation = Vector3.new(-18, 16.5, -6),
-    Floor2_Walls = Vector3.new(16, 16.5, 6),
-    Floor2_Conveyor = Vector3.new(0, 16.5, 8),
-    Upgrader_Quantum = Vector3.new(-8, 16.5, -10),
-    Dropper_Galactic = Vector3.new(8, 16.5, -20),
-    AbilityStand_Ultimate = Vector3.new(16, 16.5, -10),
+    LaserGate = Vector3.new(-8, 0.5, 24),
+    BrainrotWalls = Vector3.new(8, 0.5, 24),
+    Upgrader_Laser = Vector3.new(-8, 0.5, 4),
+    AbilityStand_1 = Vector3.new(-14, 0.5, -4),
+    Dropper_Prime = Vector3.new(12, 0.5, -12),
+    AbilityStand_Tactical = Vector3.new(14, 0.5, 4),
+    Stairs_To_Floor2 = Vector3.new(-10, 0.5, 14),
+    Floor2_Foundation = Vector3.new(-14, 0.5, 10),
+    Floor2_Walls = Vector3.new(14, 16.5, 10),
+    Floor2_Conveyor = Vector3.new(0, 16.5, 6),
+    Upgrader_Quantum = Vector3.new(-8, 16.5, -4),
+    Dropper_Galactic = Vector3.new(10, 16.5, -16),
+    AbilityStand_Ultimate = Vector3.new(14, 16.5, -8),
     Upgrader_Annihilator = Vector3.new(8, 16.5, 4),
 }
 
 local function buildButtonsForPlot(plotModel: Model, owner: Player, plotIndex: number, baseCF: CFrame, faction: TycoonConfig.Faction)
-    local buttonsFolder = plotModel:FindFirstChild("Buttons") :: Folder
-    if not buttonsFolder then return end
+    local buttonsFolder = plotModel:FindFirstChild("Buttons") :: Folder?
+    if not buttonsFolder then
+        buttonsFolder = Instance.new("Folder")
+        buttonsFolder.Name = "Buttons"
+        buttonsFolder.Parent = plotModel
+    end
     buttonsFolder:ClearAllChildren()
 
+    local count = 0
     for _, item in ipairs(TycoonConfig.ITEMS) do
         if item.category == "Collector" or item.id == "FactionDropper" then
             continue
@@ -598,14 +603,17 @@ local function buildButtonsForPlot(plotModel: Model, owner: Player, plotIndex: n
             continue
         end
 
-        if item.dependsOn and not TycoonService.hasItem(owner, item.dependsOn) then
-            continue
+        if item.dependsOn and item.dependsOn ~= "Collector" and item.dependsOn ~= "FactionDropper" then
+            if not TycoonService.hasItem(owner, item.dependsOn) then
+                continue
+            end
         end
 
+        count += 1
         local pos = BUTTON_CONFIGS[item.id] or Vector3.new(0, 0.5, 0)
         local btnPart = Instance.new("Part")
         btnPart.Name = "Button_" .. item.id
-        btnPart.Size = Vector3.new(4, 0.4, 4)
+        btnPart.Size = Vector3.new(4.5, 0.4, 4.5)
         btnPart.CFrame = baseCF * CFrame.new(pos)
         btnPart.Anchored = true
         btnPart.Material = Enum.Material.Neon
@@ -613,7 +621,7 @@ local function buildButtonsForPlot(plotModel: Model, owner: Player, plotIndex: n
         btnPart.Parent = buttonsFolder
 
         local subTxt = string.format("Цена: %d AURA", item.cost)
-        createBillboard(btnPart, item.name, subTxt, Color3.fromRGB(46, 204, 113))
+        createBillboard(btnPart, item.name, subTxt, Color3.fromRGB(46, 204, 113), Vector3.new(0, 3.5, 0))
 
         local debounce = false
         btnPart.Touched:Connect(function(hit)
@@ -632,6 +640,7 @@ local function buildButtonsForPlot(plotModel: Model, owner: Player, plotIndex: n
             end
         end)
     end
+    print(string.format("[PlotBuilder] Base %d: Created %d available buttons for %s", plotIndex, count, owner.Name))
 end
 
 -- Инициализация пустых баз при старте сервера

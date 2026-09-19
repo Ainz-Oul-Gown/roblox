@@ -210,7 +210,10 @@ end
 
 function TycoonService.getOwnedItems(player: Player): { [string]: boolean }
     local data = playerDataMap[player.UserId]
-    return if data then data.ownedItems else {}
+    local items = if data then table.clone(data.ownedItems) else {}
+    items["Collector"] = true
+    items["FactionDropper"] = true
+    return items
 end
 
 -- Начисление напрямую в кошелек (используется для бонуса Центральной Арены "Царь Горы")
@@ -338,6 +341,9 @@ function TycoonService.performRebirth(player: Player): boolean
 end
 
 function TycoonService.hasItem(player: Player, itemId: string): boolean
+    if itemId == "Collector" or itemId == "FactionDropper" then
+        return true
+    end
     local data = playerDataMap[player.UserId]
     return if data then (data.ownedItems[itemId] == true) else false
 end
