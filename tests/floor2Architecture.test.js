@@ -12,7 +12,8 @@ test('PlotBuilder: 56x76 expanded base footprint and height 14 walls', () => {
     assert.ok(content.includes('Vector3.new(56, 1, 76)'), 'Base floor must be 56x76 studs');
 
     // Walls height 14
-    assert.ok(content.includes('Vector3.new(1, 14, 76)'), 'Left and right walls must be height 14');
+    // Walls height 14 with window openings
+    assert.ok(content.includes('Vector3.new(1, 14, 32)'), 'Side walls back section must be height 14');
     assert.ok(content.includes('Vector3.new(56, 14, 1)'), 'Back wall must be width 56 and height 14');
 
     // Floor 2 resting on walls at Y = 14 with drop chute hole
@@ -21,7 +22,7 @@ test('PlotBuilder: 56x76 expanded base footprint and height 14 walls', () => {
     assert.ok(content.includes('Floor2_CenterBack'), 'Floor 2 must have center back section');
     assert.ok(content.includes('Floor2_CenterFront'), 'Floor 2 must have center front section');
 
-    // Chute slide to Floor 1
+    // Chute slide to Floor 1 elevated above conveyor
     assert.ok(content.includes('OreDropChute'), 'Ore drop chute must exist');
     assert.ok(content.includes('ChuteWall'), 'Chute must have side guide walls');
 
@@ -34,8 +35,8 @@ test('PlotBuilder: 56x76 expanded base footprint and height 14 walls', () => {
     assert.ok(content.includes('MonumentPedestal'), 'FactionMonument pedestal must exist');
     assert.ok(content.includes('CFrame.new(0, 26, -6)'), 'Monument pedestal must sit at Y = 26 on top of roof');
 
-    // Rebirth Altar in spacious open location with legible billboard
-    assert.ok(content.includes('CFrame.new(-18, 14.4, 18)'), 'Rebirth Altar must be positioned in open area away from conveyor');
+    // Rebirth Altar in spacious open right wing sanctuary with legible billboard
+    assert.ok(content.includes('CFrame.new(18, 14.4, 20)'), 'Rebirth Altar must be positioned in open right wing sanctuary');
     assert.ok(content.includes('AltarPedestal'), 'Rebirth Altar must have altar pedestal');
 
     // Stairs climb to Y = 14
@@ -57,12 +58,12 @@ test('PlotBuilder: Floor 2 button is not placed under the stairs, Roof & Rebirth
     const pbPath = path.join(__dirname, '../src/server/PlotBuilder.luau');
     const content = fs.readFileSync(pbPath, 'utf8');
 
-    // Button positions
-    assert.ok(content.includes('Floor2_Foundation = Vector3.new(-10, 0.5, 26)'), 'Floor2_Foundation button must be at Z=26 in front of stairs');
-    assert.ok(content.includes('Stairs_To_Floor2 = Vector3.new(-10, 0.5, 20)'), 'Stairs button must be at Z=20');
-    assert.ok(content.includes('TycoonRoof = Vector3.new(18, 14.5, 16)'), 'TycoonRoof button must be on 2nd floor');
-    assert.ok(content.includes('Rebirth_Portal = Vector3.new(-18, 14.5, 8)'), 'Rebirth_Portal button must lead to altar');
-    assert.ok(content.includes('FactionMonument = Vector3.new(18, 14.5, 24)'), 'FactionMonument button must be on 2nd floor');
+    // Button positions: clear of stairs, aligned with open floor zones
+    assert.ok(content.includes('Floor2_Foundation = Vector3.new(-6, 0.5, 22)'), 'Floor2_Foundation button must be in open floor area');
+    assert.ok(content.includes('Stairs_To_Floor2 = Vector3.new(-12, 0.5, 22)'), 'Stairs button must be at open floor area');
+    assert.ok(content.includes('TycoonRoof = Vector3.new(-18, 14.5, 28)'), 'TycoonRoof button must be on 2nd floor');
+    assert.ok(content.includes('Rebirth_Portal = Vector3.new(18, 14.5, 12)'), 'Rebirth_Portal button must lead to altar plaza');
+    assert.ok(content.includes('FactionMonument = Vector3.new(0, 14.5, 20)'), 'FactionMonument button must be on 2nd floor');
 });
 
 test('TycoonService: RebirthEvent exists and fires to client with multiplier', () => {

@@ -134,3 +134,28 @@ test('Client HUD: Keybindings for [E], [R], [Q], [F], [Z], [X] and 6-slot cooldo
     assert.ok(content.includes('[5/Z]'), 'Hints must include slot 5 [Z]');
     assert.ok(content.includes('[6/X]'), 'Hints must include slot 6 [X]');
 });
+
+test('PlotBuilder: Window transparency, unobstructed conveyor chute, and zero buttons on stairs', () => {
+    const pbPath = path.join(__dirname, '../src/server/PlotBuilder.luau');
+    const content = fs.readFileSync(pbPath, 'utf8');
+
+    // 1. Transparent windows & actual openings in walls
+    assert.ok(content.includes('wSill'), 'BrainrotWalls must have lower sill part');
+    assert.ok(content.includes('wHeader'), 'BrainrotWalls must have upper header part');
+    assert.ok(content.includes('rFrontSill'), 'Floor2_Walls must have lower sill part');
+    assert.ok(content.includes('rFrontHeader'), 'Floor2_Walls must have upper header part');
+    assert.ok(content.includes('glass.Transparency = 0.55'), 'Floor 1 windows must be transparent (0.55)');
+    assert.ok(content.includes('glassFront.Transparency = 0.55'), 'Floor 2 windows must be transparent (0.55)');
+
+    // 2. Chute elevated above conveyor (does not cut into conveyor)
+    assert.ok(content.includes('math.rad(46.0)'), 'OreDropChute must use elevated 46 degree slope');
+    assert.ok(content.includes('CFrame.new(0, 9.6, 8.1)'), 'OreDropChute center must hover above conveyor');
+
+    // 3. Rebirth Altar in Right Wing temple plaza
+    assert.ok(content.includes('CFrame.new(18, 14.4, 20)'), 'Rebirth Altar must be positioned in Right Wing plaza');
+    assert.ok(content.includes('Rebirth_Portal = Vector3.new(18, 14.5, 12)'), 'Rebirth Altar button must be in open floor at Z=12');
+
+    // 4. Ability stands outside stairs bounding box
+    assert.ok(content.includes('AbilityStand_Special = Vector3.new(-20, 14.5, -14)'), 'AbilityStand_Special button must be in rear room');
+    assert.ok(content.includes('AbilityStand_Mobility = Vector3.new(-20, 14.5, -24)'), 'AbilityStand_Mobility button must be in rear room');
+});
