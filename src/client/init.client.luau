@@ -22,11 +22,13 @@ screenGui.Parent = playerGui
 -- Индикатор статуса карты в центре экрана
 local statusBanner = Instance.new("TextLabel")
 statusBanner.Name = "StatusBanner"
-statusBanner.Size = UDim2.new(0, 480, 0, 34)
-statusBanner.Position = UDim2.new(0.5, -240, 0, 15)
-statusBanner.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-statusBanner.BackgroundTransparency = 0.2
-statusBanner.TextColor3 = Color3.fromRGB(255, 215, 0)
+statusBanner.Size = UDim2.new(0, 560, 0, 42)
+statusBanner.Position = UDim2.new(0.5, -280, 0, 15)
+statusBanner.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+statusBanner.BackgroundTransparency = 0.05
+statusBanner.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusBanner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+statusBanner.TextStrokeTransparency = 0
 statusBanner.TextScaled = true
 statusBanner.Font = Enum.Font.FredokaOne
 statusBanner.BorderSizePixel = 0
@@ -38,22 +40,22 @@ sbCorner.Parent = statusBanner
 
 local sbStroke = Instance.new("UIStroke")
 sbStroke.Color = Color3.fromRGB(241, 196, 15)
-sbStroke.Thickness = 1.5
+sbStroke.Thickness = 2
 sbStroke.Parent = statusBanner
 
 local function applyStatusText(txt: string)
     statusBanner.Text = txt
     if string.find(txt, "✅") then
-        statusBanner.TextColor3 = Color3.fromRGB(46, 204, 113)
+        statusBanner.TextColor3 = Color3.fromRGB(80, 255, 120)
         sbStroke.Color = Color3.fromRGB(46, 204, 113)
         task.delay(4, function()
             statusBanner.Visible = false
         end)
     elseif string.find(txt, "❌") or string.find(txt, "⚠️") then
-        statusBanner.TextColor3 = Color3.fromRGB(231, 76, 60)
+        statusBanner.TextColor3 = Color3.fromRGB(255, 100, 100)
         sbStroke.Color = Color3.fromRGB(231, 76, 60)
     else
-        statusBanner.TextColor3 = Color3.fromRGB(241, 196, 15)
+        statusBanner.TextColor3 = Color3.fromRGB(255, 220, 80)
         sbStroke.Color = Color3.fromRGB(241, 196, 15)
     end
 end

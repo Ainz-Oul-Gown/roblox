@@ -546,7 +546,6 @@ function PlotBuilder.activatePlot(player: Player, plotIndex: number)
     -- Направление строго по локальной оси +Z (вперед к сборщику!)
     local forwardVector = baseCF:VectorToWorldSpace(Vector3.new(0, 0, 1))
     conveyor.AssemblyLinearVelocity = forwardVector * speed
-    (conveyor :: any).Velocity = forwardVector * speed
     conveyor.Parent = plotModel
 
     -- 2. Задний стоппер конвейера (чтобы руда никогда не вылетала назад)
