@@ -1,9 +1,12 @@
 --!strict
 
 --[=[
-    PlotBuilder (8-Base Faction Selection Edition)
-    Создает все 8 баз на арене со стартовыми площадками выбора (ClaimPad).
-    При выборе базы активирует конвейер, коллектор, кнопки и спавнит персонажа.
+    PlotBuilder (Bug-Fixed & Perimeter-Sealed Edition)
+    Исправления:
+    1. Направление движения конвейера строго в сторону Сборщика (без вылетания назад).
+    2. Задний стоппер и высокие бортики конвейера, чтобы руда не падала мимо.
+    3. Полностью закрытый передний фасад стен вокруг лазерных ворот (без щелей и дыр).
+    4. Звуковые и визуальные эффекты.
 ]=]
 
 local Workspace = game:GetService("Workspace")
@@ -63,9 +66,12 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
                 local ore = Instance.new("Part")
                 ore.Name = "Ore"
                 ore.Size = Vector3.new(1.2, 1.2, 1.2)
-                ore.Position = dropper.Position - Vector3.new(0, 1.5, 0)
+                ore.CFrame = dropper.CFrame * CFrame.new(0, -1.8, 0)
                 ore.Material = Enum.Material.Neon
                 ore.Color = faction.oreColor
+                ore.TopSurface = Enum.SurfaceType.Smooth
+                ore.BottomSurface = Enum.SurfaceType.Smooth
+                ore.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.05, 0, 1, 1)
                 ore:SetAttribute("Value", 1)
                 ore.Parent = Workspace
                 task.delay(15, function() if ore.Parent then ore:Destroy() end end)
@@ -73,28 +79,39 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         end)
 
     elseif item.id == "LaserGate" then
+        -- Лазерные ворота по центру фасада с верхней защитной балкой (lintel)
         local gateModel = Instance.new("Model")
         gateModel.Name = "LaserGate"
         gateModel.Parent = itemsFolder
 
         local postLeft = Instance.new("Part")
-        postLeft.Size = Vector3.new(1, 8, 1)
-        postLeft.CFrame = baseCF * CFrame.new(-6, 4, 18)
+        postLeft.Name = "PostLeft"
+        postLeft.Size = Vector3.new(1.2, 10, 1.2)
+        postLeft.CFrame = baseCF * CFrame.new(-5.5, 5, 20)
         postLeft.Anchored = true
-        postLeft.Color = Color3.fromRGB(30, 30, 30)
+        postLeft.Color = Color3.fromRGB(20, 20, 20)
         postLeft.Parent = gateModel
 
         local postRight = Instance.new("Part")
-        postRight.Size = Vector3.new(1, 8, 1)
-        postRight.CFrame = baseCF * CFrame.new(6, 4, 18)
+        postRight.Name = "PostRight"
+        postRight.Size = Vector3.new(1.2, 10, 1.2)
+        postRight.CFrame = baseCF * CFrame.new(5.5, 5, 20)
         postRight.Anchored = true
-        postRight.Color = Color3.fromRGB(30, 30, 30)
+        postRight.Color = Color3.fromRGB(20, 20, 20)
         postRight.Parent = gateModel
+
+        local lintel = Instance.new("Part")
+        lintel.Name = "GateLintel"
+        lintel.Size = Vector3.new(12.2, 1.2, 1.2)
+        lintel.CFrame = baseCF * CFrame.new(0, 9.5, 20)
+        lintel.Anchored = true
+        lintel.Color = Color3.fromRGB(20, 20, 20)
+        lintel.Parent = gateModel
 
         local beam = Instance.new("Part")
         beam.Name = "LaserBeam"
-        beam.Size = Vector3.new(11, 7, 0.4)
-        beam.CFrame = baseCF * CFrame.new(0, 4, 18)
+        beam.Size = Vector3.new(10, 8.8, 0.4)
+        beam.CFrame = baseCF * CFrame.new(0, 4.5, 20)
         beam.Anchored = true
         beam.CanCollide = false
         beam.Material = Enum.Material.ForceField
@@ -102,41 +119,76 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         beam.Transparency = 0.4
         beam.Parent = gateModel
 
-        createBillboard(beam, "⚡ ЗАЩИТНЫЙ ЛАЗЕР", "Чужим вход воспрещен!", Color3.fromRGB(231, 76, 60))
+        createBillboard(beam, "⚡ ЗАЩИТНЫЙ ЛАЗЕР", "Вход только для владельца!", Color3.fromRGB(231, 76, 60))
 
-        beam.Touched:Connect(function(hit)
+        local function onLaserTouch(hit: BasePart)
             local char = hit.Parent
-            local p = Players:GetPlayerFromCharacter(char)
-            if p and p ~= owner then
-                local hum = char:FindFirstChild("Humanoid") :: Humanoid?
-                if hum then hum:TakeDamage(100) end
+            if not char then return end
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if not hum and char.Parent then
+                hum = char.Parent:FindFirstChildOfClass("Humanoid")
+                if hum then char = char.Parent end
             end
-        end)
+            if hum and hum.Health > 0 then
+                local p = Players:GetPlayerFromCharacter(char)
+                if p and p ~= owner then
+                    hum.Health = 0 -- Защита базы: мгновенная ликвидация нарушителя
+                end
+            end
+        end
+        beam.Touched:Connect(onLaserTouch)
 
     elseif item.id == "BrainrotWalls" then
+        -- 100% герметичный периметр стен без единой дыры
+        -- Левая стена
         local wLeft = Instance.new("Part")
-        wLeft.Size = Vector3.new(1, 10, 40)
-        wLeft.CFrame = baseCF * CFrame.new(-16, 5, 0)
+        wLeft.Name = "WallLeft"
+        wLeft.Size = Vector3.new(1, 10, 42)
+        wLeft.CFrame = baseCF * CFrame.new(-17, 5, 0)
         wLeft.Anchored = true
         wLeft.Material = Enum.Material.SmoothPlastic
         wLeft.Color = faction.secondaryColor
         wLeft.Parent = itemsFolder
 
+        -- Правая стена
         local wRight = Instance.new("Part")
-        wRight.Size = Vector3.new(1, 10, 40)
-        wRight.CFrame = baseCF * CFrame.new(16, 5, 0)
+        wRight.Name = "WallRight"
+        wRight.Size = Vector3.new(1, 10, 42)
+        wRight.CFrame = baseCF * CFrame.new(17, 5, 0)
         wRight.Anchored = true
         wRight.Material = Enum.Material.SmoothPlastic
         wRight.Color = faction.secondaryColor
         wRight.Parent = itemsFolder
 
+        -- Задняя стена
         local wBack = Instance.new("Part")
-        wBack.Size = Vector3.new(32, 10, 1)
-        wBack.CFrame = baseCF * CFrame.new(0, 5, -20)
+        wBack.Name = "WallBack"
+        wBack.Size = Vector3.new(35, 10, 1)
+        wBack.CFrame = baseCF * CFrame.new(0, 5, -21)
         wBack.Anchored = true
         wBack.Material = Enum.Material.SmoothPlastic
         wBack.Color = faction.secondaryColor
         wBack.Parent = itemsFolder
+
+        -- Передняя левая стена (от угла до ворот)
+        local wFrontLeft = Instance.new("Part")
+        wFrontLeft.Name = "WallFrontLeft"
+        wFrontLeft.Size = Vector3.new(11.5, 10, 1)
+        wFrontLeft.CFrame = baseCF * CFrame.new(-11.25, 5, 20)
+        wFrontLeft.Anchored = true
+        wFrontLeft.Material = Enum.Material.SmoothPlastic
+        wFrontLeft.Color = faction.secondaryColor
+        wFrontLeft.Parent = itemsFolder
+
+        -- Передняя правая стена (от ворот до угла)
+        local wFrontRight = Instance.new("Part")
+        wFrontRight.Name = "WallFrontRight"
+        wFrontRight.Size = Vector3.new(11.5, 10, 1)
+        wFrontRight.CFrame = baseCF * CFrame.new(11.25, 5, 20)
+        wFrontRight.Anchored = true
+        wFrontRight.Material = Enum.Material.SmoothPlastic
+        wFrontRight.Color = faction.secondaryColor
+        wFrontRight.Parent = itemsFolder
 
     elseif item.id == "FactionAbilityStand" then
         local stand = Instance.new("Part")
@@ -148,7 +200,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         stand.Color = faction.color
         stand.Parent = itemsFolder
 
-        createBillboard(stand, string.format("⚡ %s", faction.abilityName), faction.abilityDesc, faction.color)
+        createBillboard(stand, string.format("⚡ %s (УЛУЧШЕНО)", faction.abilityName), "Кулдаун сокращен в 2 раза!", faction.color)
 
     elseif item.id == "UpgradedDropper" then
         local dropper = Instance.new("Part")
@@ -168,9 +220,12 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
                 local ore = Instance.new("Part")
                 ore.Name = "Ore"
                 ore.Size = Vector3.new(1.3, 1.3, 1.3)
-                ore.Position = dropper.Position - Vector3.new(0, 1.5, 0)
+                ore.CFrame = dropper.CFrame * CFrame.new(0, -1.8, 0)
                 ore.Material = Enum.Material.Neon
                 ore.Color = Color3.fromRGB(46, 204, 113)
+                ore.TopSurface = Enum.SurfaceType.Smooth
+                ore.BottomSurface = Enum.SurfaceType.Smooth
+                ore.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.05, 0, 1, 1)
                 ore:SetAttribute("Value", 8)
                 ore.Parent = Workspace
                 task.delay(15, function() if ore.Parent then ore:Destroy() end end)
@@ -180,7 +235,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
     elseif item.id == "NeonRoof" then
         local roof = Instance.new("Part")
         roof.Name = "NeonRoof"
-        roof.Size = Vector3.new(34, 1, 42)
+        roof.Size = Vector3.new(35, 1, 43)
         roof.CFrame = baseCF * CFrame.new(0, 10.5, 0)
         roof.Anchored = true
         roof.Material = Enum.Material.Glass
@@ -206,9 +261,12 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
                 local ore = Instance.new("Part")
                 ore.Name = "Ore"
                 ore.Size = Vector3.new(1.4, 1.4, 1.4)
-                ore.Position = dropper.Position - Vector3.new(0, 1.5, 0)
+                ore.CFrame = dropper.CFrame * CFrame.new(0, -1.8, 0)
                 ore.Material = Enum.Material.Neon
                 ore.Color = Color3.fromRGB(241, 196, 15)
+                ore.TopSurface = Enum.SurfaceType.Smooth
+                ore.BottomSurface = Enum.SurfaceType.Smooth
+                ore.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.05, 0, 1, 1)
                 ore:SetAttribute("Value", 35)
                 ore.Parent = Workspace
                 task.delay(15, function() if ore.Parent then ore:Destroy() end end)
@@ -218,7 +276,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
     elseif item.id == "SecondFloor" then
         local floor2 = Instance.new("Part")
         floor2.Name = "SecondFloor"
-        floor2.Size = Vector3.new(32, 1, 40)
+        floor2.Size = Vector3.new(34, 1, 41)
         floor2.CFrame = baseCF * CFrame.new(0, 11, 0)
         floor2.Anchored = true
         floor2.Material = Enum.Material.SmoothPlastic
@@ -311,6 +369,7 @@ local function updateButtons(plotModel: Model, owner: Player, baseCF: CFrame, fa
         end
     end
 
+    -- Кнопка Rebirth
     local currentRebirths = TycoonService.getRebirths(owner)
     local hasSecondFloor = TycoonService.hasItem(owner, "SecondFloor")
     local existingRebirth = buttonsFolder:FindFirstChild("Button_Rebirth")
@@ -361,7 +420,6 @@ local function updateButtons(plotModel: Model, owner: Player, baseCF: CFrame, fa
     end
 end
 
--- Построение всех 8 баз в мире со стартовыми ClaimPads
 function PlotBuilder.initAllBases(onClaimCallback: (player: Player, plotIndex: number) -> ())
     local plotsContainer = Workspace:FindFirstChild("TycoonPlots")
     if not plotsContainer then
@@ -388,7 +446,6 @@ function PlotBuilder.initAllBases(onClaimCallback: (player: Player, plotIndex: n
         buttonsFolder.Name = "Buttons"
         buttonsFolder.Parent = plotModel
 
-        -- 1. Пол базы
         local baseFloor = Instance.new("Part")
         baseFloor.Name = "BaseFloor"
         baseFloor.Size = Vector3.new(34, 1, 42)
@@ -398,7 +455,6 @@ function PlotBuilder.initAllBases(onClaimCallback: (player: Player, plotIndex: n
         baseFloor.Color = Color3.fromRGB(25, 25, 30)
         baseFloor.Parent = plotModel
 
-        -- Вывеска
         local sign = Instance.new("Part")
         sign.Name = "OwnerSign"
         sign.Size = Vector3.new(16, 3.5, 1)
@@ -409,7 +465,6 @@ function PlotBuilder.initAllBases(onClaimCallback: (player: Player, plotIndex: n
         sign.Parent = plotModel
         createBillboard(sign, faction.name, "[СВОБОДНО] Встань, чтобы занять!", Color3.fromRGB(255, 255, 255))
 
-        -- Стартовая площадка захвата базы (ClaimPad)
         local claimPad = Instance.new("Part")
         claimPad.Name = "ClaimPad"
         claimPad.Size = Vector3.new(8, 0.4, 8)
@@ -437,7 +492,6 @@ function PlotBuilder.initAllBases(onClaimCallback: (player: Player, plotIndex: n
     print("[PlotBuilder] All 8 circular bases created with ClaimPads!")
 end
 
--- Активация базы при выборе игроком
 function PlotBuilder.activatePlot(player: Player, plotIndex: number)
     local plotsContainer = Workspace:FindFirstChild("TycoonPlots")
     if not plotsContainer then return end
@@ -467,6 +521,7 @@ function PlotBuilder.activatePlot(player: Player, plotIndex: number)
         end
     end
 
+    -- 1. Конвейер с ПРАВИЛЬНЫМ направлением вектора (строго в сторону Сборщика на +Z!)
     local conveyor = Instance.new("Part")
     conveyor.Name = "Conveyor"
     conveyor.Size = Vector3.new(4, 0.8, 30)
@@ -474,6 +529,7 @@ function PlotBuilder.activatePlot(player: Player, plotIndex: number)
     conveyor.Anchored = true
     conveyor.Material = Enum.Material.DiamondPlate
     conveyor.Color = Color3.fromRGB(40, 40, 45)
+    conveyor.CustomPhysicalProperties = PhysicalProperties.new(0.7, 1.0, 0, 1, 1)
     
     local speed = TycoonConfig.CONVEYOR_SPEED
     if TycoonService.getRebirths(player) >= 2 then
@@ -481,14 +537,46 @@ function PlotBuilder.activatePlot(player: Player, plotIndex: number)
         conveyor.Material = Enum.Material.Neon
         conveyor.Color = Color3.fromRGB(241, 196, 15)
     end
-    conveyor.AssemblyLinearVelocity = baseCF.LookVector * speed
+    -- Направление строго по локальной оси +Z (вперед к сборщику!)
+    local forwardVector = baseCF:VectorToWorldSpace(Vector3.new(0, 0, 1))
+    conveyor.AssemblyLinearVelocity = forwardVector * speed
+    (conveyor :: any).Velocity = forwardVector * speed
     conveyor.Parent = plotModel
 
+    -- 2. Задний стоппер конвейера (чтобы руда никогда не вылетала назад)
+    local conveyorBackstop = Instance.new("Part")
+    conveyorBackstop.Name = "ConveyorBackstop"
+    conveyorBackstop.Size = Vector3.new(4.5, 2.5, 0.6)
+    conveyorBackstop.CFrame = baseCF * CFrame.new(0, 1.6, -15.2)
+    conveyorBackstop.Anchored = true
+    conveyorBackstop.Material = Enum.Material.Metal
+    conveyorBackstop.Color = Color3.fromRGB(20, 20, 20)
+    conveyorBackstop.Parent = plotModel
+
+    -- Боковые бортики конвейера (высота 2.5 studs)
+    local borderLeft = Instance.new("Part")
+    borderLeft.Name = "BorderLeft"
+    borderLeft.Size = Vector3.new(0.5, 2.5, 30)
+    borderLeft.CFrame = baseCF * CFrame.new(-2.2, 1.6, 0)
+    borderLeft.Anchored = true
+    borderLeft.Color = Color3.fromRGB(20, 20, 20)
+    borderLeft.Parent = plotModel
+
+    local borderRight = Instance.new("Part")
+    borderRight.Name = "BorderRight"
+    borderRight.Size = Vector3.new(0.5, 2.5, 30)
+    borderRight.CFrame = baseCF * CFrame.new(2.2, 1.6, 0)
+    borderRight.Anchored = true
+    borderRight.Color = Color3.fromRGB(20, 20, 20)
+    borderRight.Parent = plotModel
+
+    -- 3. Сборщик монет (Collector)
     local collector = Instance.new("Part")
     collector.Name = "Collector"
-    collector.Size = Vector3.new(5, 1.5, 3)
-    collector.CFrame = baseCF * CFrame.new(0, 1.0, 15)
+    collector.Size = Vector3.new(6, 2.2, 3.5)
+    collector.CFrame = baseCF * CFrame.new(0, 1.4, 15.2)
     collector.Anchored = true
+    collector.CanCollide = true
     collector.Material = Enum.Material.Neon
     collector.Color = Color3.fromRGB(46, 204, 113)
     collector.Parent = plotModel
@@ -508,12 +596,13 @@ function PlotBuilder.activatePlot(player: Player, plotIndex: number)
     particles.Parent = collector
 
     collector.Touched:Connect(function(hit)
-        if hit.Name == "Ore" then
+        if hit.Name == "Ore" and not hit:GetAttribute("Collected") then
+            hit:SetAttribute("Collected", true)
             local val = hit:GetAttribute("Value")
             if val and typeof(val) == "number" then
                 TycoonService.addCash(player, val)
                 coinSound:Play()
-                particles:Emit(6)
+                particles:Emit(8)
                 hit:Destroy()
             end
         end
@@ -530,7 +619,6 @@ function PlotBuilder.activatePlot(player: Player, plotIndex: number)
     print(string.format("[PlotBuilder] Base %d activated for %s", plotIndex, player.Name))
 end
 
--- Сброс базы в свободное состояние при выходе
 function PlotBuilder.resetPlotToUnclaimed(plotIndex: number, onClaimCallback: (player: Player, plotIndex: number) -> ())
     local plotsContainer = Workspace:FindFirstChild("TycoonPlots")
     if not plotsContainer then return end
@@ -550,6 +638,15 @@ function PlotBuilder.resetPlotToUnclaimed(plotIndex: number, onClaimCallback: (p
 
     local conveyor = plotModel:FindFirstChild("Conveyor")
     if conveyor then conveyor:Destroy() end
+
+    local backstop = plotModel:FindFirstChild("ConveyorBackstop")
+    if backstop then backstop:Destroy() end
+
+    local borderLeft = plotModel:FindFirstChild("BorderLeft")
+    if borderLeft then borderLeft:Destroy() end
+
+    local borderRight = plotModel:FindFirstChild("BorderRight")
+    if borderRight then borderRight:Destroy() end
 
     local collector = plotModel:FindFirstChild("Collector")
     if collector then collector:Destroy() end
@@ -588,7 +685,6 @@ function PlotBuilder.resetPlotToUnclaimed(plotIndex: number, onClaimCallback: (p
     print(string.format("[PlotBuilder] Base %d reset to unclaimed.", plotIndex))
 end
 
--- Обратная совместимость для тестов
 function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
     PlotBuilder.activatePlot(player, plotIndex)
 end

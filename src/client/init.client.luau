@@ -251,6 +251,62 @@ if plotStateEvent then
     end)
 end
 
+-- Всплывающее уведомление (Toast)
+local toastFrame = Instance.new("Frame")
+toastFrame.Name = "ToastFrame"
+toastFrame.Size = UDim2.new(0, 420, 0, 50)
+toastFrame.Position = UDim2.new(0.5, -210, 0, -60)
+toastFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+toastFrame.BackgroundTransparency = 0.1
+toastFrame.BorderSizePixel = 0
+toastFrame.Visible = false
+toastFrame.Parent = screenGui
+
+local toastCorner = Instance.new("UICorner")
+toastCorner.CornerRadius = UDim.new(0, 12)
+toastCorner.Parent = toastFrame
+
+local toastStroke = Instance.new("UIStroke")
+toastStroke.Color = Color3.fromRGB(241, 196, 15)
+toastStroke.Thickness = 2
+toastStroke.Parent = toastFrame
+
+local toastLabel = Instance.new("TextLabel")
+toastLabel.Size = UDim2.new(1, -20, 1, 0)
+toastLabel.Position = UDim2.new(0, 10, 0, 0)
+toastLabel.BackgroundTransparency = 1
+toastLabel.Text = ""
+toastLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+toastLabel.TextScaled = true
+toastLabel.Font = Enum.Font.FredokaOne
+toastLabel.Parent = toastFrame
+
+local function showToast(message: string, color: Color3?)
+    toastLabel.Text = message
+    toastStroke.Color = color or Color3.fromRGB(241, 196, 15)
+    toastFrame.Visible = true
+    toastFrame.Position = UDim2.new(0.5, -210, 0, -60)
+    
+    local inTween = TweenService:Create(toastFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0.5, -210, 0, 30)
+    })
+    inTween:Play()
+    
+    task.delay(2.8, function()
+        if toastFrame.Parent then
+            local outTween = TweenService:Create(toastFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Position = UDim2.new(0.5, -210, 0, -60)
+            })
+            outTween:Play()
+            outTween.Completed:Connect(function()
+                if toastFrame.Position.Y.Offset <= -50 then
+                    toastFrame.Visible = false
+                end
+            end)
+        end
+    end)
+end
+
 -- 3. Кнопка активации способности на экране (справа внизу)
 local abilityBtn = Instance.new("TextButton")
 abilityBtn.Name = "AbilityButton"
@@ -272,7 +328,15 @@ btnStroke.Color = Color3.fromRGB(255, 255, 255)
 btnStroke.Thickness = 2
 btnStroke.Parent = abilityBtn
 
+local isAbilityOnCooldown = false
+local currentCooldownRemaining = 0
+
 local function castAbility()
+    if isAbilityOnCooldown then
+        showToast(string.format("⏳ Перезарядка: %d сек!", currentCooldownRemaining), Color3.fromRGB(230, 126, 34))
+        return
+    end
+
     if abilityEvent then
         abilityEvent:FireServer()
         local tIn = TweenService:Create(abilityBtn, TweenInfo.new(0.1), { Size = UDim2.new(0, 135, 0, 50) })
@@ -290,6 +354,54 @@ UserInputService.InputBegan:Connect(function(input, processed)
         castAbility()
     end
 end)
+
+-- Обработка ответа сервера на применение способности
+if abilityEvent then
+    abilityEvent.OnClientEvent:Connect(function(status: string, messageOrName: string, duration: number, factionId: string?)
+        if status == "SUCCESS" then
+            isAbilityOnCooldown = true
+            currentCooldownRemaining = duration or 12
+            abilityBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
+            btnStroke.Color = Color3.fromRGB(150, 150, 150)
+            showToast(string.format("⚡ %s АКТИВИРОВАНА!", messageOrName), Color3.fromRGB(46, 204, 113))
+
+            -- Локальные визуальные спецэффекты для игрока
+            local char = localPlayer.Character
+            if char then
+                local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+                if root and factionId == "Skibidi" then
+                    task.spawn(function()
+                        for _ = 1, 15 do
+                            root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(24), 0)
+                            task.wait(0.03)
+                        end
+                    end)
+                end
+            end
+
+            -- Таймер обратного отсчета на кнопке
+            task.spawn(function()
+                while currentCooldownRemaining > 0 do
+                    abilityBtn.Text = string.format("⏳ %dс\n[КД]", currentCooldownRemaining)
+                    task.wait(1.0)
+                    currentCooldownRemaining -= 1
+                end
+                isAbilityOnCooldown = false
+                abilityBtn.Text = "⚡ СПОСОБНОСТЬ\n[E]"
+                abilityBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+                btnStroke.Color = Color3.fromRGB(255, 255, 255)
+                showToast("⚡ Способность снова готова к бою!", Color3.fromRGB(241, 196, 15))
+            end)
+
+        elseif status == "COOLDOWN" then
+            showToast(string.format("⏳ Перезарядка: %d сек!", duration or 0), Color3.fromRGB(230, 126, 34))
+
+        elseif status == "ERROR" then
+            showToast(string.format("⚠️ %s", messageOrName), Color3.fromRGB(231, 76, 60))
+            selectModal.Visible = true
+        end
+    end)
+end
 
 -- 4. Двойной прыжок (Double Jump)
 local canDoubleJump = false
