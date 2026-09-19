@@ -1,36 +1,29 @@
-# Архитектура проекта roblox (Tycoon)
+# Архитектура: Gen Alpha Brainrot Multiplayer Tycoon
 
-## Принципы организации кода
-Проект использует строгую клиент-серверную архитектуру Roblox, синхронизацию через Rojo, сохранение в облачном DataStore и динамическую 3D-генерацию мира.
+## Мультиплеерная круговая арена
+8 автономных баз расположены по кругу с радиусом $R = 90$ studs от центра `(0, 0, 0)`.
+Каждая база ориентирована лицом к центральной арене.
 
-### Сервисы и модули
-1. **ReplicatedStorage (Shared)**:
-   - `MathUtils.luau`: Математические утилиты (`clamp`, `lerp`).
-   - `TycoonConfig.luau`: Конфигурация предметов, параметров, зависимостей, цен и интервалов дропа.
-   - `EconomyManager.luau`: Валидация покупок, проверка достаточного баланса, расчет множителей.
-
-2. **ServerScriptService (Server)**:
-   - `init.server.luau`: Серверная точка входа, подключение событий игроков, таймер автосохранения (каждые 60 с), перехват `game:BindToClose`.
-   - `DataStoreManager.luau`: Инкапсуляция `DataStoreService:GetDataStore("TycoonSave_v1")`, безопасные вызовы через `pcall`, повторные попытки (retries), валидация и дефолтные профили.
-   - `PlotBuilder.luau`: Процедурный генератор 3D-базы: восстанавливает сохраненные постройки при входе, проигрывает звуки сбора монет (`Sound`) и частицы (`ParticleEmitter`), создает кнопку Rebirth.
-   - `TycoonService.luau`: Управление профилями игроков, начисление дохода с множителем Rebirth (`1 + rebirths * 0.5`), списание баланса, логика сброса при перерождении.
-
-3. **StarterPlayer.StarterPlayerScripts (Client)**:
-   - `init.client.luau`: TycoonHUD — современный темный интерфейс в левом верхнем углу с балансом, множителем и счетчиком перерождений с микроанимациями через `TweenService`.
-
-## Потоки данных
-```mermaid
-graph TD
-    DataStore[Roblox DataStoreService] <-->|Load on Join / Save on Exit & Autosave| DSM[DataStoreManager]
-    DSM <--> TycoonService[TycoonService]
-    TycoonService -->|Rebuild Owned Items| PlotBuilder[PlotBuilder]
-    Player[Player Avatar] -->|Steps on Pad| Button[Purchase / Rebirth Button]
-    Button -->|Trigger Action| TycoonService
-    TycoonService -->|Spawn Structure| World[Workspace.TycoonPlots]
-    Dropper[Active Dropper] -->|Drop Ore| Conveyor[Conveyor: LinearVelocity]
-    Conveyor --> Collector[Collector]
-    Collector -->|Play Coin SFX & Emit VFX| Player
-    Collector -->|Award Cash * RebirthMult| TycoonService
-    TycoonService --> Leaderstats[Player.leaderstats]
-    Leaderstats -->|Changed Event| ClientHUD[Client TycoonHUD: ScreenGui]
+### Схема расположения
+```text
+           [1: Skibidi]
+      [8: Tung]    [2: Mewing]
+   [7: Rizz]  (ARENA)   [3: Sigma]
+      [6: Case]    [4: Fanum]
+           [5: Grimace]
 ```
+
+### Ключевые системы
+1. **PlotManager**:
+   - Распределяет свободные слоты 1..8 при подключении игроков.
+   - Фиксирует фракцию базы, цвет, вывеску и эксклюзивную способность.
+2. **Лазерная защита (LaserGate)**:
+   - Лазерные барьеры у входа на базу проверяют право собственности.
+   - Владелец проходит беспрепятственно, чужакам наносится смертельный урон.
+3. **CentralArena (Царь Горы Ауры)**:
+   - Золотая платформа в центре карты `(0, 0, 0)`.
+   - Игрок, удерживающий платформу, получает **+25 Aura в секунду**.
+4. **AbilityService**:
+   - Обрабатывает применение 8 фракционных способностей (Skibidi Spin, Mewing Stare, Phonk Rage, etc.) с кулдауном 12 сек.
+5. **5 Уровней Rebirth**:
+   - Уровни 1..5 открывают двойной прыжок, рывок, турель на крыше, гравитационные суперпрыжки и полет на крыльях Сверхсигмы.

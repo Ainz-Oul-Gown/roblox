@@ -1,48 +1,54 @@
-# Project Overview: roblox (Tycoon)
+# Project Overview: Gen Alpha Brainrot Multiplayer Tycoon
 
 ## Описание проекта
-Проект **roblox** — это полнофункциональный тайкун для платформы Roblox с синхронизацией через **Rojo**, типизированной базой на **Luau**, облачным сохранением в **DataStore**, системой перерождений (**Rebirth**), звуковыми и визуальными эффектами (**SFX/VFX**) и экранным **HUD**.
+**Gen Alpha Brainrot Multiplayer Tycoon** — масштабный вирусный мультиплеерный тайкун на **8 игроков** в стилистике интернет-культуры поколения Альфа (Skibidi, Mewing, Sigma, Fanum Tax, Grimace, CaseOh, Rizzler, Tung Tung). Проект включает 8 круговых баз вокруг центральной боевой арены, 8 уникальных суперспособностей, лазерную защиту базы, 5 уровней Rebirth и современный экранный HUD.
 
 ## Стек технологий
 - **Платформа**: Roblox
 - **Инструмент синхронизации**: Rojo v7.7.0 (бинарник в `bin/rojo.exe`, плагин в `%LocalAppData%\Roblox\Plugins\Rojo.rbxm`)
-- **Язык**: Luau (strict mode `--!strict`)
-- **Сохранение данных**: Roblox DataStoreService (`TycoonSave_v1`) с автосохранением и pcall
-- **Тестирование**: Node.js Test Runner (`npm test`, 17 юнит-тестов)
+- **Язык**: Luau (strict typing `--!strict`)
+- **Мультиплеер**: 8 независимых баз по круговой сетке ($R = 90$ studs) + центральная зона царя горы `(0, 0, 0)`
+- **Сохранение**: Roblox DataStoreService (`TycoonSave_v1`)
+- **Тестирование**: Node.js Test Runner (`npm test`, 22 юнит-теста)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
 
 ## Структура каталогов
 ```text
 roblox/
-├── .ai/                    # AI контекст, архитектура, конвенции
+├── .ai/
 │   ├── PROJECT_OVERVIEW.md
 │   ├── ARCHITECTURE.md
 │   └── CONVENTIONS.md
 ├── .github/
 │   └── workflows/
-│       └── ci.yml          # GitHub Actions автотесты
-├── bin/                    # Локальные утилиты (rojo.exe)
+│       └── ci.yml
+├── bin/
+│   └── rojo.exe
 ├── src/
-│   ├── client/             # Клиентские скрипты (StarterPlayerScripts)
-│   │   └── init.client.luau # TycoonHUD (анимированный баланс, множитель, Rebirths)
-│   ├── server/             # Серверные скрипты (ServerScriptService)
-│   │   ├── init.server.luau # Точка входа, автосохранение, BindToClose
-│   │   ├── DataStoreManager.luau # Облачное сохранение/загрузка профилей
-│   │   ├── PlotBuilder.luau # 3D-генератор базы, SFX, VFX, конвейер, кнопки
-│   │   └── TycoonService.luau # Экономика, Rebirth, транзакции, leaderstats
-│   └── shared/             # Общие модули (ReplicatedStorage)
-│       ├── EconomyManager.luau
-│       ├── MathUtils.luau
-│       └── TycoonConfig.luau
-├── tests/                  # Автотесты логики
+│   ├── client/
+│   │   └── init.client.luau          # BrainrotHUD, двойной прыжок, кнопка способности
+│   ├── server/
+│   │   ├── AbilityService.luau       # Серверная логика 8 способностей фракций
+│   │   ├── CentralArena.luau         # Зона «Царь Горы Ауры» (+25/сек)
+│   │   ├── DataStoreManager.luau     # Сохранение прогресса
+│   │   ├── PlotBuilder.luau          # 3D-генератор фракционных баз и лазеров
+│   │   ├── PlotManager.luau          # Круговое распределение 8 участков
+│   │   ├── TycoonService.luau        # Экономика, Rebirth 1-5, множители
+│   │   └── init.server.luau          # Серверная точка входа
+│   └── shared/
+│       ├── EconomyManager.luau       # Расчет баланса и 5 Rebirth тиров
+│       ├── MathUtils.luau            # Математические утилиты
+│       └── TycoonConfig.luau         # Конфигурация 8 фракций, способностей и цен
+├── tests/
+│   ├── brainrotMultiplayer.test.js   # 8 баз, способности, лазеры, арена
 │   ├── dataStore.test.js
 │   ├── economyManager.test.js
 │   ├── mathUtils.test.js
 │   ├── plotBuilder.test.js
 │   └── rebirth.test.js
-├── default.project.json    # Rojo маппинг в Roblox DataModel
-├── package.json            # Node.js конфигурация и скрипты (test, serve, build)
+├── default.project.json
+├── package.json
 └── .gitignore
 ```
 

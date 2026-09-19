@@ -3,98 +3,183 @@
 -- Client initialization script (StarterPlayerScripts)
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui") :: PlayerGui
 
--- Создание современного HUD на экране
+local abilityEvent = ReplicatedStorage:WaitForChild("AbilityEvent", 10) :: RemoteEvent?
+
+-- 1. Создание Gen Alpha Brainrot HUD
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TycoonHUD"
+screenGui.Name = "BrainrotHUD"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- Контейнер статистики (в верхнем левом углу)
-local statsFrame = Instance.new("Frame")
-statsFrame.Name = "StatsFrame"
-statsFrame.Size = UDim2.new(0, 220, 0, 90)
-statsFrame.Position = UDim2.new(0, 20, 0, 20)
-statsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-statsFrame.BackgroundTransparency = 0.2
-statsFrame.BorderSizePixel = 0
-statsFrame.Parent = screenGui
+-- Контейнер статистики слева вверху
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 240, 0, 110)
+mainFrame.Position = UDim2.new(0, 20, 0, 20)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+mainFrame.BackgroundTransparency = 0.15
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
 
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = statsFrame
+corner.CornerRadius = UDim.new(0, 14)
+corner.Parent = mainFrame
 
 local stroke = Instance.new("UIStroke")
-stroke.Color = Color3.fromRGB(60, 60, 70)
+stroke.Color = Color3.fromRGB(241, 196, 15)
 stroke.Thickness = 2
-stroke.Parent = statsFrame
+stroke.Parent = mainFrame
 
--- Заголовок денег
-local cashLabel = Instance.new("TextLabel")
-cashLabel.Name = "CashLabel"
-cashLabel.Size = UDim2.new(1, -20, 0, 45)
-cashLabel.Position = UDim2.new(0, 10, 0, 5)
-cashLabel.BackgroundTransparency = 1
-cashLabel.Text = "$0"
-cashLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
-cashLabel.TextStrokeColor3 = Color3.fromRGB(0, 50, 0)
-cashLabel.TextStrokeTransparency = 0.5
-cashLabel.TextScaled = true
-cashLabel.Font = Enum.Font.FredokaOne
-cashLabel.Parent = statsFrame
+-- Счетчик Ауры
+local auraLabel = Instance.new("TextLabel")
+auraLabel.Name = "AuraLabel"
+auraLabel.Size = UDim2.new(1, -20, 0, 45)
+auraLabel.Position = UDim2.new(0, 10, 0, 8)
+auraLabel.BackgroundTransparency = 1
+auraLabel.Text = "AURA: +0 🔥"
+auraLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+auraLabel.TextStrokeColor3 = Color3.fromRGB(150, 80, 0)
+auraLabel.TextStrokeTransparency = 0.3
+auraLabel.TextScaled = true
+auraLabel.Font = Enum.Font.FredokaOne
+auraLabel.Parent = mainFrame
 
--- Множитель дохода и Rebirths
+-- Ранг и множитель
+local rankLabel = Instance.new("TextLabel")
+rankLabel.Name = "RankLabel"
+rankLabel.Size = UDim2.new(1, -20, 0, 25)
+rankLabel.Position = UDim2.new(0, 10, 0, 52)
+rankLabel.BackgroundTransparency = 1
+rankLabel.Text = "🗿 Ранг: Новичок Мьюинга"
+rankLabel.TextColor3 = Color3.fromRGB(189, 195, 199)
+rankLabel.TextScaled = true
+rankLabel.Font = Enum.Font.FredokaOne
+rankLabel.Parent = mainFrame
+
 local infoLabel = Instance.new("TextLabel")
 infoLabel.Name = "InfoLabel"
-infoLabel.Size = UDim2.new(1, -20, 0, 30)
-infoLabel.Position = UDim2.new(0, 10, 0, 50)
+infoLabel.Size = UDim2.new(1, -20, 0, 22)
+infoLabel.Position = UDim2.new(0, 10, 0, 80)
 infoLabel.BackgroundTransparency = 1
 infoLabel.Text = "Множитель: x1.0 | Rebirths: 0"
-infoLabel.TextColor3 = Color3.fromRGB(241, 196, 15)
+infoLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
 infoLabel.TextScaled = true
 infoLabel.Font = Enum.Font.FredokaOne
-infoLabel.Parent = statsFrame
+infoLabel.Parent = mainFrame
 
--- Подключение к leaderstats
-local function bindLeaderstats()
-    local leaderstats = localPlayer:WaitForChild("leaderstats", 10)
-    if not leaderstats then return end
+-- 2. Кнопка активации способности на экране (справа внизу)
+local abilityBtn = Instance.new("TextButton")
+abilityBtn.Name = "AbilityButton"
+abilityBtn.Size = UDim2.new(0, 140, 0, 60)
+abilityBtn.Position = UDim2.new(1, -160, 1, -80)
+abilityBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+abilityBtn.Text = "⚡ СПОСОБНОСТЬ\n[E]"
+abilityBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+abilityBtn.TextScaled = true
+abilityBtn.Font = Enum.Font.FredokaOne
+abilityBtn.Parent = screenGui
 
-    local cashVal = leaderstats:WaitForChild("Cash", 10) :: IntValue?
-    local rebirthVal = leaderstats:WaitForChild("Rebirths", 10) :: IntValue?
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 12)
+btnCorner.Parent = abilityBtn
 
-    local function updateDisplay()
-        local cash = if cashVal then cashVal.Value else 0
-        local rebirths = if rebirthVal then rebirthVal.Value else 0
-        local mult = 1.0 + (rebirths * 0.5)
+local btnStroke = Instance.new("UIStroke")
+btnStroke.Color = Color3.fromRGB(255, 255, 255)
+btnStroke.Thickness = 2
+btnStroke.Parent = abilityBtn
 
-        cashLabel.Text = string.format("$%s", tostring(cash))
-        infoLabel.Text = string.format("Множитель: x%.1f | Rebirths: %d", mult, rebirths)
-
-        -- Легкая микроанимация масштаба
-        local tweenIn = TweenService:Create(cashLabel, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            TextColor3 = Color3.fromRGB(100, 255, 150)
-        })
-        local tweenOut = TweenService:Create(cashLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            TextColor3 = Color3.fromRGB(46, 204, 113)
-        })
-        tweenIn:Play()
-        tweenIn.Completed:Connect(function() tweenOut:Play() end)
+local function castAbility()
+    if abilityEvent then
+        abilityEvent:FireServer()
+        local tIn = TweenService:Create(abilityBtn, TweenInfo.new(0.1), { Size = UDim2.new(0, 125, 0, 50) })
+        local tOut = TweenService:Create(abilityBtn, TweenInfo.new(0.2), { Size = UDim2.new(0, 140, 0, 60) })
+        tIn:Play()
+        tIn.Completed:Connect(function() tOut:Play() end)
     end
-
-    if cashVal then
-        cashVal.Changed:Connect(updateDisplay)
-    end
-    if rebirthVal then
-        rebirthVal.Changed:Connect(updateDisplay)
-    end
-
-    updateDisplay()
 end
 
-task.spawn(bindLeaderstats)
-print("[CLIENT] TycoonHUD initialized successfully!")
+abilityBtn.MouseButton1Click:Connect(castAbility)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.E then
+        castAbility()
+    end
+end)
+
+-- 3. Двойной прыжок (Double Jump) при Rebirth >= 1
+local canDoubleJump = false
+local hasDoubleJumped = false
+
+UserInputService.JumpRequest:Connect(function()
+    if not localPlayer:GetAttribute("DoubleJumpUnlocked") then return end
+
+    local char = localPlayer.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+
+    if hum and root and canDoubleJump and not hasDoubleJumped then
+        hasDoubleJumped = true
+        root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 48, root.AssemblyLinearVelocity.Z)
+    end
+end)
+
+-- Отслеживание приземления
+local function setupCharacter(char: Model)
+    local hum = char:WaitForChild("Humanoid") :: Humanoid
+    hum.StateChanged:Connect(function(_, newState)
+        if newState == Enum.HumanoidStateType.Landed then
+            canDoubleJump = false
+            hasDoubleJumped = false
+        elseif newState == Enum.HumanoidStateType.Freefall then
+            canDoubleJump = true
+        end
+    end)
+end
+
+if localPlayer.Character then setupCharacter(localPlayer.Character) end
+localPlayer.CharacterAdded:Connect(setupCharacter)
+
+-- 4. Привязка к лидерстатс
+local function bindStats()
+    local leaderstats = localPlayer:WaitForChild("leaderstats", 15)
+    if not leaderstats then return end
+
+    local auraVal = leaderstats:WaitForChild("Aura", 10) :: IntValue?
+    local rebirthVal = leaderstats:WaitForChild("Rebirths", 10) :: IntValue?
+
+    local function updateStats()
+        local aura = if auraVal then auraVal.Value else 0
+        local rebirths = if rebirthVal then rebirthVal.Value else 0
+
+        auraLabel.Text = string.format("AURA: +%s 🔥", tostring(aura))
+
+        local rankNames = {
+            [0] = "🗿 Новичок Мьюинга",
+            [1] = "🚽 Скибиди Сигма",
+            [2] = "🕶️ Ризз Мастер",
+            [3] = "📱 Айпад Повелитель",
+            [4] = "🪐 КейсОх Гигачад",
+            [5] = "👑 БОГ АЛЬФА ПОКОЛЕНИЯ",
+        }
+        rankLabel.Text = rankNames[math.min(rebirths, 5)] or "👑 БОГ АЛЬФА ПОКОЛЕНИЯ"
+
+        local mults = { [0] = 1.0, [1] = 1.5, [2] = 2.2, [3] = 3.5, [4] = 5.5, [5] = 10.0 }
+        local mult = mults[math.min(rebirths, 5)] or (10.0 + (rebirths - 5) * 2.0)
+        infoLabel.Text = string.format("Множитель: x%.1f | Rebirths: %d", mult, rebirths)
+    end
+
+    if auraVal then auraVal.Changed:Connect(updateStats) end
+    if rebirthVal then rebirthVal.Changed:Connect(updateStats) end
+    updateStats()
+end
+
+task.spawn(bindStats)
+print("[CLIENT] Gen Alpha BrainrotHUD ready!")
