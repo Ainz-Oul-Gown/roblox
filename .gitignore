@@ -1,3 +1,8 @@
+# Binaries and tools
+bin/
+*.exe
+*.zip
+
 # Node / Testing
 node_modules/
 npm-debug.log*

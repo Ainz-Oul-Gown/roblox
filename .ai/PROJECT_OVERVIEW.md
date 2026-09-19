@@ -1,13 +1,13 @@
-# Project Overview: roblox
+# Project Overview: roblox (Tycoon)
 
 ## Описание проекта
-Проект **roblox** предназначен для разработки плейса / игры на платформе Roblox с использованием современного инструментария синхронизации **Rojo** и типизированного языка **Luau**.
+Проект **roblox** — это тайкун для платформы Roblox с синхронизацией через **Rojo** и типизированной кодовой базой на **Luau**.
 
 ## Стек технологий
 - **Платформа**: Roblox
-- **Инструмент синхронизации**: Rojo (конфигурация `default.project.json`)
-- **Язык**: Luau (strict typing `--!strict`)
-- **Тестирование**: Node.js Test Runner (`npm test`, `node:test`)
+- **Инструмент синхронизации**: Rojo v7.7.0 (бинарник в `bin/rojo.exe`, плагин в `%LocalAppData%\Roblox\Plugins\Rojo.rbxm`)
+- **Язык**: Luau (strict mode `--!strict`)
+- **Тестирование**: Node.js Test Runner (`npm test`, 9 юнит-тестов)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
 
@@ -21,17 +21,22 @@ roblox/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml          # GitHub Actions автотесты
+├── bin/                    # Локальные утилиты (rojo.exe)
 ├── src/
 │   ├── client/             # Клиентские скрипты (StarterPlayerScripts)
 │   │   └── init.client.luau
 │   ├── server/             # Серверные скрипты (ServerScriptService)
-│   │   └── init.server.luau
+│   │   ├── init.server.luau
+│   │   └── TycoonService.luau
 │   └── shared/             # Общие модули (ReplicatedStorage)
-│       └── MathUtils.luau
+│       ├── EconomyManager.luau
+│       ├── MathUtils.luau
+│       └── TycoonConfig.luau
 ├── tests/                  # Автотесты логики
+│   ├── economyManager.test.js
 │   └── mathUtils.test.js
 ├── default.project.json    # Rojo маппинг в Roblox DataModel
-├── package.json            # Node.js конфигурация и тестовые скрипты
+├── package.json            # Node.js конфигурация и скрипты (test, serve, build)
 └── .gitignore
 ```
 
@@ -40,8 +45,12 @@ roblox/
    ```powershell
    npm test
    ```
-2. **Сборка / Синхронизация с Roblox Studio через Rojo**:
+2. **Запуск локального сервера Rojo**:
    ```powershell
-   rojo serve
+   npm run serve
    ```
-   (Затем в плагине Rojo в Roblox Studio нажать Connect).
+   (Затем в Roblox Studio нажать кнопку Rojo -> Connect).
+3. **Сборка файла плейса**:
+   ```powershell
+   npm run build
+   ```

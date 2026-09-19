@@ -1,15 +1,18 @@
 {
   "name": "roblox",
   "version": "1.0.0",
-  "description": "Roblox game project with Rojo and Luau",
+  "description": "Roblox Tycoon game project with Rojo and Luau",
   "main": "src/server/init.server.luau",
   "scripts": {
-    "test": "node --test tests/**/*.test.js"
+    "test": "node --test tests/**/*.test.js",
+    "serve": "bin\\rojo.exe serve",
+    "build": "bin\\rojo.exe build -o place.rbxl"
   },
   "keywords": [
     "roblox",
     "rojo",
-    "luau"
+    "luau",
+    "tycoon"
   ],
   "author": "Ainz-Oul-Gown",
   "license": "MIT"

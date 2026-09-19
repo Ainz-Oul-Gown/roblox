@@ -3,13 +3,13 @@
 ## 1. Стиль Luau
 - **Строгая типизация**: Всегда начинать файлы с директивы `--!strict`.
 - **Именование файлов**:
-  - Модули: `PascalCase.luau` (например, `MathUtils.luau`).
+  - Модули: `PascalCase.luau` (например, `MathUtils.luau`, `EconomyManager.luau`).
   - Серверные скрипты: `*.server.luau` или `init.server.luau`.
   - Клиентские скрипты: `*.client.luau` или `init.client.luau`.
 - **Именование переменных и функций**:
   - Локальные переменные и функции: `camelCase` (`local playerLevel = 1`).
-  - Экспортируемые функции модулей: `PascalCase` (`function MathUtils.calculateLevel()`).
-  - Константы: `UPPER_SNAKE_CASE` (`local DEFAULT_XP_PER_LEVEL = 100`).
+  - Экспортируемые функции модулей: `PascalCase` или `camelCase` (`TycoonService.purchaseItem`, `MathUtils.clamp`).
+  - Константы: `UPPER_SNAKE_CASE` (`local STARTING_CASH = 0`).
 
 ## 2. Тестирование и качество
 - Для каждого нового модуля **обязательно** создается соответствующий юнит-тест в каталоге `tests/`.
@@ -20,6 +20,6 @@
   ```
 
 ## 3. Процесс коммитов и CI/CD
-- Сообщения коммитов формируются по стандарту Conventional Commits (например, `feat: add player leveling system`, `fix: level calculation clamp`).
+- Сообщения коммитов формируются по стандарту Conventional Commits (например, `feat: add tycoon economy and configuration`).
 - При каждом пуше на GitHub автоматически запускается GitHub Actions workflow (`.github/workflows/ci.yml`).
-- Обязательно проверять успешность выполнения Actions перед переходом к следующей задаче.
+- Обязательно проверять успешность выполнения Actions перед завершением задачи.

@@ -1,35 +1,33 @@
-# Архитектура проекта roblox
+# Архитектура проекта roblox (Tycoon)
 
 ## Принципы организации кода
 Проект использует классическое клиент-серверное разделение Roblox с синхронизацией через Rojo.
 
-### Сервисы Roblox DataModel
+### Сервисы и модули
 1. **ReplicatedStorage (Shared)**:
-   - Маппится из директории `src/shared`.
-   - Содержит модули (`ModuleScript`), доступные как серверу, так и клиенту.
-   - Используется для чистых утилит, математических расчетов, констант конфигурации, сетевых протоколов.
-   - Пример: `MathUtils.luau`.
+   - `MathUtils.luau`: Чистые математические вычисления (`clamp`, `lerp`, расчет опыта/уровней).
+   - `TycoonConfig.luau`: Дерево предметов, стоимость, типы (Dropper, Structure, Collector), зависимости и интервалы выпадения.
+   - `EconomyManager.luau`: Логика валидации покупок, проверка достаточного количества средств, расчет множителей.
 
 2. **ServerScriptService (Server)**:
-   - Маппится из директории `src/server`.
-   - Содержит серверные скрипты (`Script`), выполняемые исключительно на стороне сервера.
-   - Управляет состоянием игроков, персистентностью данных, валидацией действий и защитой от читеров.
-   - Точка входа: `init.server.luau`.
+   - `init.server.luau`: Главная точка входа на сервере, подключение событий `PlayerAdded` и `PlayerRemoving`.
+   - `TycoonService.luau`: Серверное хранилище состояния игроков, создание `leaderstats` с валютой `Cash`, валидация и проведение транзакций покупок, начисление дохода.
 
 3. **StarterPlayer.StarterPlayerScripts (Client)**:
-   - Маппится из директории `src/client`.
-   - Содержит клиентские скрипты (`LocalScript`), исполняемые на устройстве игрока.
-   - Отвечает за рендеринг UI, обработку ввода (клавиатура, мышь, геймпад, тачскрин), камеру и локальные визуальные эффекты.
-   - Точка входа: `init.client.luau`.
+   - `init.client.luau`: Клиентский скрипт инициализации пользовательского интерфейса, локальных эффектов и взаимодействия.
 
-## Потоки данных (Data Flow)
+## Потоки данных тайкуна
 ```mermaid
 graph TD
-    Client[Client: init.client.luau] -->|Require| Shared[Shared: MathUtils.luau]
-    Server[Server: init.server.luau] -->|Require| Shared
-    Client -.->|RemoteEvent / RemoteFunction| Server
+    Player[Player Avatar] -->|Touch Button| TycoonService[TycoonService: Server]
+    TycoonService -->|Validate Purchase| EconomyManager[EconomyManager: Shared]
+    TycoonService -->|Check Prerequisites| TycoonConfig[TycoonConfig: Shared]
+    TycoonService -->|Update Balance| Leaderstats[Player.leaderstats.Cash]
+    Dropper[Dropper Model] -->|Spawn Ore| Conveyor[Conveyor Belt]
+    Conveyor -->|Move Ore| Collector[Collector]
+    Collector -->|Add Cash| TycoonService
 ```
 
 ## Безопасность
-- Клиент никогда не должен считаться доверенным источником истины.
-- Все критичные операции (выдача валюты, повышение уровня, расчет урона) валидируются и производятся на сервере.
+- Все денежные транзакции и проверки предметов выполняются строго на сервере в `TycoonService`.
+- Клиент не имеет прямого доступа к модификации значений баланса.
