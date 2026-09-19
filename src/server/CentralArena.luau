@@ -16,6 +16,7 @@ local CentralArena = {}
 
 local AURA_ZONE_RADIUS = 16
 local AURA_REWARD_PER_SEC = 25
+local GROUND_Y = 3 -- соответствует WorldBuilder.GROUND_Y
 
 function CentralArena.init()
     local arenaModel = Instance.new("Model")
@@ -27,7 +28,7 @@ function CentralArena.init()
     pad.Name = "KingOfAuraPad"
     pad.Shape = Enum.PartType.Cylinder
     pad.Size = Vector3.new(1.2, AURA_ZONE_RADIUS * 2, AURA_ZONE_RADIUS * 2)
-    pad.CFrame = CFrame.new(0, 0.6, 0) * CFrame.Angles(0, 0, math.rad(90))
+    pad.CFrame = CFrame.new(0, GROUND_Y + 0.6, 0) * CFrame.Angles(0, 0, math.rad(90))
     pad.Anchored = true
     pad.Material = Enum.Material.Neon
     pad.Color = Color3.fromRGB(241, 196, 15)
@@ -68,7 +69,7 @@ function CentralArena.init()
     task.spawn(function()
         while true do
             task.wait(1.0)
-            local centerPos = Vector3.new(0, 0.6, 0)
+            local centerPos = Vector3.new(0, GROUND_Y + 0.6, 0)
             local currentKing: Player? = nil
             local closestDist = AURA_ZONE_RADIUS
 

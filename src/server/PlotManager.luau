@@ -48,7 +48,7 @@ local function initPlots()
         local angle = (i - 1) * (2 * math.pi / total)
         local posX = radius * math.cos(angle)
         local posZ = radius * math.sin(angle)
-        local pos = Vector3.new(posX, 0.5, posZ)
+        local pos = Vector3.new(posX, 3, posZ) -- Y=3 (GROUND_Y) = поверхность острова
 
         -- База смотрит ВГЛУБЬ (от центра наружу).
         -- LookVector = направление К центру (entrée лицом к центру).

@@ -67,12 +67,12 @@ local function onPlayerAdded(player: Player)
     print(string.format("[SERVER] Player connected: %s (UserId: %d)", player.Name, player.UserId))
     TycoonService.onPlayerAdded(player)
 
-    -- Телепортируем игрока в центр при спавне
+    -- Телепортируем игрока в центр при спавне (Y=11 = GROUND_Y(3) + 8)
     player.CharacterAdded:Connect(function(char)
         local root = char:WaitForChild("HumanoidRootPart", 5) :: BasePart?
         if root then
             task.wait(0.2)
-            root.CFrame = CFrame.new(0, 8, 0) -- Центр арены, над землёй
+            root.CFrame = CFrame.new(0, 11, 0) -- Центр острова, над площадью
         end
     end)
 
