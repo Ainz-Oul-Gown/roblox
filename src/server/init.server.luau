@@ -1,19 +1,10 @@
---!strict
+print("[SERVER] ========================================")
+print("[SERVER] init.server.luau STARTING EXECUTION...")
+print("[SERVER] ========================================")
 
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local MathUtils = require(Shared:WaitForChild("MathUtils"))
-local TycoonService = require(script:WaitForChild("TycoonService"))
-local PlotManager = require(script:WaitForChild("PlotManager"))
-local PlotBuilder = require(script:WaitForChild("PlotBuilder"))
-local AbilityService = require(script:WaitForChild("AbilityService"))
-local CentralArena = require(script:WaitForChild("CentralArena"))
-local WorldBuilder = require(script:WaitForChild("WorldBuilder"))
-
-print("[SERVER] Initializing 8-Base Gen Alpha Brainrot Tycoon World...")
 
 -- Удаляем стандартный Baseplate из Studio (мешает виду острова)
 local existingBaseplate = Workspace:FindFirstChild("Baseplate") or Workspace:FindFirstChild("baseplate")
@@ -21,6 +12,18 @@ if existingBaseplate then
     existingBaseplate:Destroy()
     print("[SERVER] Removed default Baseplate")
 end
+
+local Shared = ReplicatedStorage:WaitForChild("Shared", 10)
+if not Shared then
+    error("[SERVER] FATAL: ReplicatedStorage.Shared not found!")
+end
+
+local TycoonService = require(script:WaitForChild("TycoonService", 10))
+local PlotManager = require(script:WaitForChild("PlotManager", 10))
+local PlotBuilder = require(script:WaitForChild("PlotBuilder", 10))
+local AbilityService = require(script:WaitForChild("AbilityService", 10))
+local CentralArena = require(script:WaitForChild("CentralArena", 10))
+local WorldBuilder = require(script:WaitForChild("WorldBuilder", 10))
 
 -- 0. Строим карту острова (пол, дороги, океан, фонари)
 local wbOk, wbErr = pcall(function()

@@ -19,6 +19,52 @@ screenGui.Name = "BrainrotHUD"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
+-- Индикатор статуса карты в центре экрана
+local statusBanner = Instance.new("TextLabel")
+statusBanner.Name = "StatusBanner"
+statusBanner.Size = UDim2.new(0, 480, 0, 34)
+statusBanner.Position = UDim2.new(0.5, -240, 0, 15)
+statusBanner.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+statusBanner.BackgroundTransparency = 0.2
+statusBanner.TextColor3 = Color3.fromRGB(255, 215, 0)
+statusBanner.TextScaled = true
+statusBanner.Font = Enum.Font.FredokaOne
+statusBanner.BorderSizePixel = 0
+statusBanner.Parent = screenGui
+
+local sbCorner = Instance.new("UICorner")
+sbCorner.CornerRadius = UDim.new(0, 10)
+sbCorner.Parent = statusBanner
+
+local sbStroke = Instance.new("UIStroke")
+sbStroke.Color = Color3.fromRGB(241, 196, 15)
+sbStroke.Thickness = 1.5
+sbStroke.Parent = statusBanner
+
+local function updateWorldStatus()
+    local wm = game.Workspace:FindFirstChild("WorldMap")
+    local tp = game.Workspace:FindFirstChild("TycoonPlots")
+    if wm and tp then
+        statusBanner.Text = "✅ Остров и 8 баз активны! Выбери базу"
+        statusBanner.TextColor3 = Color3.fromRGB(46, 204, 113)
+        sbStroke.Color = Color3.fromRGB(46, 204, 113)
+        task.delay(4, function()
+            statusBanner.Visible = false
+        end)
+    else
+        statusBanner.Text = "⚠️ Сервер ещё не загрузился (нажми Stop [Shift+F5] → Play [F5])"
+        statusBanner.TextColor3 = Color3.fromRGB(231, 76, 60)
+        sbStroke.Color = Color3.fromRGB(231, 76, 60)
+    end
+end
+
+updateWorldStatus()
+game.Workspace.ChildAdded:Connect(function(child)
+    if child.Name == "WorldMap" or child.Name == "TycoonPlots" then
+        updateWorldStatus()
+    end
+end)
+
 -- Контейнер статистики слева вверху
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
