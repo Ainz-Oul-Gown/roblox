@@ -1,33 +1,33 @@
 # Архитектура проекта roblox (Tycoon)
 
 ## Принципы организации кода
-Проект использует классическое клиент-серверное разделение Roblox с синхронизацией через Rojo.
+Проект использует клиент-серверное разделение Roblox с синхронизацией через Rojo и процедурной генерацией 3D-мира базы.
 
 ### Сервисы и модули
 1. **ReplicatedStorage (Shared)**:
-   - `MathUtils.luau`: Чистые математические вычисления (`clamp`, `lerp`, расчет опыта/уровней).
-   - `TycoonConfig.luau`: Дерево предметов, стоимость, типы (Dropper, Structure, Collector), зависимости и интервалы выпадения.
-   - `EconomyManager.luau`: Логика валидации покупок, проверка достаточного количества средств, расчет множителей.
+   - `MathUtils.luau`: Чистые математические вычисления (`clamp`, `lerp`, расчет уровней).
+   - `TycoonConfig.luau`: Конфигурация предметов тайкуна, стоимости, категорий, зависимостей, интервалов дропа и скоростей конвейера.
+   - `EconomyManager.luau`: Валидация покупок, проверка достаточного баланса, расчет множителей.
 
 2. **ServerScriptService (Server)**:
-   - `init.server.luau`: Главная точка входа на сервере, подключение событий `PlayerAdded` и `PlayerRemoving`.
-   - `TycoonService.luau`: Серверное хранилище состояния игроков, создание `leaderstats` с валютой `Cash`, валидация и проведение транзакций покупок, начисление дохода.
+   - `init.server.luau`: Серверная точка входа. Назначает базы входящим игрокам и запускает их жизненный цикл.
+   - `PlotBuilder.luau`: Процедурный 3D-генератор базы. Создает платформу, вывеску с ником игрока, конвейерную ленту с физической скоростью, неоновый сборщик монет и динамические интерактивные кнопки покупок. Запускает цикл спавна физической руды из дропперов.
+   - `TycoonService.luau`: Серверная служба игровых профилей, валюты `Cash` в `leaderstats`, безопасного списания и начисления дохода.
 
 3. **StarterPlayer.StarterPlayerScripts (Client)**:
-   - `init.client.luau`: Клиентский скрипт инициализации пользовательского интерфейса, локальных эффектов и взаимодействия.
+   - `init.client.luau`: Клиентский скрипт инициализации.
 
 ## Потоки данных тайкуна
 ```mermaid
 graph TD
-    Player[Player Avatar] -->|Touch Button| TycoonService[TycoonService: Server]
-    TycoonService -->|Validate Purchase| EconomyManager[EconomyManager: Shared]
-    TycoonService -->|Check Prerequisites| TycoonConfig[TycoonConfig: Shared]
-    TycoonService -->|Update Balance| Leaderstats[Player.leaderstats.Cash]
-    Dropper[Dropper Model] -->|Spawn Ore| Conveyor[Conveyor Belt]
+    Player[Player Avatar] -->|Steps on Pad| Button[Purchase Button in Plot]
+    Button -->|Trigger Purchase| TycoonService[TycoonService: Server]
+    TycoonService -->|Validate| EconomyManager[EconomyManager: Shared]
+    TycoonService -->|Deduct Cash & Unlock| PlotBuilder[PlotBuilder: Server]
+    PlotBuilder -->|Spawn 3D Structure| World[Workspace.TycoonPlots]
+    PlotBuilder -->|Spawn Ore Loop| Dropper[Active Dropper]
+    Dropper -->|Drop Ore| Conveyor[Conveyor: AssemblyLinearVelocity]
     Conveyor -->|Move Ore| Collector[Collector]
-    Collector -->|Add Cash| TycoonService
+    Collector -->|Award Cash| TycoonService
+    TycoonService -->|Update Value| Leaderstats[Player.leaderstats.Cash]
 ```
-
-## Безопасность
-- Все денежные транзакции и проверки предметов выполняются строго на сервере в `TycoonService`.
-- Клиент не имеет прямого доступа к модификации значений баланса.

@@ -1,13 +1,13 @@
 # Project Overview: roblox (Tycoon)
 
 ## Описание проекта
-Проект **roblox** — это тайкун для платформы Roblox с синхронизацией через **Rojo** и типизированной кодовой базой на **Luau**.
+Проект **roblox** — это полностью рабочий тайкун для платформы Roblox с синхронизацией через **Rojo** и типизированной кодовой базой на **Luau**.
 
 ## Стек технологий
 - **Платформа**: Roblox
 - **Инструмент синхронизации**: Rojo v7.7.0 (бинарник в `bin/rojo.exe`, плагин в `%LocalAppData%\Roblox\Plugins\Rojo.rbxm`)
 - **Язык**: Luau (strict mode `--!strict`)
-- **Тестирование**: Node.js Test Runner (`npm test`, 9 юнит-тестов)
+- **Тестирование**: Node.js Test Runner (`npm test`, 12 юнит-тестов)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
 
@@ -27,6 +27,7 @@ roblox/
 │   │   └── init.client.luau
 │   ├── server/             # Серверные скрипты (ServerScriptService)
 │   │   ├── init.server.luau
+│   │   ├── PlotBuilder.luau
 │   │   └── TycoonService.luau
 │   └── shared/             # Общие модули (ReplicatedStorage)
 │       ├── EconomyManager.luau
@@ -34,7 +35,8 @@ roblox/
 │       └── TycoonConfig.luau
 ├── tests/                  # Автотесты логики
 │   ├── economyManager.test.js
-│   └── mathUtils.test.js
+│   ├── mathUtils.test.js
+│   └── plotBuilder.test.js
 ├── default.project.json    # Rojo маппинг в Roblox DataModel
 ├── package.json            # Node.js конфигурация и скрипты (test, serve, build)
 └── .gitignore
@@ -50,7 +52,5 @@ roblox/
    npm run serve
    ```
    (Затем в Roblox Studio нажать кнопку Rojo -> Connect).
-3. **Сборка файла плейса**:
-   ```powershell
-   npm run build
-   ```
+3. **Запуск игры в Studio**:
+   - Нажать кнопку **Play (F5)** в Roblox Studio. База тайкуна с конвейером и кнопками сгенерируется автоматически!
