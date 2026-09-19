@@ -47,6 +47,18 @@ CentralArena.init()
 statusVal.Value = "📦 Загрузка AbilityService..."
 local AbilityService = require(script:WaitForChild("AbilityService", 10))
 
+statusVal.Value = "📦 Загрузка PlotBuilder..."
+local PlotBuilder = require(script:WaitForChild("PlotBuilder", 10))
+
+-- Перемещаем стандартный SpawnLocation в центр острова
+local defaultSpawn = Workspace:FindFirstChild("SpawnLocation") :: SpawnLocation?
+if defaultSpawn and defaultSpawn:IsA("SpawnLocation") then
+    defaultSpawn.CFrame = CFrame.new(0, 4, 0)
+    defaultSpawn.Transparency = 1
+    local decal = defaultSpawn:FindFirstChildOfClass("Decal")
+    if decal then decal.Transparency = 1 end
+end
+
 -- 2. Обработчик захвата/смены базы
 local function onClaimBase(player: Player, plotIndex: number)
     local currentPlotIndex = PlotManager.getPlayerPlotIndex(player)
@@ -74,9 +86,16 @@ end
 
 -- 3. Строим все 8 баз по кругу арены
 statusVal.Value = "🏗️ Постройка 8 баз (PlotBuilder)..."
-local PlotBuilder = require(script:WaitForChild("PlotBuilder", 10))
-PlotBuilder.initAllBases(onClaimBase)
-statusVal.Value = "✅ Остров и 8 баз активны! Выбери базу"
+local pbOk, pbErr = pcall(function()
+    PlotBuilder.initAllBases(onClaimBase)
+end)
+if not pbOk then
+    statusVal.Value = "❌ Ошибка PlotBuilder: " .. tostring(pbErr)
+    warn("[SERVER] PlotBuilder error:", pbErr)
+else
+    statusVal.Value = "✅ Остров и 8 баз активны! Выбери базу"
+    print("[SERVER] All 8 Bases ready for player selection!")
+end
 
 -- Связываем PlotManager.hasAnyBase в TycoonService (нужно CentralArena)
 TycoonService.hasAnyBase = function(player: Player): boolean
@@ -96,14 +115,18 @@ local function onPlayerAdded(player: Player)
     print(string.format("[SERVER] Player connected: %s (UserId: %d)", player.Name, player.UserId))
     TycoonService.onPlayerAdded(player)
 
-    -- Телепортируем игрока в центр при спавне (Y=11 = GROUND_Y(3) + 8)
-    player.CharacterAdded:Connect(function(char)
+    local function setupChar(char: Model)
         local root = char:WaitForChild("HumanoidRootPart", 5) :: BasePart?
         if root then
-            task.wait(0.2)
+            task.wait(0.1)
             root.CFrame = CFrame.new(0, 11, 0) -- Центр острова, над площадью
         end
-    end)
+    end
+
+    if player.Character then
+        task.spawn(setupChar, player.Character)
+    end
+    player.CharacterAdded:Connect(setupChar)
 
     -- Отправляем новому игроку актуальные статусы 8 баз
     local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent") :: RemoteEvent
