@@ -22,15 +22,27 @@ if existingBaseplate then
     print("[SERVER] Removed default Baseplate")
 end
 
--- Настройка глобального освещения: яркий дневной свет и сочный ambient, чтобы в помещениях и на этажах не было темно
+-- Настройка сбалансированного освещения: мягкий приятный свет без пересвета, ослепления и белой пелены
 local Lighting = game:GetService("Lighting")
-Lighting.Ambient = Color3.fromRGB(155, 155, 170)
-Lighting.OutdoorAmbient = Color3.fromRGB(170, 170, 185)
-Lighting.Brightness = 2.5
+Lighting.Ambient = Color3.fromRGB(50, 50, 58)
+Lighting.OutdoorAmbient = Color3.fromRGB(75, 75, 85)
+Lighting.Brightness = 1.2
 Lighting.ClockTime = 14
-Lighting.EnvironmentDiffuseScale = 0.75
-Lighting.EnvironmentSpecularScale = 0.75
+Lighting.EnvironmentDiffuseScale = 0.25
+Lighting.EnvironmentSpecularScale = 0.25
 Lighting.GlobalShadows = true
+Lighting.ExposureCompensation = -0.1
+
+-- Анти-ослепление: настраиваем BloomEffect с высоким порогом (Threshold 2.5), чтобы неон не слепил экран
+local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
+if not bloom then
+    bloom = Instance.new("BloomEffect")
+    bloom.Name = "AntiGlareBloom"
+    bloom.Parent = Lighting
+end
+bloom.Intensity = 0.18
+bloom.Size = 8
+bloom.Threshold = 2.5
 
 statusVal.Value = "🏝️ Постройка острова (WorldBuilder)..."
 local WorldBuilder = require(script:WaitForChild("WorldBuilder", 10))

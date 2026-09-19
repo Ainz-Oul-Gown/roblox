@@ -539,7 +539,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         rail.Parent = stairsModel
 
     elseif item.id == "Lighting_Floor1" then
-        -- Неоновое дизайнерское освещение 1-го этажа (мощные люстры + заливающий свет)
+        -- Неоновое дизайнерское освещение 1-го этажа (матовые люстры + мягкий свет)
         local lightModel = Instance.new("Model")
         lightModel.Name = "Lighting_Floor1"
         lightModel.Parent = itemsFolder
@@ -553,25 +553,36 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         }) do
             local fixture = Instance.new("Part")
             fixture.Name = "Chandelier"
-            fixture.Size = Vector3.new(4.5, 0.6, 4.5)
+            fixture.Size = Vector3.new(3.5, 0.4, 3.5)
             fixture.CFrame = baseCF * CFrame.new(pos)
             fixture.Anchored = true
-            fixture.Material = Enum.Material.Neon
-            fixture.Color = faction.color
+            fixture.Material = Enum.Material.SmoothPlastic
+            fixture.Color = Color3.fromRGB(45, 45, 52)
             fixture.Parent = lightModel
 
+            local trim = Instance.new("Part")
+            trim.Name = "ChandelierTrim"
+            trim.Size = Vector3.new(3.6, 0.15, 3.6)
+            trim.CFrame = fixture.CFrame
+            trim.Anchored = true
+            trim.CanCollide = false
+            trim.Material = Enum.Material.Neon
+            trim.Color = faction.color
+            trim.Transparency = 0.35
+            trim.Parent = lightModel
+
             local pLight = Instance.new("PointLight")
-            pLight.Color = Color3.fromRGB(255, 255, 255)
-            pLight.Brightness = 3.6
-            pLight.Range = 52
+            pLight.Color = Color3.fromRGB(240, 240, 250)
+            pLight.Brightness = 0.95
+            pLight.Range = 28
             pLight.Parent = fixture
 
             local sLight = Instance.new("SurfaceLight")
             sLight.Face = Enum.NormalId.Bottom
             sLight.Color = faction.color
-            sLight.Brightness = 3.2
-            sLight.Range = 42
-            sLight.Angle = 135
+            sLight.Brightness = 0.8
+            sLight.Range = 22
+            sLight.Angle = 90
             sLight.Parent = fixture
         end
 
@@ -722,7 +733,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         frontLeftFloor2.Material = Enum.Material.SmoothPlastic
         frontLeftFloor2.Parent = f2Model
 
-        -- Встроенные потолочные LED панели для 1-го этажа (на нижней стороне перекрытия Y=13.4)
+        -- Встроенные потолочные светильники для 1-го этажа (матовые панели на перекрытии Y=13.4 без слепящего неона)
         for _, ceilPos in ipairs({
             Vector3.new(-12, 13.4, -16),
             Vector3.new(12, 13.4, -16),
@@ -731,24 +742,24 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         }) do
             local panel = Instance.new("Part")
             panel.Name = "CeilingLightPanel"
-            panel.Size = Vector3.new(4, 0.2, 4)
+            panel.Size = Vector3.new(3, 0.2, 3)
             panel.CFrame = baseCF * CFrame.new(ceilPos)
             panel.Anchored = true
             panel.CanCollide = false
-            panel.Material = Enum.Material.Neon
-            panel.Color = Color3.fromRGB(240, 240, 255)
+            panel.Material = Enum.Material.SmoothPlastic
+            panel.Color = Color3.fromRGB(180, 185, 195)
             panel.Parent = f2Model
 
             local sLight = Instance.new("SurfaceLight")
             sLight.Face = Enum.NormalId.Bottom
-            sLight.Color = Color3.fromRGB(255, 255, 255)
-            sLight.Brightness = 3.2
-            sLight.Range = 45
-            sLight.Angle = 135
+            sLight.Color = Color3.fromRGB(230, 230, 240)
+            sLight.Brightness = 0.85
+            sLight.Range = 22
+            sLight.Angle = 90
             sLight.Parent = panel
         end
 
-        -- Встроенные светящиеся колонны 2-го этажа (освещают весь второй этаж сразу при постройке)
+        -- Встроенные светящиеся колонны 2-го этажа (мягкая подсветка без ослепления)
         for _, colPos in ipairs({
             Vector3.new(-25, 17, -35),
             Vector3.new(25, 17, -35),
@@ -763,12 +774,13 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             col.CanCollide = false
             col.Material = Enum.Material.Neon
             col.Color = faction.color
+            col.Transparency = 0.35
             col.Parent = f2Model
 
             local pLight = Instance.new("PointLight")
-            pLight.Color = Color3.fromRGB(245, 245, 255)
-            pLight.Brightness = 2.8
-            pLight.Range = 46
+            pLight.Color = Color3.fromRGB(240, 240, 250)
+            pLight.Brightness = 0.8
+            pLight.Range = 26
             pLight.Parent = col
         end
 
@@ -1045,7 +1057,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         )
 
     elseif item.id == "Lighting_Floor2" then
-        -- Дизайнерский мощный неоновый свет 2-го этажа (пилоны + центральная гранд-люстра)
+        -- Дизайнерский комфортный неоновый свет 2-го этажа (мягкие пилоны + центральный светильник)
         local lightModel = Instance.new("Model")
         lightModel.Name = "Lighting_Floor2"
         lightModel.Parent = itemsFolder
@@ -1060,43 +1072,44 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         }) do
             local pylon = Instance.new("Part")
             pylon.Name = "LightPylon"
-            pylon.Size = Vector3.new(1.2, 7, 1.2)
+            pylon.Size = Vector3.new(1.0, 6, 1.0)
             pylon.CFrame = baseCF * CFrame.new(pos)
             pylon.Anchored = true
             pylon.Material = Enum.Material.Neon
             pylon.Color = faction.color
+            pylon.Transparency = 0.35
             pylon.Parent = lightModel
 
             local pLight = Instance.new("PointLight")
-            pLight.Color = Color3.fromRGB(255, 255, 255)
-            pLight.Brightness = 3.8
-            pLight.Range = 52
+            pLight.Color = Color3.fromRGB(240, 240, 250)
+            pLight.Brightness = 0.9
+            pLight.Range = 26
             pLight.Parent = pylon
         end
 
-        -- Гранд-люстра по центру 2-го этажа (освещает весь пентхаус)
+        -- Светильник по центру 2-го этажа (освещает пентхаус без слепящего пересвета)
         local grandChandelier = Instance.new("Part")
         grandChandelier.Name = "Floor2_GrandChandelier"
-        grandChandelier.Size = Vector3.new(6, 0.8, 6)
+        grandChandelier.Size = Vector3.new(5, 0.4, 5)
         grandChandelier.CFrame = baseCF * CFrame.new(0, 22, 0)
         grandChandelier.Anchored = true
         grandChandelier.CanCollide = false
-        grandChandelier.Material = Enum.Material.Neon
-        grandChandelier.Color = faction.color
+        grandChandelier.Material = Enum.Material.SmoothPlastic
+        grandChandelier.Color = Color3.fromRGB(45, 45, 52)
         grandChandelier.Parent = lightModel
 
         local centerLight = Instance.new("PointLight")
-        centerLight.Color = Color3.fromRGB(255, 255, 255)
-        centerLight.Brightness = 4.2
-        centerLight.Range = 65
+        centerLight.Color = Color3.fromRGB(245, 245, 255)
+        centerLight.Brightness = 1.1
+        centerLight.Range = 32
         centerLight.Parent = grandChandelier
 
         local sLight = Instance.new("SurfaceLight")
         sLight.Face = Enum.NormalId.Bottom
         sLight.Color = faction.color
-        sLight.Brightness = 3.5
-        sLight.Range = 45
-        sLight.Angle = 140
+        sLight.Brightness = 0.8
+        sLight.Range = 22
+        sLight.Angle = 90
         sLight.Parent = grandChandelier
 
     elseif item.id == "Windows_Floor2" then
@@ -1411,17 +1424,17 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             beam.Parent = roofModel
 
             local light = Instance.new("PointLight")
-            light.Color = Color3.fromRGB(255, 255, 255)
-            light.Brightness = 3.2
-            light.Range = 50
+            light.Color = Color3.fromRGB(245, 245, 255)
+            light.Brightness = 0.85
+            light.Range = 26
             light.Parent = beam
 
             local sLight = Instance.new("SurfaceLight")
             sLight.Face = Enum.NormalId.Bottom
             sLight.Color = faction.color
-            sLight.Brightness = 3.0
-            sLight.Range = 42
-            sLight.Angle = 135
+            sLight.Brightness = 0.75
+            sLight.Range = 22
+            sLight.Angle = 90
             sLight.Parent = beam
         end
 
@@ -1748,18 +1761,19 @@ function PlotBuilder.initAllBases(onClaimCallback: (player: Player, plotIndex: n
         }) do
             local pillar = Instance.new("Part")
             pillar.Name = "BaseLightPillar"
-            pillar.Size = Vector3.new(1.4, 7, 1.4)
+            pillar.Size = Vector3.new(1.2, 6, 1.2)
             pillar.CFrame = baseCF * CFrame.new(cornerPos)
             pillar.Anchored = true
             pillar.CanCollide = false
             pillar.Material = Enum.Material.Neon
             pillar.Color = faction.color
+            pillar.Transparency = 0.4
             pillar.Parent = plotModel
 
             local pLight = Instance.new("PointLight")
-            pLight.Color = Color3.fromRGB(245, 245, 255)
-            pLight.Brightness = 2.6
-            pLight.Range = 44
+            pLight.Color = Color3.fromRGB(240, 240, 250)
+            pLight.Brightness = 0.85
+            pLight.Range = 26
             pLight.Parent = pillar
         end
 
