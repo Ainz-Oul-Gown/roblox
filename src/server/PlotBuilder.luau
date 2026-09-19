@@ -278,9 +278,77 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         beam.Transparency = 0.35
         beam.Parent = gateModel
 
-        createBillboard(beam, "⚡ ЗАЩИТНЫЙ ЛАЗЕР", "Вход только для владельца!", Color3.fromRGB(231, 76, 60), Vector3.new(0, 4, 0), 28, false)
+        local gateOpen = false
+
+        -- Пульт управления воротами на внутренней стороне левого столба (для владельца)
+        local switchBase = Instance.new("Part")
+        switchBase.Name = "GateControlSwitch"
+        switchBase.Size = Vector3.new(0.6, 2.4, 1.4)
+        switchBase.CFrame = baseCF * CFrame.new(-4.8, 5, 35.2)
+        switchBase.Anchored = true
+        switchBase.Material = Enum.Material.SmoothPlastic
+        switchBase.Color = Color3.fromRGB(30, 30, 38)
+        switchBase.Parent = gateModel
+
+        local switchBtn = Instance.new("Part")
+        switchBtn.Name = "SwitchButton"
+        switchBtn.Size = Vector3.new(0.3, 1.4, 0.9)
+        switchBtn.CFrame = baseCF * CFrame.new(-4.55, 5, 35.2)
+        switchBtn.Anchored = true
+        switchBtn.Material = Enum.Material.Neon
+        switchBtn.Color = Color3.fromRGB(231, 76, 60)
+        switchBtn.Parent = gateModel
+
+        local prompt = Instance.new("ProximityPrompt")
+        prompt.ActionText = "Переключить Режим Ворот"
+        prompt.ObjectText = "Дверной Пульт"
+        prompt.MaxActivationDistance = 14
+        prompt.RequiresLineOfSight = false
+        prompt.HoldDuration = 0
+        prompt.Parent = switchBtn
+
+        local gateLabel = createBillboard(beam, "⚡ ЗАЩИТНЫЙ ЛАЗЕР", "Режим охраны: вход только для владельца!", Color3.fromRGB(231, 76, 60), Vector3.new(0, 4, 0), 28, false)
+        local switchLabel = createBillboard(switchBase, "🔘 ДВЕРНОЙ ПУЛЬТ", "[ЗАКРЫТО: ВХОД ЗАБЛОКИРОВАН]", Color3.fromRGB(231, 76, 60), Vector3.new(0, 2.2, 0), 16, false)
+
+        local function toggleGate(triggerPlayer: Player)
+            if triggerPlayer ~= owner then return end
+            gateOpen = not gateOpen
+            if gateOpen then
+                beam.Color = Color3.fromRGB(46, 204, 113)
+                beam.Transparency = 0.82
+                switchBtn.Color = Color3.fromRGB(46, 204, 113)
+                if gateLabel then
+                    gateLabel.Text = "🔓 ГОСТЕВОЙ РЕЖИМ\n[ВХОД ДЛЯ ВСЕХ ОТКРЫТ!]"
+                    gateLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
+                end
+                if switchLabel then
+                    switchLabel.Text = "🔘 ДВЕРНОЙ ПУЛЬТ\n[ОТКРЫТО: ГОСТИ РАЗРЕШЕНЫ]"
+                    switchLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
+                end
+            else
+                beam.Color = Color3.fromRGB(231, 76, 60)
+                beam.Transparency = 0.35
+                switchBtn.Color = Color3.fromRGB(231, 76, 60)
+                if gateLabel then
+                    gateLabel.Text = "⚡ ЗАЩИТНЫЙ ЛАЗЕР\n[РЕЖИМ ОХРАНЫ: ТОЛЬКО ВЛАДЕЛЕЦ]"
+                    gateLabel.TextColor3 = Color3.fromRGB(231, 76, 60)
+                end
+                if switchLabel then
+                    switchLabel.Text = "🔘 ДВЕРНОЙ ПУЛЬТ\n[ЗАКРЫТО: ВХОД ЗАБЛОКИРОВАН]"
+                    switchLabel.TextColor3 = Color3.fromRGB(231, 76, 60)
+                end
+            end
+        end
+
+        prompt.Triggered:Connect(toggleGate)
+
+        local clickDet = Instance.new("ClickDetector")
+        clickDet.MaxActivationDistance = 18
+        clickDet.Parent = switchBtn
+        clickDet.MouseClick:Connect(toggleGate)
 
         beam.Touched:Connect(function(hit)
+            if gateOpen then return end -- Гостевой проход разрешен!
             local char = hit.Parent
             if not char then return end
             if char:IsA("Accessory") then char = char.Parent end
@@ -450,6 +518,64 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         rail.Material = Enum.Material.Neon
         rail.Color = faction.color
         rail.Parent = stairsModel
+
+    elseif item.id == "Lighting_Floor1" then
+        -- Неоновое дизайнерское освещение 1-го этажа
+        local lightModel = Instance.new("Model")
+        lightModel.Name = "Lighting_Floor1"
+        lightModel.Parent = itemsFolder
+
+        for _, pos in ipairs({
+            Vector3.new(-12, 12.5, -10),
+            Vector3.new(12, 12.5, -10),
+            Vector3.new(-12, 12.5, 14),
+            Vector3.new(12, 12.5, 14),
+        }) do
+            local fixture = Instance.new("Part")
+            fixture.Name = "Chandelier"
+            fixture.Size = Vector3.new(3, 0.4, 3)
+            fixture.CFrame = baseCF * CFrame.new(pos)
+            fixture.Anchored = true
+            fixture.Material = Enum.Material.Neon
+            fixture.Color = faction.color
+            fixture.Parent = lightModel
+
+            local pLight = Instance.new("PointLight")
+            pLight.Color = faction.color
+            pLight.Brightness = 1.6
+            pLight.Range = 26
+            pLight.Parent = fixture
+        end
+
+    elseif item.id == "Windows_Floor1" then
+        -- Панорамные тонированные окна 1-го этажа в неоновых рамах
+        local winModel = Instance.new("Model")
+        winModel.Name = "Windows_Floor1"
+        winModel.Parent = itemsFolder
+
+        for _, sideX in ipairs({ -28, 28 }) do
+            local glass = Instance.new("Part")
+            glass.Name = "WallWindow"
+            glass.Size = Vector3.new(1.2, 6, 24)
+            glass.CFrame = baseCF * CFrame.new(sideX, 7, 6)
+            glass.Anchored = true
+            glass.Material = Enum.Material.Glass
+            glass.Color = Color3.fromRGB(15, 20, 28)
+            glass.Transparency = 0.65
+            glass.Parent = winModel
+
+            -- Верхняя и нижняя неоновые планки рамы
+            for _, yOff in ipairs({ -3.1, 3.1 }) do
+                local trim = Instance.new("Part")
+                trim.Size = Vector3.new(1.4, 0.3, 24.4)
+                trim.CFrame = baseCF * CFrame.new(sideX, 7 + yOff, 6)
+                trim.Anchored = true
+                trim.CanCollide = false
+                trim.Material = Enum.Material.Neon
+                trim.Color = faction.color
+                trim.Parent = winModel
+            end
+        end
 
     elseif item.id == "Floor2_Foundation" then
         -- Полноценная платформа 2-го этажа на Y = 14 (лежит ровно на стенах 1 этажа 56x76)
@@ -673,6 +799,94 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             faction.ultimateAbility.name,
             "👑 УЛЬТИМЕЙТ [3] (Q)",
             Color3.fromRGB(255, 215, 0)
+        )
+
+    elseif item.id == "AbilityStand_Special" then
+        -- Стойка спец-способности [F] на 2 этаже
+        createAbilityPedestal(
+            itemsFolder,
+            "AbilityStand_Special",
+            baseCF * CFrame.new(-18, 14, -14),
+            faction.specialAbility.name,
+            "🔮 СПЕЦ-СПОСОБНОСТЬ [4] (F)",
+            Color3.fromRGB(168, 85, 247)
+        )
+
+    elseif item.id == "AbilityStand_Mobility" then
+        -- Стойка мобильности [Z] на 2 этаже
+        createAbilityPedestal(
+            itemsFolder,
+            "AbilityStand_Mobility",
+            baseCF * CFrame.new(-18, 14, -2),
+            faction.mobilityAbility.name,
+            "⚡ МОБИЛЬНОСТЬ [5] (Z)",
+            Color3.fromRGB(6, 182, 212)
+        )
+
+    elseif item.id == "Lighting_Floor2" then
+        -- Дизайнерский неоновый свет 2-го этажа
+        local lightModel = Instance.new("Model")
+        lightModel.Name = "Lighting_Floor2"
+        lightModel.Parent = itemsFolder
+
+        for _, pos in ipairs({
+            Vector3.new(-24, 18, -14),
+            Vector3.new(24, 18, -14),
+            Vector3.new(-24, 18, 14),
+            Vector3.new(24, 18, 14),
+        }) do
+            local pylon = Instance.new("Part")
+            pylon.Name = "LightPylon"
+            pylon.Size = Vector3.new(0.8, 6, 0.8)
+            pylon.CFrame = baseCF * CFrame.new(pos)
+            pylon.Anchored = true
+            pylon.Material = Enum.Material.Neon
+            pylon.Color = faction.color
+            pylon.Parent = lightModel
+
+            local pLight = Instance.new("PointLight")
+            pLight.Color = faction.color
+            pLight.Brightness = 1.8
+            pLight.Range = 30
+            pLight.Parent = pylon
+        end
+
+    elseif item.id == "Windows_Floor2" then
+        -- Панорамное фасадное остекление 2-го этажа с видом на арену
+        local winModel = Instance.new("Model")
+        winModel.Name = "Windows_Floor2"
+        winModel.Parent = itemsFolder
+
+        local glassFront = Instance.new("Part")
+        glassFront.Name = "PanoramaWindow"
+        glassFront.Size = Vector3.new(36, 6, 1.2)
+        glassFront.CFrame = baseCF * CFrame.new(0, 18, 36)
+        glassFront.Anchored = true
+        glassFront.Material = Enum.Material.Glass
+        glassFront.Color = Color3.fromRGB(15, 20, 30)
+        glassFront.Transparency = 0.65
+        glassFront.Parent = winModel
+
+        for _, yOff in ipairs({ -3.1, 3.1 }) do
+            local trim = Instance.new("Part")
+            trim.Size = Vector3.new(36.4, 0.3, 1.4)
+            trim.CFrame = baseCF * CFrame.new(0, 18 + yOff, 36)
+            trim.Anchored = true
+            trim.CanCollide = false
+            trim.Material = Enum.Material.Neon
+            trim.Color = faction.color
+            trim.Parent = winModel
+        end
+
+    elseif item.id == "AbilityStand_Godmode" then
+        -- Стойка финишера Бога [X] на 2 этаже
+        createAbilityPedestal(
+            itemsFolder,
+            "AbilityStand_Godmode",
+            baseCF * CFrame.new(18, 14, -2),
+            faction.godmodeAbility.name,
+            "🌟 ФИНИШЕР БОГА [6] (X)",
+            Color3.fromRGB(239, 68, 68)
         )
 
     elseif item.id == "Upgrader_Annihilator" then
@@ -1042,13 +1256,20 @@ end
 local BUTTON_CONFIGS: { [string]: Vector3 } = {
     LaserGate = Vector3.new(-8, 0.5, 30),
     BrainrotWalls = Vector3.new(8, 0.5, 30),
+    Lighting_Floor1 = Vector3.new(-8, 0.5, 14),
+    Windows_Floor1 = Vector3.new(8, 0.5, 14),
     Upgrader_Laser = Vector3.new(-10, 0.5, 6),
     AbilityStand_1 = Vector3.new(-18, 0.5, -12),
     Dropper_Prime = Vector3.new(18, 0.5, -18),
     AbilityStand_Tactical = Vector3.new(18, 0.5, 8),
     Stairs_To_Floor2 = Vector3.new(-10, 0.5, 20),
     Floor2_Foundation = Vector3.new(-10, 0.5, 26), -- Свободная зона перед лестницей (НЕ под ней!)
+    AbilityStand_Special = Vector3.new(-18, 14.5, -10),
+    AbilityStand_Mobility = Vector3.new(-18, 14.5, -2),
     Floor2_Walls = Vector3.new(20, 14.5, 10),
+    Lighting_Floor2 = Vector3.new(-10, 14.5, 10),
+    Windows_Floor2 = Vector3.new(10, 14.5, 10),
+    AbilityStand_Godmode = Vector3.new(18, 14.5, 2),
     Floor2_Conveyor = Vector3.new(0, 14.5, 14),
     Upgrader_Quantum = Vector3.new(-10, 14.5, -4),
     Dropper_Galactic = Vector3.new(14, 14.5, -20),

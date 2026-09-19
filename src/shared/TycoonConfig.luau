@@ -11,7 +11,7 @@ export type AbilityInfo = {
     name: string,
     desc: string,
     cooldown: number,
-    slot: "base" | "tactical" | "ultimate",
+    slot: "base" | "tactical" | "ultimate" | "special" | "mobility" | "godmode",
 }
 
 export type Faction = {
@@ -26,13 +26,16 @@ export type Faction = {
     baseAbility: AbilityInfo,
     tacticalAbility: AbilityInfo,
     ultimateAbility: AbilityInfo,
+    specialAbility: AbilityInfo,
+    mobilityAbility: AbilityInfo,
+    godmodeAbility: AbilityInfo,
 }
 
 export type TycoonItem = {
     id: string,
     name: string,
     cost: number,
-    category: "Dropper" | "Structure" | "Collector" | "Ability" | "Defense" | "Upgrader",
+    category: "Dropper" | "Structure" | "Collector" | "Ability" | "Defense" | "Upgrader" | "Cosmetic",
     dependsOn: string?,
     dropValue: number?,
     dropInterval: number?,
@@ -58,7 +61,7 @@ local TycoonConfig = {
     CONVEYOR_SPEED = 16,
     AUTOSAVE_INTERVAL_SEC = 60,
 
-    -- 8 Фракций баз: у каждой по 3 уникальные способности (базовая, тактическая, ультимейт)
+    -- 8 Фракций баз: у каждой по 6 уникальных способностей (База, Тактика, Ульт, Спец, Мобильность, Годмод)
     FACTIONS = {
         {
             id = "Skibidi",
@@ -89,6 +92,27 @@ local TycoonConfig = {
                 desc = "Титанический водоворот: притягивает врагов в радиусе 35 studs и оглушает на 3 сек!",
                 cooldown = 32,
                 slot = "ultimate",
+            },
+            specialAbility = {
+                id = "Skibidi_Special",
+                name = "🔊 Skibidi Dop Dop Anthem",
+                desc = "Звуковой мем-взрыв: оглушает врагов в радиусе 25 studs на 2.5с и дает +2,500 Ауры!",
+                cooldown = 20,
+                slot = "special",
+            },
+            mobilityAbility = {
+                id = "Skibidi_Mobility",
+                name = "🚀 Скибиди Ракета",
+                desc = "Реактивный рывок на унитазе вперед на 50 studs со сбиванием с ног (35 урона)!",
+                cooldown = 14,
+                slot = "mobility",
+            },
+            godmodeAbility = {
+                id = "Skibidi_Godmode",
+                name = "👑 Титан Скибиди-Крушитель",
+                desc = "Режим Титана на 8с: иммунитет к стану, сплэш-удары молотом по земле (80 урона)!",
+                cooldown = 45,
+                slot = "godmode",
             },
         },
         {
@@ -121,6 +145,27 @@ local TycoonConfig = {
                 cooldown = 30,
                 slot = "ultimate",
             },
+            specialAbility = {
+                id = "Mewing_Special",
+                name = "✨ Looksmaxing Flash",
+                desc = "Вспышка ультра-резкости: ослепляет врагов белой вспышкой и замедляет на 70%!",
+                cooldown = 18,
+                slot = "special",
+            },
+            mobilityAbility = {
+                id = "Mewing_Mobility",
+                name = "🗿 Гигачад Рывок",
+                desc = "Неостановимый таран плечом вперед: 40 урона и мощное отбрасывание врагов!",
+                cooldown = 12,
+                slot = "mobility",
+            },
+            godmodeAbility = {
+                id = "Mewing_Godmode",
+                name = "👑 Альфа Доминация",
+                desc = "Враги в радиусе 30 studs падают ниц, мгновенное исцеление 100% HP и удвоенный урон!",
+                cooldown = 42,
+                slot = "godmode",
+            },
         },
         {
             id = "Sigma",
@@ -151,6 +196,27 @@ local TycoonConfig = {
                 desc = "Аура абсолютного превосходства: замедляет всех врагов на 60% и утраивает урон!",
                 cooldown = 35,
                 slot = "ultimate",
+            },
+            specialAbility = {
+                id = "Sigma_Special",
+                name = "🐺 Lone Wolf Grindset",
+                desc = "Невидимость на 5с: следующий удар из тени наносит гарантированный крит на 90 урона!",
+                cooldown = 22,
+                slot = "special",
+            },
+            mobilityAbility = {
+                id = "Sigma_Mobility",
+                name = "🔪 Теневой Шаг",
+                desc = "Мгновенный телепорт за спину ближайшего врага с ударом по шее (45 урона)!",
+                cooldown = 13,
+                slot = "mobility",
+            },
+            godmodeAbility = {
+                id = "Sigma_Godmode",
+                name = "⚡ Brazilian Phonk Overload",
+                desc = "Перегрузка фонка: скорость молнии и автоматические удары молнией (20 урона/с)!",
+                cooldown = 44,
+                slot = "godmode",
             },
         },
         {
@@ -183,6 +249,27 @@ local TycoonConfig = {
                 cooldown = 36,
                 slot = "ultimate",
             },
+            specialAbility = {
+                id = "FanumTax_Special",
+                name = "🍟 Fries Carpet Bomb",
+                desc = "Ковровое бомбометание горячей картошкой фри: серия взрывов (50 урона) + замедление!",
+                cooldown = 19,
+                slot = "special",
+            },
+            mobilityAbility = {
+                id = "FanumTax_Mobility",
+                name = "🥤 Cola Rocket Jump",
+                desc = "Взмывает в воздух на струе шипучей колы и приземляется со взрывной волной!",
+                cooldown = 14,
+                slot = "mobility",
+            },
+            godmodeAbility = {
+                id = "FanumTax_Godmode",
+                name = "🍕 Мега-Фанум Пиршество",
+                desc = "Гигантская золотая пицца-метеорит: 75 урона врагам и щит бессмертия на 4с!",
+                cooldown = 45,
+                slot = "godmode",
+            },
         },
         {
             id = "Grimace",
@@ -213,6 +300,27 @@ local TycoonConfig = {
                 desc = "Гигантский фиолетовый туман на всю арену: наносит 15 урона в секунду всем врагам!",
                 cooldown = 34,
                 slot = "ultimate",
+            },
+            specialAbility = {
+                id = "Grimace_Special",
+                name = "🟣 Grimace Birthday Eclipse",
+                desc = "Затмение дня рождения: фиолетовый туман, запрет прыжков и 15 урона/сек!",
+                cooldown = 21,
+                slot = "special",
+            },
+            mobilityAbility = {
+                id = "Grimace_Mobility",
+                name = "🍇 Слизистый Прыжок",
+                desc = "Прыжок вперед с разливанием липкой фиолетовой жижи, приковывающей врагов к земле!",
+                cooldown = 13,
+                slot = "mobility",
+            },
+            godmodeAbility = {
+                id = "Grimace_Godmode",
+                name = "💀 Ритуал 23 Июня",
+                desc = "Первородный ужас: гигантское щупальце вырывается из земли (85 урона + стан)!",
+                cooldown = 46,
+                slot = "godmode",
             },
         },
         {
@@ -245,6 +353,27 @@ local TycoonConfig = {
                 cooldown = 32,
                 slot = "ultimate",
             },
+            specialAbility = {
+                id = "CaseOh_Special",
+                name = "💥 BAN HAMMER METEOR",
+                desc = "YOU ARE BANNED! Колоссальный неоновый банхаммер падает с неба (75 урона)!",
+                cooldown = 22,
+                slot = "special",
+            },
+            mobilityAbility = {
+                id = "CaseOh_Mobility",
+                name = "🍩 Вафельный Каток",
+                desc = "Превращается в неостановимый шар массы и катится, сметая всё на пути (40 урона)!",
+                cooldown = 15,
+                slot = "mobility",
+            },
+            godmodeAbility = {
+                id = "CaseOh_Godmode",
+                name = "🌍 Смещение Земной Оси",
+                desc = "Сотрясает весь остров: все враги подбрасываются вверх и теряют 50% HP!",
+                cooldown = 50,
+                slot = "godmode",
+            },
         },
         {
             id = "Rizzler",
@@ -276,6 +405,27 @@ local TycoonConfig = {
                 cooldown = 30,
                 slot = "ultimate",
             },
+            specialAbility = {
+                id = "Rizzler_Special",
+                name = "💘 Cupid's Brainrot Arrow",
+                desc = "Стрела Купидона: наносит 40 урона и принуждает цель к безудержному танцу на 3с!",
+                cooldown = 18,
+                slot = "special",
+            },
+            mobilityAbility = {
+                id = "Rizzler_Mobility",
+                name = "🌹 Лепестковый Блинк",
+                desc = "Мгновенное перемещение вперед в вихре лепестков роз с ароматной бомбой на старте!",
+                cooldown = 11,
+                slot = "mobility",
+            },
+            godmodeAbility = {
+                id = "Rizzler_Godmode",
+                name = "💋 Аура Гипер-Ризза 999+",
+                desc = "Все враги в радиусе 35 studs влюбляются: запрет атаки на 7с и +100% урон по ним!",
+                cooldown = 42,
+                slot = "godmode",
+            },
         },
         {
             id = "TungTung",
@@ -306,6 +456,27 @@ local TycoonConfig = {
                 desc = "Вихрь молотов на 6 секунд: рассекает всех врагов вокруг и дает бессмертие!",
                 cooldown = 32,
                 slot = "ultimate",
+            },
+            specialAbility = {
+                id = "TungTung_Special",
+                name = "🔨 Базука Сахура",
+                desc = "Выстрел тяжелым молотом на дистанцию: мощный разрыв и 55 урона!",
+                cooldown = 17,
+                slot = "special",
+            },
+            mobilityAbility = {
+                id = "TungTung_Mobility",
+                name = "⚡ Молот-Джамп",
+                desc = "Удар молотом в пол запускает персонажа высоко в воздух с приземлением на врагов!",
+                cooldown = 12,
+                slot = "mobility",
+            },
+            godmodeAbility = {
+                id = "TungTung_Godmode",
+                name = "🌋 Ярость Вулкана Этна",
+                desc = "Извержение лавы и дождь из раскаленных молотов: 85 урона и огненный след на 10с!",
+                cooldown = 48,
+                slot = "godmode",
             },
         },
     } :: { Faction },
@@ -429,6 +600,23 @@ local TycoonConfig = {
             dependsOn = "BrainrotWalls",
             floor = 1,
         },
+        -- Опциональная ветка комфорта 1-го этажа (не блокирует развитие):
+        {
+            id = "Lighting_Floor1",
+            name = "💡 Неоновые Люстры 1-го Этажа",
+            cost = 8000,
+            category = "Cosmetic",
+            dependsOn = "BrainrotWalls",
+            floor = 1,
+        },
+        {
+            id = "Windows_Floor1",
+            name = "🪟 Панорамные Окна 1-го Этажа",
+            cost = 12000,
+            category = "Cosmetic",
+            dependsOn = "BrainrotWalls",
+            floor = 1,
+        },
 
         -- 2 ЭТАЖ:
         {
@@ -439,12 +627,54 @@ local TycoonConfig = {
             dependsOn = "Stairs_To_Floor2",
             floor = 2,
         },
+        -- Новые стойки способностей 2-го этажа:
+        {
+            id = "AbilityStand_Special",
+            name = "🔮 Стойка Спец-Способности [F]",
+            cost = 40000,
+            category = "Ability",
+            dependsOn = "Floor2_Foundation",
+            floor = 2,
+        },
+        {
+            id = "AbilityStand_Mobility",
+            name = "⚡ Стойка Мобильности [Z]",
+            cost = 48000,
+            category = "Ability",
+            dependsOn = "Floor2_Foundation",
+            floor = 2,
+        },
         {
             id = "Floor2_Walls",
             name = "🧱 Неоновые Ограждения 2-го Этажа",
             cost = 38000,
             category = "Structure",
             dependsOn = "Floor2_Foundation",
+            floor = 2,
+        },
+        -- Опциональная ветка комфорта 2-го этажа:
+        {
+            id = "Lighting_Floor2",
+            name = "✨ Дизайнерский Свет 2-го Этажа",
+            cost = 20000,
+            category = "Cosmetic",
+            dependsOn = "Floor2_Walls",
+            floor = 2,
+        },
+        {
+            id = "Windows_Floor2",
+            name = "🪟 Панорамное Остекление 2-го Этажа",
+            cost = 26000,
+            category = "Cosmetic",
+            dependsOn = "Floor2_Walls",
+            floor = 2,
+        },
+        {
+            id = "AbilityStand_Godmode",
+            name = "🌟 Стойка Финишера Бога [X]",
+            cost = 80000,
+            category = "Ability",
+            dependsOn = "Floor2_Walls",
             floor = 2,
         },
         {

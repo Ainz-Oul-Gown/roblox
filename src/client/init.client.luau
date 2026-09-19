@@ -677,10 +677,10 @@ btnStroke.Parent = abilityBtn
 -- Панель горячих клавиш способностей
 local hintsLabel = Instance.new("TextLabel")
 hintsLabel.Name = "AbilityHints"
-hintsLabel.Size = UDim2.new(0, 260, 0, 22)
-hintsLabel.Position = UDim2.new(1, -270, 1, -112)
+hintsLabel.Size = UDim2.new(0, 360, 0, 22)
+hintsLabel.Position = UDim2.new(1, -370, 1, -112)
 hintsLabel.BackgroundTransparency = 1
-hintsLabel.Text = "[1 / E] База  •  [2 / R] Тактика  •  [3 / Q] Ульт"
+hintsLabel.Text = "[1/E] База • [2/R] Тактика • [3/Q] Ульт • [4/F] Спец • [5/Z] Мобильность • [6/X] Бог"
 hintsLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
 hintsLabel.TextScaled = true
 hintsLabel.Font = Enum.Font.FredokaOne
@@ -690,20 +690,24 @@ local cooldownsRemaining: { [string]: number } = {
     base = 0,
     tactical = 0,
     ultimate = 0,
+    special = 0,
+    mobility = 0,
+    godmode = 0,
 }
 local currentCooldownRemaining = 0
 
-local currentEquippedSlot: "base" | "tactical" | "ultimate" = "base"
+type ClientAbilitySlot = "base" | "tactical" | "ultimate" | "special" | "mobility" | "godmode"
+local currentEquippedSlot: ClientAbilitySlot = "base"
 local currentEquippedToolName: string? = nil
 
-local function getEquippedAbilitySlot(): "base" | "tactical" | "ultimate"
+local function getEquippedAbilitySlot(): ClientAbilitySlot
     local char = localPlayer.Character
     if char then
         local tool = char:FindFirstChildOfClass("Tool")
         if tool then
             local slot = tool:GetAttribute("AbilitySlot")
-            if slot == "base" or slot == "tactical" or slot == "ultimate" then
-                return slot
+            if slot == "base" or slot == "tactical" or slot == "ultimate" or slot == "special" or slot == "mobility" or slot == "godmode" then
+                return slot :: any
             end
         end
     end
@@ -738,7 +742,7 @@ local function updateButtonDisplay()
     end
 end
 
-local function castAbility(slot: "base" | "tactical" | "ultimate")
+local function castAbility(slot: ClientAbilitySlot)
     local cd = cooldownsRemaining[slot] or 0
     if cd > 0 then
         showToast(string.format("⏳ Способность на перезарядке: %d сек!", cd), Color3.fromRGB(230, 126, 34))
@@ -766,6 +770,12 @@ UserInputService.InputBegan:Connect(function(input, processed)
         castAbility("tactical")
     elseif input.KeyCode == Enum.KeyCode.Q then
         castAbility("ultimate")
+    elseif input.KeyCode == Enum.KeyCode.F then
+        castAbility("special")
+    elseif input.KeyCode == Enum.KeyCode.Z then
+        castAbility("mobility")
+    elseif input.KeyCode == Enum.KeyCode.X then
+        castAbility("godmode")
     end
 end)
 
