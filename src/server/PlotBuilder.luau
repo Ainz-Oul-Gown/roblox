@@ -1,9 +1,9 @@
 --!strict
 
 --[=[
-    PlotBuilder (Gen Alpha 8-Base Multiplayer Edition)
-    Процедурно строит 8 уникальных круговых баз с лазерными воротами безопасности,
-    персонализированными фракционными дропперами, Rebirth 1-5 разблокировками и эффектами.
+    PlotBuilder (8-Base Faction Selection Edition)
+    Создает все 8 баз на арене со стартовыми площадками выбора (ClaimPad).
+    При выборе базы активирует конвейер, коллектор, кнопки и спавнит персонажа.
 ]=]
 
 local Workspace = game:GetService("Workspace")
@@ -19,7 +19,6 @@ local PlotManager = require(script.Parent:WaitForChild("PlotManager"))
 
 local PlotBuilder = {}
 
--- Создание информационного BillboardGui над деталью
 local function createBillboard(parent: Instance, title: string, subtitle: string, textColor: Color3)
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "InfoGui"
@@ -42,13 +41,11 @@ local function createBillboard(parent: Instance, title: string, subtitle: string
     return label
 end
 
--- Спавн купленной структуры в локальных координатах базы
 local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfig.TycoonItem, baseCF: CFrame, faction: TycoonConfig.Faction)
     local itemsFolder = plotModel:FindFirstChild("PurchasedItems") :: Folder
     if not itemsFolder then return end
 
     if item.id == "FactionDropper" then
-        -- Фирменный дроппер фракции
         local dropper = Instance.new("Part")
         dropper.Name = "FactionDropper"
         dropper.Size = Vector3.new(3, 2, 3)
@@ -76,7 +73,6 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         end)
 
     elseif item.id == "LaserGate" then
-        -- Лазерные ворота безопасности (сжигают чужаков)
         local gateModel = Instance.new("Model")
         gateModel.Name = "LaserGate"
         gateModel.Parent = itemsFolder
@@ -113,9 +109,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             local p = Players:GetPlayerFromCharacter(char)
             if p and p ~= owner then
                 local hum = char:FindFirstChild("Humanoid") :: Humanoid?
-                if hum then
-                    hum:TakeDamage(100) -- Испепеляет воров
-                end
+                if hum then hum:TakeDamage(100) end
             end
         end)
 
@@ -145,7 +139,6 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         wBack.Parent = itemsFolder
 
     elseif item.id == "FactionAbilityStand" then
-        -- Стойка суперспособности
         local stand = Instance.new("Part")
         stand.Name = "AbilityStand"
         stand.Size = Vector3.new(4, 1, 4)
@@ -232,7 +225,6 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         floor2.Color = Color3.fromRGB(40, 40, 45)
         floor2.Parent = itemsFolder
 
-        -- Трон Сигмы на 2 этаже
         local throne = Instance.new("Part")
         throne.Name = "SigmaThrone"
         throne.Size = Vector3.new(4, 4, 3)
@@ -245,7 +237,6 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
     end
 end
 
--- Размещение интерактивных кнопок
 local function updateButtons(plotModel: Model, owner: Player, baseCF: CFrame, faction: TycoonConfig.Faction)
     local buttonsFolder = plotModel:FindFirstChild("Buttons") :: Folder
     if not buttonsFolder then return end
@@ -320,7 +311,6 @@ local function updateButtons(plotModel: Model, owner: Player, baseCF: CFrame, fa
         end
     end
 
-    -- Кнопка многоуровневого Rebirth (1..5)
     local currentRebirths = TycoonService.getRebirths(owner)
     local hasSecondFloor = TycoonService.hasItem(owner, "SecondFloor")
     local existingRebirth = buttonsFolder:FindFirstChild("Button_Rebirth")
@@ -371,8 +361,8 @@ local function updateButtons(plotModel: Model, owner: Player, baseCF: CFrame, fa
     end
 end
 
--- Постройка базы для игрока
-function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
+-- Построение всех 8 баз в мире со стартовыми ClaimPads
+function PlotBuilder.initAllBases(onClaimCallback: (player: Player, plotIndex: number) -> ())
     local plotsContainer = Workspace:FindFirstChild("TycoonPlots")
     if not plotsContainer then
         plotsContainer = Instance.new("Folder")
@@ -380,46 +370,103 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
         plotsContainer.Parent = Workspace
     end
 
+    local allPlots = PlotManager.getAllPlots()
+    for plotIndex = 1, TycoonConfig.TOTAL_PLOTS do
+        local plotData = allPlots[plotIndex]
+        local baseCF = plotData.cframe
+        local faction = plotData.faction
+
+        local plotModel = Instance.new("Model")
+        plotModel.Name = string.format("Base_%d", plotIndex)
+        plotModel.Parent = plotsContainer
+
+        local purchasedItems = Instance.new("Folder")
+        purchasedItems.Name = "PurchasedItems"
+        purchasedItems.Parent = plotModel
+
+        local buttonsFolder = Instance.new("Folder")
+        buttonsFolder.Name = "Buttons"
+        buttonsFolder.Parent = plotModel
+
+        -- 1. Пол базы
+        local baseFloor = Instance.new("Part")
+        baseFloor.Name = "BaseFloor"
+        baseFloor.Size = Vector3.new(34, 1, 42)
+        baseFloor.CFrame = baseCF * CFrame.new(0, 0, 0)
+        baseFloor.Anchored = true
+        baseFloor.Material = Enum.Material.SmoothPlastic
+        baseFloor.Color = Color3.fromRGB(25, 25, 30)
+        baseFloor.Parent = plotModel
+
+        -- Вывеска
+        local sign = Instance.new("Part")
+        sign.Name = "OwnerSign"
+        sign.Size = Vector3.new(16, 3.5, 1)
+        sign.CFrame = baseCF * CFrame.new(0, 8, -20)
+        sign.Anchored = true
+        sign.Material = Enum.Material.Neon
+        sign.Color = faction.color
+        sign.Parent = plotModel
+        createBillboard(sign, faction.name, "[СВОБОДНО] Встань, чтобы занять!", Color3.fromRGB(255, 255, 255))
+
+        -- Стартовая площадка захвата базы (ClaimPad)
+        local claimPad = Instance.new("Part")
+        claimPad.Name = "ClaimPad"
+        claimPad.Size = Vector3.new(8, 0.4, 8)
+        claimPad.CFrame = baseCF * CFrame.new(0, 0.4, 14)
+        claimPad.Anchored = true
+        claimPad.Material = Enum.Material.Neon
+        claimPad.Color = faction.color
+        claimPad.Parent = plotModel
+
+        createBillboard(claimPad, string.format("👉 ЗАХВАТИТЬ: %s", faction.name), "Встань сюда, чтобы выбрать эту базу!", faction.color)
+
+        local debounce = false
+        claimPad.Touched:Connect(function(hit)
+            if debounce then return end
+            local char = hit.Parent
+            local player = Players:GetPlayerFromCharacter(char)
+            if player then
+                debounce = true
+                onClaimCallback(player, plotIndex)
+                task.wait(1)
+                debounce = false
+            end
+        end)
+    end
+    print("[PlotBuilder] All 8 circular bases created with ClaimPads!")
+end
+
+-- Активация базы при выборе игроком
+function PlotBuilder.activatePlot(player: Player, plotIndex: number)
+    local plotsContainer = Workspace:FindFirstChild("TycoonPlots")
+    if not plotsContainer then return end
+    local plotModel = plotsContainer:FindFirstChild(string.format("Base_%d", plotIndex)) :: Model?
+    if not plotModel then return end
+
     local plotData = PlotManager.getPlotData(plotIndex)
     if not plotData then return end
-
     local baseCF = plotData.cframe
     local faction = plotData.faction
 
-    local plotModel = Instance.new("Model")
-    plotModel.Name = string.format("Plot_%s", player.Name)
-    plotModel.Parent = plotsContainer
+    local claimPad = plotModel:FindFirstChild("ClaimPad")
+    if claimPad then claimPad:Destroy() end
 
-    local purchasedItems = Instance.new("Folder")
-    purchasedItems.Name = "PurchasedItems"
-    purchasedItems.Parent = plotModel
+    local sign = plotModel:FindFirstChild("OwnerSign") :: Part?
+    if sign then
+        local oldGui = sign:FindFirstChild("InfoGui")
+        if oldGui then oldGui:Destroy() end
+        createBillboard(sign, faction.name, string.format("Владелец: %s", player.Name), Color3.fromRGB(255, 255, 255))
+    end
 
-    local buttonsFolder = Instance.new("Folder")
-    buttonsFolder.Name = "Buttons"
-    buttonsFolder.Parent = plotModel
+    local char = player.Character
+    if char then
+        local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+        if root then
+            root.CFrame = baseCF * CFrame.new(0, 3, 12)
+        end
+    end
 
-    -- 1. Пол базы
-    local baseFloor = Instance.new("Part")
-    baseFloor.Name = "BaseFloor"
-    baseFloor.Size = Vector3.new(34, 1, 42)
-    baseFloor.CFrame = baseCF * CFrame.new(0, 0, 0)
-    baseFloor.Anchored = true
-    baseFloor.Material = Enum.Material.SmoothPlastic
-    baseFloor.Color = Color3.fromRGB(25, 25, 30)
-    baseFloor.Parent = plotModel
-
-    -- Вывеска базы фракции
-    local sign = Instance.new("Part")
-    sign.Name = "OwnerSign"
-    sign.Size = Vector3.new(16, 3.5, 1)
-    sign.CFrame = baseCF * CFrame.new(0, 8, -20)
-    sign.Anchored = true
-    sign.Material = Enum.Material.Neon
-    sign.Color = faction.color
-    sign.Parent = plotModel
-    createBillboard(sign, faction.name, string.format("Владелец: %s", player.Name), Color3.fromRGB(255, 255, 255))
-
-    -- 2. Конвейер
     local conveyor = Instance.new("Part")
     conveyor.Name = "Conveyor"
     conveyor.Size = Vector3.new(4, 0.8, 30)
@@ -428,17 +475,15 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
     conveyor.Material = Enum.Material.DiamondPlate
     conveyor.Color = Color3.fromRGB(40, 40, 45)
     
-    -- Направление движения по ленте в локальных координатах
     local speed = TycoonConfig.CONVEYOR_SPEED
     if TycoonService.getRebirths(player) >= 2 then
-        speed = 28 -- Золотой скоростной конвейер Rebirth 2
+        speed = 28
         conveyor.Material = Enum.Material.Neon
         conveyor.Color = Color3.fromRGB(241, 196, 15)
     end
     conveyor.AssemblyLinearVelocity = baseCF.LookVector * speed
     conveyor.Parent = plotModel
 
-    -- 3. Сборщик монет (Collector)
     local collector = Instance.new("Part")
     collector.Name = "Collector"
     collector.Size = Vector3.new(5, 1.5, 3)
@@ -474,7 +519,6 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
         end
     end)
 
-    -- Восстановление ранее купленных объектов
     local owned = TycoonService.getOwnedItems(player)
     for _, item in ipairs(TycoonConfig.ITEMS) do
         if owned[item.id] then
@@ -483,18 +527,76 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
     end
 
     updateButtons(plotModel, player, baseCF, faction)
-    print(string.format("[PlotBuilder] Built %s Base for %s", faction.name, player.Name))
-    return plotModel
+    print(string.format("[PlotBuilder] Base %d activated for %s", plotIndex, player.Name))
+end
+
+-- Сброс базы в свободное состояние при выходе
+function PlotBuilder.resetPlotToUnclaimed(plotIndex: number, onClaimCallback: (player: Player, plotIndex: number) -> ())
+    local plotsContainer = Workspace:FindFirstChild("TycoonPlots")
+    if not plotsContainer then return end
+    local plotModel = plotsContainer:FindFirstChild(string.format("Base_%d", plotIndex)) :: Model?
+    if not plotModel then return end
+
+    local plotData = PlotManager.getPlotData(plotIndex)
+    if not plotData then return end
+    local baseCF = plotData.cframe
+    local faction = plotData.faction
+
+    local pItems = plotModel:FindFirstChild("PurchasedItems")
+    if pItems then pItems:ClearAllChildren() end
+
+    local buttons = plotModel:FindFirstChild("Buttons")
+    if buttons then buttons:ClearAllChildren() end
+
+    local conveyor = plotModel:FindFirstChild("Conveyor")
+    if conveyor then conveyor:Destroy() end
+
+    local collector = plotModel:FindFirstChild("Collector")
+    if collector then collector:Destroy() end
+
+    local sign = plotModel:FindFirstChild("OwnerSign") :: Part?
+    if sign then
+        local oldGui = sign:FindFirstChild("InfoGui")
+        if oldGui then oldGui:Destroy() end
+        createBillboard(sign, faction.name, "[СВОБОДНО] Встань, чтобы занять!", Color3.fromRGB(255, 255, 255))
+    end
+
+    local claimPad = Instance.new("Part")
+    claimPad.Name = "ClaimPad"
+    claimPad.Size = Vector3.new(8, 0.4, 8)
+    claimPad.CFrame = baseCF * CFrame.new(0, 0.4, 14)
+    claimPad.Anchored = true
+    claimPad.Material = Enum.Material.Neon
+    claimPad.Color = faction.color
+    claimPad.Parent = plotModel
+
+    createBillboard(claimPad, string.format("👉 ЗАХВАТИТЬ: %s", faction.name), "Встань сюда, чтобы выбрать эту базу!", faction.color)
+
+    local debounce = false
+    claimPad.Touched:Connect(function(hit)
+        if debounce then return end
+        local char = hit.Parent
+        local player = Players:GetPlayerFromCharacter(char)
+        if player then
+            debounce = true
+            onClaimCallback(player, plotIndex)
+            task.wait(1)
+            debounce = false
+        end
+    end)
+
+    print(string.format("[PlotBuilder] Base %d reset to unclaimed.", plotIndex))
+end
+
+-- Обратная совместимость для тестов
+function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
+    PlotBuilder.activatePlot(player, plotIndex)
 end
 
 function PlotBuilder.destroyPlotForPlayer(player: Player)
-    local plotsContainer = Workspace:FindFirstChild("TycoonPlots")
-    if plotsContainer then
-        local plot = plotsContainer:FindFirstChild(string.format("Plot_%s", player.Name))
-        if plot then
-            plot:Destroy()
-            print(string.format("[PlotBuilder] Destroyed Base for %s", player.Name))
-        end
+    local plotIndex = PlotManager.getPlayerPlotIndex(player)
+    if plotIndex then
+        PlotBuilder.resetPlotToUnclaimed(plotIndex, function() end)
     end
 end
 
