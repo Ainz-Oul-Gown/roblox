@@ -31,17 +31,37 @@ local PlotBuilder = {}
 -- Ссылки на табло вывода сейфа по базам для живого обновления суммы
 local vaultLabels: { [number]: TextLabel } = {}
 
-local function createBillboard(parent: Instance, title: string, subtitle: string, textColor: Color3, offset: Vector3?)
+local function createBillboard(
+    parent: Instance,
+    title: string,
+    subtitle: string,
+    textColor: Color3,
+    offset: Vector3?,
+    maxDist: number?,
+    alwaysOnTop: boolean?
+)
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "InfoGui"
-    billboard.Size = UDim2.new(0, 240, 0, 70)
-    billboard.StudsOffset = offset or Vector3.new(0, 3.5, 0)
-    billboard.AlwaysOnTop = true
-    billboard.MaxDistance = 120
+    billboard.Size = UDim2.new(0, 220, 0, 56)
+    billboard.StudsOffset = offset or Vector3.new(0, 3.2, 0)
+    billboard.AlwaysOnTop = if alwaysOnTop ~= nil then alwaysOnTop else false
+    billboard.MaxDistance = maxDist or 30
     billboard.Parent = parent
 
+    local bgFrame = Instance.new("Frame")
+    bgFrame.Size = UDim2.new(1, 0, 1, 0)
+    bgFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+    bgFrame.BackgroundTransparency = 0.35
+    bgFrame.BorderSizePixel = 0
+    bgFrame.Parent = billboard
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = bgFrame
+
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Size = UDim2.new(1, -10, 1, -6)
+    label.Position = UDim2.new(0, 5, 0, 3)
     label.BackgroundTransparency = 1
     label.Text = string.format("%s\n%s", title, subtitle)
     label.TextColor3 = textColor
@@ -49,7 +69,7 @@ local function createBillboard(parent: Instance, title: string, subtitle: string
     label.TextStrokeTransparency = 0.2
     label.TextScaled = true
     label.Font = Enum.Font.FredokaOne
-    label.Parent = billboard
+    label.Parent = bgFrame
     return label
 end
 
@@ -226,31 +246,31 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         gateModel.Parent = itemsFolder
 
         local postL = Instance.new("Part")
-        postL.Size = Vector3.new(1.5, 12, 1.5)
-        postL.CFrame = baseCF * CFrame.new(-6, 6, 30)
+        postL.Size = Vector3.new(1.8, 14, 1.8)
+        postL.CFrame = baseCF * CFrame.new(-6, 7, 36)
         postL.Anchored = true
         postL.Color = Color3.fromRGB(25, 25, 30)
         postL.Parent = gateModel
 
         local postR = Instance.new("Part")
-        postR.Size = Vector3.new(1.5, 12, 1.5)
-        postR.CFrame = baseCF * CFrame.new(6, 6, 30)
+        postR.Size = Vector3.new(1.8, 14, 1.8)
+        postR.CFrame = baseCF * CFrame.new(6, 7, 36)
         postR.Anchored = true
         postR.Color = Color3.fromRGB(25, 25, 30)
         postR.Parent = gateModel
 
         local lintel = Instance.new("Part")
         lintel.Name = "GateLintel"
-        lintel.Size = Vector3.new(13.5, 1.5, 1.5)
-        lintel.CFrame = baseCF * CFrame.new(0, 11.25, 30)
+        lintel.Size = Vector3.new(13.8, 1.6, 1.8)
+        lintel.CFrame = baseCF * CFrame.new(0, 13.2, 36)
         lintel.Anchored = true
         lintel.Color = Color3.fromRGB(25, 25, 30)
         lintel.Parent = gateModel
 
         local beam = Instance.new("Part")
         beam.Name = "LaserBeam"
-        beam.Size = Vector3.new(10.5, 10.5, 0.4)
-        beam.CFrame = baseCF * CFrame.new(0, 5.25, 30)
+        beam.Size = Vector3.new(10.2, 12.4, 0.4)
+        beam.CFrame = baseCF * CFrame.new(0, 6.2, 36)
         beam.Anchored = true
         beam.CanCollide = false
         beam.Material = Enum.Material.ForceField
@@ -258,7 +278,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         beam.Transparency = 0.35
         beam.Parent = gateModel
 
-        createBillboard(beam, "⚡ ЗАЩИТНЫЙ ЛАЗЕР", "Вход только для владельца!", Color3.fromRGB(231, 76, 60))
+        createBillboard(beam, "⚡ ЗАЩИТНЫЙ ЛАЗЕР", "Вход только для владельца!", Color3.fromRGB(231, 76, 60), Vector3.new(0, 4, 0), 28, false)
 
         beam.Touched:Connect(function(hit)
             local char = hit.Parent
@@ -268,7 +288,6 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             if player and player ~= owner then
                 local hum = char:FindFirstChild("Humanoid") :: Humanoid?
                 if hum and hum.Health > 0 then
-                    -- Помечаем тегом создателя для лута
                     local tag = Instance.new("ObjectValue")
                     tag.Name = "creator"
                     tag.Value = owner
@@ -283,56 +302,56 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         wallsModel.Name = "BrainrotWalls"
         wallsModel.Parent = itemsFolder
 
-        -- 1. Левая стена (X = -24)
+        -- 1. Левая стена (X = -28)
         local wL = Instance.new("Part")
-        wL.Size = Vector3.new(1, 12, 64)
-        wL.CFrame = baseCF * CFrame.new(-24, 6, 0)
+        wL.Size = Vector3.new(1, 14, 76)
+        wL.CFrame = baseCF * CFrame.new(-28, 7, 0)
         wL.Anchored = true
         wL.Color = Color3.fromRGB(35, 35, 42)
         wL.Parent = wallsModel
 
-        -- 2. Правая стена (X = +24)
+        -- 2. Правая стена (X = +28)
         local wR = Instance.new("Part")
-        wR.Size = Vector3.new(1, 12, 64)
-        wR.CFrame = baseCF * CFrame.new(24, 6, 0)
+        wR.Size = Vector3.new(1, 14, 76)
+        wR.CFrame = baseCF * CFrame.new(28, 7, 0)
         wR.Anchored = true
         wR.Color = Color3.fromRGB(35, 35, 42)
         wR.Parent = wallsModel
 
-        -- 3. Задняя стена (Z = -32)
+        -- 3. Задняя стена (Z = -38)
         local wB = Instance.new("Part")
-        wB.Size = Vector3.new(48, 12, 1)
-        wB.CFrame = baseCF * CFrame.new(0, 6, -32)
+        wB.Size = Vector3.new(56, 14, 1)
+        wB.CFrame = baseCF * CFrame.new(0, 7, -38)
         wB.Anchored = true
         wB.Color = Color3.fromRGB(35, 35, 42)
         wB.Parent = wallsModel
 
-        -- 4. Передний фасад слева от ворот (X = -24..-6, ширина 18, центр X=-15)
+        -- 4. Передний фасад слева от ворот (X = -28..-6, ширина 22, центр X=-17)
         local wFL = Instance.new("Part")
-        wFL.Size = Vector3.new(18, 12, 1)
-        wFL.CFrame = baseCF * CFrame.new(-15, 6, 30)
+        wFL.Size = Vector3.new(22, 14, 1)
+        wFL.CFrame = baseCF * CFrame.new(-17, 7, 36)
         wFL.Anchored = true
         wFL.Color = Color3.fromRGB(35, 35, 42)
         wFL.Parent = wallsModel
 
-        -- 5. Передний фасад справа от ворот (X = 6..24, ширина 18, центр X=15)
+        -- 5. Передний фасад справа от ворот (X = 6..28, ширина 22, центр X=17)
         local wFR = Instance.new("Part")
-        wFR.Size = Vector3.new(18, 12, 1)
-        wFR.CFrame = baseCF * CFrame.new(15, 6, 30)
+        wFR.Size = Vector3.new(22, 14, 1)
+        wFR.CFrame = baseCF * CFrame.new(17, 7, 36)
         wFR.Anchored = true
         wFR.Color = Color3.fromRGB(35, 35, 42)
         wFR.Parent = wallsModel
 
-        -- Неоновые полосы по верху стен фракционного цвета
+        -- Неоновые полосы по верху стен фракционного цвета на Y = 14
         for _, pos in ipairs({
-            Vector3.new(-24, 12, 0),
-            Vector3.new(24, 12, 0),
-            Vector3.new(0, 12, -32),
-            Vector3.new(-15, 12, 30),
-            Vector3.new(15, 12, 30),
+            Vector3.new(-28, 14, 0),
+            Vector3.new(28, 14, 0),
+            Vector3.new(0, 14, -38),
+            Vector3.new(-17, 14, 36),
+            Vector3.new(17, 14, 36),
         }) do
             local neonStripe = Instance.new("Part")
-            neonStripe.Size = if pos.Z == 0 then Vector3.new(1.2, 0.4, 64) elseif pos.Z == -32 then Vector3.new(48, 0.4, 1.2) else Vector3.new(18, 0.4, 1.2)
+            neonStripe.Size = if pos.Z == 0 then Vector3.new(1.2, 0.4, 76) elseif pos.Z == -38 then Vector3.new(56, 0.4, 1.2) else Vector3.new(22, 0.4, 1.2)
             neonStripe.CFrame = baseCF * CFrame.new(pos)
             neonStripe.Anchored = true
             neonStripe.CanCollide = false
@@ -394,15 +413,15 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         )
 
     elseif item.id == "Stairs_To_Floor2" then
-        -- Лестница на 2-й этаж вдоль левой стены (от Z=16 до Z=-6, подъем на Y=16)
+        -- Лестница на 2-й этаж вдоль левой стены (от Z=24 до Z=-6, подъем на Y=14)
         local stairsModel = Instance.new("Model")
         stairsModel.Name = "Stairs_To_Floor2"
         stairsModel.Parent = itemsFolder
 
         local STEPS = 20
-        local startZ = 16
+        local startZ = 24
         local endZ = -6
-        local totalHeight = 16
+        local totalHeight = 14
 
         for i = 1, STEPS do
             local t = (i - 1) / (STEPS - 1)
@@ -411,8 +430,8 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
 
             local step = Instance.new("Part")
             step.Name = string.format("Step_%d", i)
-            step.Size = Vector3.new(7, 0.8, 1.3)
-            step.CFrame = baseCF * CFrame.new(-18, curY, curZ)
+            step.Size = Vector3.new(8, 0.7, 1.6)
+            step.CFrame = baseCF * CFrame.new(-22, curY, curZ)
             step.Anchored = true
             step.Material = Enum.Material.SmoothPlastic
             step.Color = Color3.fromRGB(45, 45, 52)
@@ -426,63 +445,120 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         local midY = 0.5 + totalHeight / 2 + 2.5
         local midZ = (startZ + endZ) / 2
         local angleX = math.atan2(totalHeight, startZ - endZ)
-        rail.CFrame = baseCF * CFrame.new(-14.3, midY, midZ) * CFrame.Angles(-angleX, 0, 0)
+        rail.CFrame = baseCF * CFrame.new(-17.8, midY, midZ) * CFrame.Angles(-angleX, 0, 0)
         rail.Anchored = true
         rail.Material = Enum.Material.Neon
         rail.Color = faction.color
         rail.Parent = stairsModel
 
     elseif item.id == "Floor2_Foundation" then
-        -- Платформа 2-го этажа на Y = 16
+        -- Полноценная платформа 2-го этажа на Y = 14 (лежит ровно на стенах 1 этажа 56x76)
         local f2Model = Instance.new("Model")
         f2Model.Name = "Floor2_Foundation"
         f2Model.Parent = itemsFolder
 
-        -- Основной пол 2 этажа (с вырезом под лестницу слева и шахту сброса спереди)
+        -- 1. Основное перекрытие 2 этажа (X = -14..+28, Z = -38..+38)
         local mainFloor2 = Instance.new("Part")
         mainFloor2.Name = "Floor2_Main"
-        mainFloor2.Size = Vector3.new(34, 1, 44)
-        mainFloor2.CFrame = baseCF * CFrame.new(5, 16, -10)
+        mainFloor2.Size = Vector3.new(42, 1, 76)
+        mainFloor2.CFrame = baseCF * CFrame.new(7, 14, 0)
         mainFloor2.Anchored = true
         mainFloor2.Color = Color3.fromRGB(30, 30, 36)
         mainFloor2.Material = Enum.Material.SmoothPlastic
         mainFloor2.Parent = f2Model
 
-        -- Площадка выхода с лестницы
+        -- 2. Задняя секция перекрытия слева от лестницы (X = -28..-14, Z = -38..-6)
+        local backFloor2 = Instance.new("Part")
+        backFloor2.Name = "Floor2_Back"
+        backFloor2.Size = Vector3.new(14, 1, 32)
+        backFloor2.CFrame = baseCF * CFrame.new(-21, 14, -22)
+        backFloor2.Anchored = true
+        backFloor2.Color = Color3.fromRGB(30, 30, 36)
+        backFloor2.Material = Enum.Material.SmoothPlastic
+        backFloor2.Parent = f2Model
+
+        -- 3. Площадка выхода с лестницы (стык на Z = -6)
         local landing = Instance.new("Part")
         landing.Name = "StairLanding"
-        landing.Size = Vector3.new(12, 1, 14)
-        landing.CFrame = baseCF * CFrame.new(-18, 16, -10)
+        landing.Size = Vector3.new(14, 1, 6)
+        landing.CFrame = baseCF * CFrame.new(-21, 14, -6)
         landing.Anchored = true
-        landing.Color = Color3.fromRGB(30, 30, 36)
+        landing.Color = Color3.fromRGB(38, 38, 46)
         landing.Parent = f2Model
 
     elseif item.id == "Floor2_Walls" then
-        -- Неоновые ограждения периметра 2-го этажа
+        -- Стены и защитные ограждения 2-го этажа (периметр 56x76, высота Y=14..24)
         local f2Walls = Instance.new("Model")
         f2Walls.Name = "Floor2_Walls"
         f2Walls.Parent = itemsFolder
 
+        -- Задняя стена 2 этажа
         local rBack = Instance.new("Part")
-        rBack.Size = Vector3.new(48, 4, 1)
-        rBack.CFrame = baseCF * CFrame.new(0, 18.5, -32)
+        rBack.Size = Vector3.new(56, 10, 1)
+        rBack.CFrame = baseCF * CFrame.new(0, 19, -38)
         rBack.Anchored = true
         rBack.Color = Color3.fromRGB(40, 40, 48)
         rBack.Parent = f2Walls
 
+        -- Правая стена 2 этажа
         local rRight = Instance.new("Part")
-        rRight.Size = Vector3.new(1, 4, 44)
-        rRight.CFrame = baseCF * CFrame.new(24, 18.5, -10)
+        rRight.Size = Vector3.new(1, 10, 76)
+        rRight.CFrame = baseCF * CFrame.new(28, 19, 0)
         rRight.Anchored = true
         rRight.Color = Color3.fromRGB(40, 40, 48)
         rRight.Parent = f2Walls
 
+        -- Левая стена 2 этажа
+        local rLeft = Instance.new("Part")
+        rLeft.Size = Vector3.new(1, 10, 76)
+        rLeft.CFrame = baseCF * CFrame.new(-28, 19, 0)
+        rLeft.Anchored = true
+        rLeft.Color = Color3.fromRGB(40, 40, 48)
+        rLeft.Parent = f2Walls
+
+        -- Переднее ограждение 2 этажа
         local rFront = Instance.new("Part")
-        rFront.Size = Vector3.new(40, 4, 1)
-        rFront.CFrame = baseCF * CFrame.new(4, 18.5, 12)
+        rFront.Size = Vector3.new(56, 10, 1)
+        rFront.CFrame = baseCF * CFrame.new(0, 19, 36)
         rFront.Anchored = true
         rFront.Color = Color3.fromRGB(40, 40, 48)
         rFront.Parent = f2Walls
+
+        -- Защитные перила вокруг лестничного проема
+        local stairGuard = Instance.new("Part")
+        stairGuard.Name = "StairGuard"
+        stairGuard.Size = Vector3.new(0.4, 3.5, 32)
+        stairGuard.CFrame = baseCF * CFrame.new(-14, 16.25, 10)
+        stairGuard.Anchored = true
+        stairGuard.Color = Color3.fromRGB(50, 50, 60)
+        stairGuard.Parent = f2Walls
+
+        -- Неоновый поручень на guard rail
+        local guardNeon = Instance.new("Part")
+        guardNeon.Size = Vector3.new(0.6, 0.3, 32)
+        guardNeon.CFrame = baseCF * CFrame.new(-14, 18, 10)
+        guardNeon.Anchored = true
+        guardNeon.CanCollide = false
+        guardNeon.Material = Enum.Material.Neon
+        guardNeon.Color = faction.color
+        guardNeon.Parent = f2Walls
+
+        -- Неоновые полосы по верху стен 2 этажа на Y = 24
+        for _, pos in ipairs({
+            Vector3.new(-28, 24, 0),
+            Vector3.new(28, 24, 0),
+            Vector3.new(0, 24, -38),
+            Vector3.new(0, 24, 36),
+        }) do
+            local neonStripe = Instance.new("Part")
+            neonStripe.Size = if pos.Z == 0 then Vector3.new(1.2, 0.4, 76) else Vector3.new(56, 0.4, 1.2)
+            neonStripe.CFrame = baseCF * CFrame.new(pos)
+            neonStripe.Anchored = true
+            neonStripe.CanCollide = false
+            neonStripe.Material = Enum.Material.Neon
+            neonStripe.Color = faction.color
+            neonStripe.Parent = f2Walls
+        end
 
     elseif item.id == "Floor2_Conveyor" then
         -- Верхний конвейер со сбросом руды в нижний приёмник
@@ -493,7 +569,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         local topConv = Instance.new("Part")
         topConv.Name = "TopConveyor"
         topConv.Size = Vector3.new(5, 1, 32)
-        topConv.CFrame = baseCF * CFrame.new(0, 16.5, -6)
+        topConv.CFrame = baseCF * CFrame.new(0, 14.5, -12)
         topConv.Anchored = true
         topConv.Material = Enum.Material.DiamondPlate
         topConv.Color = Color3.fromRGB(40, 40, 48)
@@ -505,8 +581,8 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         -- Направляющий желоб сброса (Chute)
         local chute = Instance.new("Part")
         chute.Name = "OreDropChute"
-        chute.Size = Vector3.new(6, 14, 1)
-        chute.CFrame = baseCF * CFrame.new(0, 9, 11) * CFrame.Angles(math.rad(15), 0, 0)
+        chute.Size = Vector3.new(6, 12, 1)
+        chute.CFrame = baseCF * CFrame.new(0, 8, 5) * CFrame.Angles(math.rad(18), 0, 0)
         chute.Anchored = true
         chute.Material = Enum.Material.SmoothPlastic
         chute.Color = Color3.fromRGB(30, 30, 35)
@@ -517,7 +593,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         createUpgrader(
             itemsFolder,
             "Upgrader_Quantum",
-            baseCF * CFrame.new(0, 17, -10),
+            baseCF * CFrame.new(0, 14.5, -16),
             7, 6, 3,
             Color3.fromRGB(0, 220, 255),
             "🌌 КВАНТОВЫЙ УМНОЖИТЕЛЬ"
@@ -527,13 +603,13 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         local dropper = Instance.new("Part")
         dropper.Name = "Dropper_Galactic"
         dropper.Size = Vector3.new(4.5, 3, 4.5)
-        dropper.CFrame = baseCF * CFrame.new(0, 24, -20)
+        dropper.CFrame = baseCF * CFrame.new(0, 22, -26)
         dropper.Anchored = true
         dropper.Material = Enum.Material.Neon
         dropper.Color = Color3.fromRGB(155, 89, 182)
         dropper.Parent = itemsFolder
 
-        createBillboard(dropper, "⭐ Галактический Дроппер", "+60 Aura / 1.1c", Color3.fromRGB(155, 89, 182))
+        createBillboard(dropper, "⭐ Галактический Дроппер", "+60 Aura / 1.1c", Color3.fromRGB(155, 89, 182), Vector3.new(0, 3.5, 0), 28, false)
 
         task.spawn(function()
             while dropper.Parent and owner.Parent do
@@ -547,7 +623,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         createAbilityPedestal(
             itemsFolder,
             "AbilityStand_Ultimate",
-            baseCF * CFrame.new(16, 16, -16),
+            baseCF * CFrame.new(18, 14, -14),
             faction.ultimateAbility.name,
             "👑 УЛЬТИМЕЙТ [3] (Q)",
             Color3.fromRGB(255, 215, 0)
@@ -558,37 +634,37 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         createUpgrader(
             itemsFolder,
             "Upgrader_Annihilator",
-            baseCF * CFrame.new(0, 17, 4),
+            baseCF * CFrame.new(0, 14.5, -2),
             7, 6, 5,
             Color3.fromRGB(255, 40, 100),
             "🔥 АННИГИЛЯТОР АУРЫ"
         )
 
     elseif item.id == "Rebirth_Portal" then
-        -- 1. Портал Перерождения Rebirth на 2 этаже
+        -- Алтарь Перерождения Rebirth на 2 этаже в отдельной золотой зоне
         local portalModel = Instance.new("Model")
         portalModel.Name = "Rebirth_Portal"
         portalModel.Parent = itemsFolder
 
         local postL = Instance.new("Part")
-        postL.Size = Vector3.new(1.8, 11, 1.8)
-        postL.CFrame = baseCF * CFrame.new(-5, 21.5, -22)
+        postL.Size = Vector3.new(2, 10, 2)
+        postL.CFrame = baseCF * CFrame.new(-6, 19.5, -28)
         postL.Anchored = true
         postL.Color = Color3.fromRGB(255, 215, 0)
         postL.Material = Enum.Material.Neon
         postL.Parent = portalModel
 
         local postR = Instance.new("Part")
-        postR.Size = Vector3.new(1.8, 11, 1.8)
-        postR.CFrame = baseCF * CFrame.new(5, 21.5, -22)
+        postR.Size = Vector3.new(2, 10, 2)
+        postR.CFrame = baseCF * CFrame.new(6, 19.5, -28)
         postR.Anchored = true
         postR.Color = Color3.fromRGB(255, 215, 0)
         postR.Material = Enum.Material.Neon
         postR.Parent = portalModel
 
         local archTop = Instance.new("Part")
-        archTop.Size = Vector3.new(11.8, 1.8, 1.8)
-        archTop.CFrame = baseCF * CFrame.new(0, 27, -22)
+        archTop.Size = Vector3.new(14, 2, 2)
+        archTop.CFrame = baseCF * CFrame.new(0, 25.5, -28)
         archTop.Anchored = true
         archTop.Color = Color3.fromRGB(255, 215, 0)
         archTop.Material = Enum.Material.Neon
@@ -596,18 +672,30 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
 
         local field = Instance.new("Part")
         field.Name = "PortalField"
-        field.Size = Vector3.new(8.2, 9.2, 0.5)
-        field.CFrame = baseCF * CFrame.new(0, 21.5, -22)
+        field.Size = Vector3.new(10, 8.5, 0.8)
+        field.CFrame = baseCF * CFrame.new(0, 19.5, -28)
         field.Anchored = true
         field.CanCollide = false
         field.Material = Enum.Material.ForceField
         field.Color = Color3.fromRGB(241, 196, 15)
-        field.Transparency = 0.3
+        field.Transparency = 0.25
         field.Parent = portalModel
 
-        local rTier = TycoonConfig.getRebirthTier(TycoonService.getRebirths(owner) + 1)
-        local costTxt = if rTier then string.format("Цена: %d Aura | Множитель: x%.1f", rTier.cost, rTier.multiplier) else "MAX TIER"
-        createBillboard(field, "👑 АЛТАРЬ REBIRTH", costTxt, Color3.fromRGB(255, 215, 0), Vector3.new(0, 6, 0))
+        local curRebirths = TycoonService.getRebirths(owner)
+        local rTier = TycoonConfig.getRebirthTier(curRebirths + 1)
+        local cost = if rTier then rTier.cost else (50000 + (curRebirths + 1) * 15000)
+        local mult = if rTier then rTier.multiplier else 2.0
+        local tierTitle = if rTier then rTier.name else "MAX TIER"
+
+        createBillboard(
+            field,
+            string.format("👑 АЛТАРЬ REBIRTH [УРОВЕНЬ %d]", curRebirths + 1),
+            string.format("Цена: %d Aura | Множитель: x%.1f\n👉 ВОЙДИ ВНУТРЬ ДЛЯ ПЕРЕРОЖДЕНИЯ", cost, mult),
+            Color3.fromRGB(255, 215, 0),
+            Vector3.new(0, 5.5, 0),
+            35,
+            false
+        )
 
         local debounce = false
         field.Touched:Connect(function(hit)
@@ -616,14 +704,16 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             local p = Players:GetPlayerFromCharacter(char)
             if p == owner then
                 debounce = true
-                local success = TycoonService.performRebirth(p)
+                local success, reason = TycoonService.performRebirth(p)
                 if success then
                     local pIndex = PlotManager.getPlayerPlotIndex(p)
                     if pIndex then
                         PlotBuilder.activatePlot(p, pIndex)
                     end
+                else
+                    warn(string.format("[PlotBuilder] Rebirth rejected: %s", reason or "Unknown"))
                 end
-                task.wait(1.5)
+                task.wait(2)
                 debounce = false
             end
         end)
@@ -799,24 +889,24 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
     end
 end
 
--- Позиции кнопок покупки для всех предметов
+-- Позиции кнопок покупки для всех предметов (просторная расстановка без наслоений)
 local BUTTON_CONFIGS: { [string]: Vector3 } = {
-    LaserGate = Vector3.new(-8, 0.5, 24),
-    BrainrotWalls = Vector3.new(8, 0.5, 24),
-    Upgrader_Laser = Vector3.new(-8, 0.5, 4),
-    AbilityStand_1 = Vector3.new(-14, 0.5, -4),
-    Dropper_Prime = Vector3.new(12, 0.5, -12),
-    AbilityStand_Tactical = Vector3.new(14, 0.5, 4),
-    Stairs_To_Floor2 = Vector3.new(-10, 0.5, 14),
-    Floor2_Foundation = Vector3.new(-14, 0.5, 10),
-    Floor2_Walls = Vector3.new(14, 16.5, 10),
-    Floor2_Conveyor = Vector3.new(0, 16.5, 6),
-    Upgrader_Quantum = Vector3.new(-8, 16.5, -4),
-    Dropper_Galactic = Vector3.new(10, 16.5, -16),
-    AbilityStand_Ultimate = Vector3.new(14, 16.5, -8),
-    Upgrader_Annihilator = Vector3.new(8, 16.5, 4),
-    Rebirth_Portal = Vector3.new(-8, 16.5, 12),
-    FactionMonument = Vector3.new(8, 16.5, 12),
+    LaserGate = Vector3.new(-8, 0.5, 30),
+    BrainrotWalls = Vector3.new(8, 0.5, 30),
+    Upgrader_Laser = Vector3.new(-10, 0.5, 6),
+    AbilityStand_1 = Vector3.new(-18, 0.5, -12),
+    Dropper_Prime = Vector3.new(18, 0.5, -18),
+    AbilityStand_Tactical = Vector3.new(18, 0.5, 8),
+    Stairs_To_Floor2 = Vector3.new(-10, 0.5, 20),
+    Floor2_Foundation = Vector3.new(-10, 0.5, 26), -- Свободная зона перед лестницей (НЕ под ней!)
+    Floor2_Walls = Vector3.new(20, 14.5, 14),
+    Floor2_Conveyor = Vector3.new(0, 14.5, 10),
+    Upgrader_Quantum = Vector3.new(-10, 14.5, -4),
+    Dropper_Galactic = Vector3.new(14, 14.5, -20),
+    AbilityStand_Ultimate = Vector3.new(18, 14.5, -6),
+    Upgrader_Annihilator = Vector3.new(10, 14.5, 4),
+    Rebirth_Portal = Vector3.new(-10, 14.5, 18),
+    FactionMonument = Vector3.new(10, 14.5, 18),
 }
 
 local function buildButtonsForPlot(plotModel: Model, owner: Player, plotIndex: number, baseCF: CFrame, faction: TycoonConfig.Faction)
@@ -856,7 +946,7 @@ local function buildButtonsForPlot(plotModel: Model, owner: Player, plotIndex: n
         btnPart.Parent = buttonsFolder
 
         local subTxt = string.format("Цена: %d AURA", item.cost)
-        createBillboard(btnPart, item.name, subTxt, Color3.fromRGB(46, 204, 113), Vector3.new(0, 3.5, 0))
+        createBillboard(btnPart, item.name, subTxt, Color3.fromRGB(46, 204, 113), Vector3.new(0, 3.2, 0), 28, false)
 
         local debounce = false
         btnPart.Touched:Connect(function(hit)
@@ -905,10 +995,10 @@ function PlotBuilder.initAllBases(onClaimCallback: (player: Player, plotIndex: n
         buttonsFolder.Name = "Buttons"
         buttonsFolder.Parent = plotModel
 
-        -- Основание базы 48 x 64 стада
+        -- Основание базы 56 x 76 стадов (просторное основание)
         local baseFloor = Instance.new("Part")
         baseFloor.Name = "BaseFloor"
-        baseFloor.Size = Vector3.new(48, 1, 64)
+        baseFloor.Size = Vector3.new(56, 1, 76)
         baseFloor.CFrame = baseCF * CFrame.new(0, 0, 0)
         baseFloor.Anchored = true
         baseFloor.Material = Enum.Material.SmoothPlastic
@@ -917,25 +1007,25 @@ function PlotBuilder.initAllBases(onClaimCallback: (player: Player, plotIndex: n
 
         local sign = Instance.new("Part")
         sign.Name = "OwnerSign"
-        sign.Size = Vector3.new(20, 4, 1)
-        sign.CFrame = baseCF * CFrame.new(0, 10, -31)
+        sign.Size = Vector3.new(24, 4, 1)
+        sign.CFrame = baseCF * CFrame.new(0, 11, -37)
         sign.Anchored = true
         sign.Material = Enum.Material.Neon
         sign.Color = faction.color
         sign.Parent = plotModel
-        createBillboard(sign, faction.name, "[СВОБОДНО] Встань на площадку у входа!", Color3.fromRGB(255, 255, 255))
+        createBillboard(sign, faction.name, "[СВОБОДНО] Встань на площадку у входа!", Color3.fromRGB(255, 255, 255), Vector3.new(0, 3.5, 0), 45, false)
 
         -- Площадка выбора/захвата базы
         local claimPad = Instance.new("Part")
         claimPad.Name = "ClaimPad"
-        claimPad.Size = Vector3.new(10, 0.4, 10)
-        claimPad.CFrame = baseCF * CFrame.new(0, 0.4, 24)
+        claimPad.Size = Vector3.new(12, 0.4, 10)
+        claimPad.CFrame = baseCF * CFrame.new(0, 0.4, 28)
         claimPad.Anchored = true
         claimPad.Material = Enum.Material.Neon
         claimPad.Color = faction.color
         claimPad.Parent = plotModel
 
-        createBillboard(claimPad, string.format("👉 ЗАХВАТИТЬ: %s", faction.name), "Встань сюда, чтобы выбрать эту базу!", faction.color)
+        createBillboard(claimPad, string.format("👉 ЗАХВАТИТЬ: %s", faction.name), "Встань сюда, чтобы выбрать эту базу!", faction.color, Vector3.new(0, 3.5, 0), 40, false)
 
         local debounce = false
         claimPad.Touched:Connect(function(hit)
@@ -950,7 +1040,7 @@ function PlotBuilder.initAllBases(onClaimCallback: (player: Player, plotIndex: n
             end
         end)
     end
-    print("[PlotBuilder] All 8 circular bases created with expanded 48x64 footprint!")
+    print("[PlotBuilder] All 8 circular bases created with expanded 56x76 footprint!")
 end
 
 -- Активация базы за игроком
@@ -974,7 +1064,7 @@ function PlotBuilder.activatePlot(player: Player, plotIndex: number)
     if sign then
         local gui = sign:FindFirstChild("InfoGui")
         if gui then gui:Destroy() end
-        createBillboard(sign, string.format("БАЗА: %s", player.Name), faction.name, faction.color)
+        createBillboard(sign, string.format("БАЗА: %s", player.Name), faction.name, faction.color, Vector3.new(0, 3.5, 0), 50, false)
     end
 
     local itemsFolder = plotModel:FindFirstChild("PurchasedItems") :: Folder
@@ -1005,7 +1095,9 @@ function PlotBuilder.activatePlot(player: Player, plotIndex: number)
         "💸 В СЕЙФЕ: +0 AURA",
         "[ВСТАНЬ, ЧТОБЫ ЗАБРАТЬ В КОШЕЛЕК]",
         Color3.fromRGB(255, 215, 0),
-        Vector3.new(0, 4, 0)
+        Vector3.new(0, 4, 0),
+        32,
+        false
     )
     vaultLabels[plotIndex] = vLabel
 

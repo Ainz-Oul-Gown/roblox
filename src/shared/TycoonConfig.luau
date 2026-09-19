@@ -493,7 +493,7 @@ local TycoonConfig = {
         },
         {
             id = "Rebirth_Portal",
-            name = "👑 Портал Перерождения (Rebirth)",
+            name = "🏛️ Построить Алтарь Rebirth",
             cost = 50000,
             category = "Structure",
             dependsOn = "Floor2_Walls",

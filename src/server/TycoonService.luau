@@ -38,6 +38,7 @@ end
 local vaultUpdatedEvent = getOrCreateRemote("VaultUpdatedEvent")
 local pvpKillEvent = getOrCreateRemote("PvPKillEvent")
 local withdrawEvent = getOrCreateRemote("WithdrawEvent")
+local rebirthEvent = getOrCreateRemote("RebirthEvent")
 
 -- Ссылка на AbilityService для выдачи инструментов (устанавливается после инициализации)
 TycoonService.onItemPurchased = nil :: ((player: Player, itemId: string) -> ())?
@@ -316,14 +317,14 @@ function TycoonService.purchaseItem(player: Player, itemId: string): boolean
     return true
 end
 
-function TycoonService.performRebirth(player: Player): boolean
+function TycoonService.performRebirth(player: Player): (boolean, string?)
     local data = playerDataMap[player.UserId]
-    if not data then return false end
+    if not data then return false, "No player data" end
 
     local canRebirth, reason, cost = EconomyManager.canPerformRebirth(data.cash, data.rebirths, data.ownedItems)
     if not canRebirth or not cost then
         warn(string.format("[TycoonService] Rebirth failed: %s", reason or "unknown"))
-        return false
+        return false, reason
     end
 
     data.cash = 0
@@ -340,8 +341,12 @@ function TycoonService.performRebirth(player: Player): boolean
     end
 
     TycoonService.applyRebirthPerks(player)
-    print(string.format("[TycoonService] %s performed REBIRTH %d!", player.Name, data.rebirths))
-    return true
+    
+    local mult = EconomyManager.calculateMultiplier(data.rebirths)
+    rebirthEvent:FireClient(player, data.rebirths, mult)
+
+    print(string.format("[TycoonService] %s performed REBIRTH %d! Multiplier x%.1f", player.Name, data.rebirths, mult))
+    return true, nil
 end
 
 function TycoonService.hasItem(player: Player, itemId: string): boolean

@@ -23,6 +23,7 @@ local withdrawEvent = ReplicatedStorage:WaitForChild("WithdrawEvent", 15) :: Rem
 local pvpKillEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15) :: RemoteEvent?
 local airDropEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15) :: RemoteEvent?
 local adminGiveCashEvent = ReplicatedStorage:WaitForChild("AdminGiveCashEvent", 15) :: RemoteEvent?
+local rebirthEvent = ReplicatedStorage:WaitForChild("RebirthEvent", 15) :: RemoteEvent?
 
 -- Безопасная загрузка JuiceEffects (поддержка как script, так и script.Parent)
 local juiceModule = script:FindFirstChild("JuiceEffects")
@@ -636,6 +637,18 @@ if airDropEvent then
             local winner = if data and data.winnerName then data.winnerName else "Игрок"
             local rew = if data and data.reward then data.reward else 10000
             showToast(string.format("🎉 %s ЗАХВАТИЛ АИРДРОП И ПОЛУЧИЛ +$%d AURA!", winner, rew), Color3.fromRGB(46, 204, 113))
+        end
+    end)
+end
+
+if rebirthEvent then
+    rebirthEvent.OnClientEvent:Connect(function(newRebirths: number, newMult: number)
+        JuiceEffects.playSound("fanfare", 1.0)
+        JuiceEffects.screenFlash(Color3.fromRGB(255, 215, 0), 0.6)
+        showToast(string.format("👑 ПЕРЕРОЖДЕНИЕ #%d ВЫПОЛНЕНО! Множитель x%.1f 🔥", newRebirths, newMult), Color3.fromRGB(255, 215, 0))
+        local char = localPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            JuiceEffects.showFloatingText((char:FindFirstChild("HumanoidRootPart") :: BasePart).Position + Vector3.new(0, 4, 0), string.format("👑 REBIRTH #%d! x%.1f MULTIPLIER", newRebirths, newMult), Color3.fromRGB(255, 215, 0), 2.5)
         end
     end)
 end
