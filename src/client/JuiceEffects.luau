@@ -16,30 +16,30 @@ local playerGui = localPlayer:WaitForChild("PlayerGui") :: PlayerGui
 
 local JuiceEffects = {}
 
--- Каталог проверенных Roblox аудио-идентификаторов
+-- Каталог надежных Roblox аудио-идентификаторов (встроенные rbxasset и официальные rbxassetid)
 local SOUND_IDS: { [string]: string } = {
-    cash = "rbxassetid://6895079853",       -- Звон кассы (Cha-ching!)
-    buy = "rbxassetid://9069609200",        -- Щелчок успешной покупки
-    error = "rbxassetid://8667613768",      -- Звук ошибки / недостатка денег
-    siren = "rbxassetid://2865227271",      -- Сирена AirDrop
-    fanfare = "rbxassetid://6534947588",    -- Торжественная фанфара Rebirth
-    powerup = "rbxassetid://9114223175",    -- Активация способности
-    slam = "rbxassetid://9114223175",       -- Удар / землетрясение
-    laser = "rbxassetid://9114223175",      -- Лазерный луч
-    dash = "rbxassetid://9114223175",       -- Свистящий рывок
-    explosion = "rbxassetid://9114223175",  -- Мощный взрыв
-    electric = "rbxassetid://9114223175",   -- Электрический разряд
-    magic = "rbxassetid://9114223175",      -- Магическое сияние
-    teleport = "rbxassetid://9114223175",   -- Теневой телепорт
-    meteor = "rbxassetid://9114223175",     -- Падение метеорита
-    hammer = "rbxassetid://9114223175",     -- Удар банхаммера
-    splash = "rbxassetid://9114223175",     -- Всплеск / смыв
-    whoosh = "rbxassetid://9114223175",     -- Быстрый свист
-    chime = "rbxassetid://9114223175",      -- Ризз-колокольчик
-    horn = "rbxassetid://9114223175",       -- Мемный горн / фанфара
-    parry = "rbxassetid://9069609200",      -- Парирование / металлический лязг
-    snatch = "rbxassetid://6895079853",     -- Налог / звон монет
-    anvil = "rbxassetid://9069609200",      -- Звон наковальни
+    cash = "rbxassetid://6895079853",                  -- Звон кассы (Cha-ching! Официальный Roblox)
+    buy = "rbxasset://sounds/button.mp3",               -- Щелчок успешной покупки
+    error = "rbxasset://sounds/uuhhh.mp3",              -- Звук ошибки / недостатка денег
+    siren = "rbxassetid://2865227271",                 -- Сирена AirDrop (Официальный Roblox)
+    fanfare = "rbxasset://sounds/victory.mp3",          -- Торжественная фанфара Rebirth
+    powerup = "rbxasset://sounds/electronicpingshort.wav", -- Активация способности
+    slam = "rbxasset://sounds/bass.mp3",                -- Удар / землетрясение
+    laser = "rbxassetid://130976108",                  -- Лазерный луч
+    dash = "rbxasset://sounds/swordlunge.wav",          -- Свистящий рывок
+    explosion = "rbxassetid://12222084",               -- Мощный взрыв
+    electric = "rbxasset://sounds/electronicpingshort.wav", -- Электрический разряд
+    magic = "rbxassetid://131070686",                  -- Магическое сияние
+    teleport = "rbxassetid://131070686",               -- Теневой телепорт
+    meteor = "rbxasset://sounds/collide.mp3",           -- Падение метеорита
+    hammer = "rbxasset://sounds/bass.mp3",              -- Удар банхаммера
+    splash = "rbxasset://sounds/splat.mp3",             -- Всплеск / смыв
+    whoosh = "rbxasset://sounds/swordlunge.wav",        -- Быстрый свист
+    chime = "rbxasset://sounds/bell.mp3",               -- Ризз-колокольчик
+    horn = "rbxasset://sounds/victory.mp3",             -- Мемный горн / фанфара
+    parry = "rbxasset://sounds/swordhit.wav",           -- Парирование / металлический лязг
+    snatch = "rbxasset://sounds/snap.mp3",              -- Налог / звон монет
+    anvil = "rbxasset://sounds/metal.mp3",              -- Звон наковальни
 }
 
 function JuiceEffects.playSound(soundName: string, volume: number?)
@@ -48,7 +48,7 @@ function JuiceEffects.playSound(soundName: string, volume: number?)
 
     local sound = Instance.new("Sound")
     sound.SoundId = assetId
-    sound.Volume = volume or 0.7
+    sound.Volume = volume or 0.85
     sound.Parent = SoundService
     sound:Play()
     Debris:AddItem(sound, 4)
@@ -59,6 +59,16 @@ function JuiceEffects.play3DSound(soundName: string, position: Vector3, volume: 
     local assetId = SOUND_IDS[soundName] or SOUND_IDS.powerup
     if not assetId then return end
 
+    local char = localPlayer.Character
+    local root = if char then char:FindFirstChild("HumanoidRootPart") :: BasePart? else nil
+    local dist = if root then (root.Position - position).Magnitude else 999
+
+    -- Если кастер или игрок рядом (до 30 стадов) — проигрываем чистый 2D-звук напрямую
+    if dist <= 30 then
+        JuiceEffects.playSound(soundName, volume)
+    end
+
+    -- Позиционный 3D-звук для пространственной локализации в мире
     local soundPart = Instance.new("Part")
     soundPart.Name = "SoundSource"
     soundPart.Size = Vector3.new(0.1, 0.1, 0.1)

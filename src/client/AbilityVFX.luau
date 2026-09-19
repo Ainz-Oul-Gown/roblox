@@ -135,6 +135,13 @@ end
 function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: Vector3, lookVector: Vector3)
     local isSelf = (caster == localPlayer)
     local pos = originPos
+    local currentFaction = fId
+    if not currentFaction or currentFaction == "" then
+        currentFaction = "Skibidi"
+    end
+    local fId = currentFaction
+
+    print(string.format("[AbilityVFX] Playing %s VFX for %s (slot: %s, isSelf: %s)", fId, tostring(caster and caster.Name), tostring(slot), tostring(isSelf)))
 
     -- 1. SKIBIDI TOILET
     if fId == "Skibidi" then

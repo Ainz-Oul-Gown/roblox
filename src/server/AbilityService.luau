@@ -78,22 +78,25 @@ local function createAbilityTool(player: Player, slot: AbilitySlot, abilityInfo:
         if old then old:Destroy() end
     end
 
-    local tool = Instance.new("Tool")
-    tool.Name = toolName
-    tool.RequiresHandle = false
-    tool.ToolTip = string.format("%s (Нажми для активации)", abilityInfo.desc)
-    tool:SetAttribute("AbilitySlot", slot)
-    tool:SetAttribute("Cooldown", abilityInfo.cooldown)
-
-    tool.Activated:Connect(function()
-        AbilityService.castAbility(player, slot)
-    end)
+    local function makeTool(): Tool
+        local t = Instance.new("Tool")
+        t.Name = toolName
+        t.RequiresHandle = false
+        t.CanBeDropped = false
+        t.ToolTip = string.format("%s (Нажми [E] или кликни мышью для активации)", abilityInfo.desc)
+        t:SetAttribute("AbilitySlot", slot)
+        t:SetAttribute("Cooldown", abilityInfo.cooldown)
+        t.Activated:Connect(function()
+            AbilityService.castAbility(player, slot)
+        end)
+        return t
+    end
 
     if backpack then
-        tool:Clone().Parent = backpack
+        makeTool().Parent = backpack
     end
     if starterGear then
-        tool.Parent = starterGear
+        makeTool().Parent = starterGear
     end
 end
 
@@ -183,11 +186,11 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
     cooldowns[cdKey] = now
     cooldowns[player.UserId] = now
 
+    local fId = faction.id
+
     -- Запуск визуала на клиенте
     abilityEvent:FireClient(player, "CAST_SUCCESS", abilityInfo.name, abilityInfo.cooldown, slot)
     abilityVFXEvent:FireAllClients(player, fId, slot, root.Position, root.CFrame.LookVector)
-
-    local fId = faction.id
 
     -- Применение эффектов в зависимости от фракции и слота:
     if fId == "Skibidi" then

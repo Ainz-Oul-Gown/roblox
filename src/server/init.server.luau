@@ -22,6 +22,16 @@ if existingBaseplate then
     print("[SERVER] Removed default Baseplate")
 end
 
+-- Настройка глобального освещения: яркий дневной свет и сочный ambient, чтобы в помещениях и на этажах не было темно
+local Lighting = game:GetService("Lighting")
+Lighting.Ambient = Color3.fromRGB(155, 155, 170)
+Lighting.OutdoorAmbient = Color3.fromRGB(170, 170, 185)
+Lighting.Brightness = 2.5
+Lighting.ClockTime = 14
+Lighting.EnvironmentDiffuseScale = 0.75
+Lighting.EnvironmentSpecularScale = 0.75
+Lighting.GlobalShadows = true
+
 statusVal.Value = "🏝️ Постройка острова (WorldBuilder)..."
 local WorldBuilder = require(script:WaitForChild("WorldBuilder", 10))
 local wbOk, wbErr = pcall(function()

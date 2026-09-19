@@ -793,13 +793,41 @@ UserInputService.InputBegan:Connect(function(input, processed)
         castAbility("mobility")
     elseif input.KeyCode == Enum.KeyCode.X then
         castAbility("godmode")
+    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local char = localPlayer.Character
+        local tool = if char then char:FindFirstChildOfClass("Tool") else nil
+        if tool and tool:GetAttribute("AbilitySlot") then
+            castAbility(tool:GetAttribute("AbilitySlot") :: any)
+        end
     end
 end)
 
+-- Надежное связывание Tool с вызовом способности при клике
+local boundTools: { [Tool]: boolean } = {}
+
+local function bindTool(tool: Tool)
+    if boundTools[tool] then return end
+    boundTools[tool] = true
+    tool.Activated:Connect(function()
+        local slot = tool:GetAttribute("AbilitySlot")
+        if slot then
+            castAbility(slot :: any)
+        else
+            castAbility("base")
+        end
+    end)
+end
+
 -- Отслеживание экипировки инструмента
 local function watchTools(char: Model)
+    for _, child in ipairs(char:GetChildren()) do
+        if child:IsA("Tool") then
+            bindTool(child)
+        end
+    end
     char.ChildAdded:Connect(function(child)
         if child:IsA("Tool") then
+            bindTool(child)
             task.wait(0.05)
             updateButtonDisplay()
         end
@@ -811,6 +839,28 @@ local function watchTools(char: Model)
         end
     end)
 end
+
+-- Отслеживание инструментов в Backpack
+local function watchBackpack(bp: Instance)
+    for _, child in ipairs(bp:GetChildren()) do
+        if child:IsA("Tool") then
+            bindTool(child)
+        end
+    end
+    bp.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") then
+            bindTool(child)
+        end
+    end)
+end
+
+local bp = localPlayer:FindFirstChild("Backpack")
+if bp then watchBackpack(bp) end
+localPlayer.ChildAdded:Connect(function(child)
+    if child.Name == "Backpack" then
+        watchBackpack(child)
+    end
+end)
 
 if localPlayer.Character then watchTools(localPlayer.Character) end
 localPlayer.CharacterAdded:Connect(watchTools)
