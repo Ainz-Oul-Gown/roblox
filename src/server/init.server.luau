@@ -129,10 +129,37 @@ claimPlotEvent.OnServerEvent:Connect(function(player: Player, plotIndex: any)
     end
 end)
 
+-- 4.1 Временная админ-фишка для моментального лута ауры
+local adminCashEvent = ReplicatedStorage:FindFirstChild("AdminGiveCashEvent") :: RemoteEvent?
+if not adminCashEvent then
+    adminCashEvent = Instance.new("RemoteEvent")
+    adminCashEvent.Name = "AdminGiveCashEvent"
+    adminCashEvent.Parent = ReplicatedStorage
+end
+
+adminCashEvent.OnServerEvent:Connect(function(player: Player, amount: any)
+    local n = tonumber(amount) or 1000000
+    n = math.clamp(n, 1000, 100000000)
+    TycoonService.addCash(player, n)
+    print(string.format("[ADMIN] Granted +%d Aura to %s", n, player.Name))
+end)
+
 -- 5. Подключение игроков
 local function onPlayerAdded(player: Player)
     print(string.format("[SERVER] Player connected: %s (UserId: %d)", player.Name, player.UserId))
     TycoonService.onPlayerAdded(player)
+
+    -- Чат-команда админа: /aura или /rich
+    player.Chatted:Connect(function(msg: string)
+        local lower = string.lower(msg)
+        if string.sub(lower, 1, 5) == "/aura" or string.sub(lower, 1, 5) == "/rich" then
+            local parts = string.split(msg, " ")
+            local amt = (parts[2] and tonumber(parts[2])) or 1000000
+            amt = math.clamp(amt, 1000, 100000000)
+            TycoonService.addCash(player, amt)
+            print(string.format("[ADMIN CHAT] %s executed %s -> +%d Aura", player.Name, msg, amt))
+        end
+    end)
 
     local function setupChar(char: Model)
         local root = char:WaitForChild("HumanoidRootPart", 5) :: BasePart?

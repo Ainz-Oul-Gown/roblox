@@ -16,8 +16,10 @@ local vaultUpdatedEvent = ReplicatedStorage:WaitForChild("VaultUpdatedEvent", 15
 local withdrawEvent = ReplicatedStorage:WaitForChild("WithdrawEvent", 15) :: RemoteEvent?
 local pvpKillEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15) :: RemoteEvent?
 local airDropEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15) :: RemoteEvent?
+local adminGiveCashEvent = ReplicatedStorage:WaitForChild("AdminGiveCashEvent", 15) :: RemoteEvent?
 
 local JuiceEffects = require(script.Parent:WaitForChild("JuiceEffects", 10))
+local showToast: (string, Color3?) -> ()
 
 -- 1. Создание Gen Alpha Brainrot HUD
 local screenGui = Instance.new("ScreenGui")
@@ -187,6 +189,30 @@ openSelectBtn.Parent = screenGui
 local openBtnCorner = Instance.new("UICorner")
 openBtnCorner.CornerRadius = UDim.new(0, 10)
 openBtnCorner.Parent = openSelectBtn
+
+-- Временная кнопка для админа: моментальный лут ауры
+local adminCashBtn = Instance.new("TextButton")
+adminCashBtn.Name = "AdminCashBtn"
+adminCashBtn.Size = UDim2.new(0, 220, 0, 42)
+adminCashBtn.Position = UDim2.new(0, 20, 0, 220)
+adminCashBtn.BackgroundColor3 = Color3.fromRGB(243, 156, 18)
+adminCashBtn.Text = "👑 +1M AURA [P]"
+adminCashBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+adminCashBtn.TextStrokeColor3 = Color3.fromRGB(150, 70, 0)
+adminCashBtn.TextStrokeTransparency = 0.2
+adminCashBtn.TextScaled = true
+adminCashBtn.Font = Enum.Font.FredokaOne
+adminCashBtn.BorderSizePixel = 0
+adminCashBtn.Parent = screenGui
+
+local adminBtnCorner = Instance.new("UICorner")
+adminBtnCorner.CornerRadius = UDim.new(0, 10)
+adminBtnCorner.Parent = adminCashBtn
+
+local adminBtnStroke = Instance.new("UIStroke")
+adminBtnStroke.Color = Color3.fromRGB(255, 240, 100)
+adminBtnStroke.Thickness = 2.5
+adminBtnStroke.Parent = adminCashBtn
 
 -- 2. Окно СМЕНЫ базы (изначально скрыто)
 local selectModal = Instance.new("Frame")
@@ -392,7 +418,7 @@ toastLabel.TextScaled = true
 toastLabel.Font = Enum.Font.FredokaOne
 toastLabel.Parent = toastFrame
 
-local function showToast(message: string, color: Color3?)
+showToast = function(message: string, color: Color3?)
     toastLabel.Text = message
     toastStroke.Color = color or Color3.fromRGB(241, 196, 15)
     toastFrame.Visible = true
@@ -417,6 +443,42 @@ local function showToast(message: string, color: Color3?)
         end
     end)
 end
+
+-- Обработчик админ-фишки (лут ауры)
+local function triggerAdminCash()
+    if adminGiveCashEvent then
+        adminGiveCashEvent:FireServer(1000000)
+    end
+    JuiceEffects.playSound("cash", 1.0)
+    JuiceEffects.screenFlash(Color3.fromRGB(255, 215, 0), 0.35)
+
+    local char = localPlayer.Character
+    if char then
+        local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+        if root then
+            JuiceEffects.showFloatingText(root.Position + Vector3.new(0, 3.5, 0), "+1,000,000 AURA 👑", Color3.fromRGB(255, 215, 0), 1.5)
+        end
+    end
+    showToast("👑 АДМИН: +1,000,000 АУРЫ ВЫДАНО!", Color3.fromRGB(255, 215, 0))
+
+    -- Анимация сжатия кнопки
+    local origSize = adminCashBtn.Size
+    adminCashBtn.Size = UDim2.new(0, 235, 0, 46)
+    task.delay(0.1, function()
+        if adminCashBtn.Parent then
+            adminCashBtn.Size = origSize
+        end
+    end)
+end
+
+adminCashBtn.MouseButton1Click:Connect(triggerAdminCash)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.P then
+        triggerAdminCash()
+    end
+end)
 
 -- 3. Центр уведомлений PvP (Лут при убийстве / Потеря при смерти)
 local pvpBanner = Instance.new("Frame")
