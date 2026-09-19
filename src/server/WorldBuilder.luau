@@ -198,7 +198,7 @@ function WorldBuilder.buildWorld()
                 math.sin(ang + math.pi / 2), 0, math.cos(ang + math.pi / 2)
             ),
             Color3.fromRGB(255, 255, 255),
-            Enum.Material.Air,
+            Enum.Material.SmoothPlastic,
             1
         )
     end

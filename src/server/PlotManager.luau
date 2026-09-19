@@ -143,11 +143,11 @@ function PlotManager.releasePlot(player: Player): number?
 end
 
 -- Смена базы: освобождает текущую и занимает новую
-function PlotManager.switchPlot(player: Player, newPlotIndex: number): boolean
+function PlotManager.switchPlot(player: Player, newPlotIndex: number): (boolean, number?)
     local currentIndex = playerPlotMap[player.UserId]
     if currentIndex == newPlotIndex then
         warn(string.format("[PlotManager] %s is already at Plot %d!", player.Name, newPlotIndex))
-        return false
+        return false, nil
     end
 
     -- Освобождаем текущую если есть
@@ -166,7 +166,7 @@ function PlotManager.switchPlot(player: Player, newPlotIndex: number): boolean
             plots[currentIndex].owner = player
             playerPlotMap[player.UserId] = currentIndex
         end
-        return false
+        return false, nil
     end
 
     newPlot.owner = player

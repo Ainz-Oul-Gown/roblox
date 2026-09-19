@@ -1,6 +1,6 @@
 --!strict
 
--- Server initialization script (ServerScriptService.Server)
+local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -16,14 +16,21 @@ local WorldBuilder = require(script:WaitForChild("WorldBuilder"))
 print("[SERVER] Initializing 8-Base Gen Alpha Brainrot Tycoon World...")
 
 -- Удаляем стандартный Baseplate из Studio (мешает виду острова)
-local existingBaseplate = Workspace:FindFirstChild("Baseplate")
+local existingBaseplate = Workspace:FindFirstChild("Baseplate") or Workspace:FindFirstChild("baseplate")
 if existingBaseplate then
     existingBaseplate:Destroy()
     print("[SERVER] Removed default Baseplate")
 end
 
 -- 0. Строим карту острова (пол, дороги, океан, фонари)
-WorldBuilder.buildWorld()
+local wbOk, wbErr = pcall(function()
+    WorldBuilder.buildWorld()
+end)
+if not wbOk then
+    warn("[SERVER] WorldBuilder.buildWorld error: " .. tostring(wbErr))
+else
+    print("[SERVER] WorldBuilder.buildWorld completed successfully")
+end
 
 -- 1. Центральная арена (0, 0, 0)
 CentralArena.init()
