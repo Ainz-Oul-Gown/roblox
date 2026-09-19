@@ -30,10 +30,10 @@ local BUTTON_OFFSETS: { [string]: Vector3 } = {
 local function createBillboard(parent: Instance, title: string, subtitle: string, textColor: Color3)
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "InfoGui"
-    billboard.Size = UDim2.new(0, 160, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.Size = UDim2.new(0, 200, 0, 60)
+    billboard.StudsOffset = Vector3.new(0, 3.5, 0)
     billboard.AlwaysOnTop = true
-    billboard.MaxDistance = 60
+    billboard.MaxDistance = 100
     billboard.Parent = parent
 
     local label = Instance.new("TextLabel")
@@ -41,6 +41,7 @@ local function createBillboard(parent: Instance, title: string, subtitle: string
     label.BackgroundTransparency = 1
     label.Text = string.format("%s\n%s", title, subtitle)
     label.TextColor3 = textColor
+    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     label.TextStrokeTransparency = 0.2
     label.TextScaled = true
     label.Font = Enum.Font.FredokaOne
@@ -53,7 +54,6 @@ local function spawnPurchasedStructure(plotModel: Model, owner: Player, item: Ty
     if not itemsFolder then return end
 
     if item.category == "Dropper" then
-        -- Создаем модель дроппера над конвейером
         local dropperHeight = 8
         local zOffset = -10
         local color = Color3.fromRGB(52, 152, 219)
@@ -107,7 +107,6 @@ local function spawnPurchasedStructure(plotModel: Model, owner: Player, item: Ty
         end)
 
     elseif item.id == "Walls" then
-        -- Стены вокруг базы
         local wallLeft = Instance.new("Part")
         wallLeft.Name = "WallLeft"
         wallLeft.Size = Vector3.new(1, 10, 40)
@@ -183,7 +182,7 @@ local function updateButtons(plotModel: Model, owner: Player, origin: Vector3)
             buttonStand.Color = Color3.fromRGB(40, 40, 40)
             buttonStand.Parent = buttonsFolder
 
-            -- Сама нажимная пластина
+            -- Нажимная пластина
             local pad = Instance.new("Part")
             pad.Name = "Pad"
             pad.Size = Vector3.new(2.8, 0.3, 2.8)
@@ -230,7 +229,8 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
         plotsContainer.Parent = Workspace
     end
 
-    local origin = Vector3.new(0, 0, (plotIndex - 1) * 70)
+    -- Располагаем базу перед спавном (Z = 30)
+    local origin = Vector3.new(0, 0.5, 30 + (plotIndex - 1) * 70)
 
     local plotModel = Instance.new("Model")
     plotModel.Name = string.format("Plot_%s", player.Name)
@@ -255,11 +255,11 @@ function PlotBuilder.createPlotForPlayer(player: Player, plotIndex: number)
     baseFloor.Color = Color3.fromRGB(30, 30, 35)
     baseFloor.Parent = plotModel
 
-    -- Вывеска владельца базы
+    -- Вывеска владельца базы перед входом
     local sign = Instance.new("Part")
     sign.Name = "OwnerSign"
-    sign.Size = Vector3.new(12, 3, 1)
-    sign.Position = origin + Vector3.new(0, 8, 22)
+    sign.Size = Vector3.new(14, 3, 1)
+    sign.Position = origin + Vector3.new(0, 8, -21)
     sign.Anchored = true
     sign.Material = Enum.Material.Neon
     sign.Color = Color3.fromRGB(52, 152, 219)
