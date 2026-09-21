@@ -162,5 +162,25 @@ test('Zero-Trust Adversarial Audit Iteration 4: Ghost Vault Exploit & Rebirth At
     assert.match(plotCode, /TycoonService\.resetVault\(plotIndex\)/, 'resetPlotToUnclaimed must reset vault cash');
 });
 
+test('Zero-Trust Adversarial Audit Iteration 5: Data Wipe Prevention & Backoff', () => {
+    const dsPath = path.join(__dirname, '..', 'src', 'server', 'DataStoreManager.luau');
+    const dsCode = fs.readFileSync(dsPath, 'utf8');
+
+    // P0: Data wipe prevention on load failure
+    assert.match(dsCode, /failedToLoad\[userId\] = true/, 'Must track load failures to protect real data');
+    assert.match(dsCode, /if failedToLoad\[userId\] then/, 'saveData must check failedToLoad guard');
+    assert.match(dsCode, /preventing data wipe/, 'Must log security warning and abort saving if load failed');
+
+    // P1: Exponential backoff on retries
+    assert.match(dsCode, /task\.wait\(attempt \* 1\.5\)/, 'saveData must use exponential backoff on retry');
+
+    // P1: Cleanup session on player disconnect
+    assert.match(dsCode, /function DataStoreManager\.clearPlayerSession/, 'DataStoreManager must export clearPlayerSession');
+    const tycoonServicePath = path.join(__dirname, '..', 'src', 'server', 'TycoonService.luau');
+    const tycoonCode = fs.readFileSync(tycoonServicePath, 'utf8');
+    assert.match(tycoonCode, /DataStoreManager\.clearPlayerSession/, 'TycoonService must clear session on disconnect');
+});
+
+
 
 

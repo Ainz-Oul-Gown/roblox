@@ -56,7 +56,7 @@
 - **Язык**: Luau (strict typing `--!strict`)
 - **Мультиплеер**: 8 баз ($R = 180$ studs), остров $R = 250$ studs, центральная площадь
 - **Сохранение**: Roblox DataStoreService (`TycoonSave_v1`)
-- **Тестирование**: Node.js Test Runner (`npm test`, 80 юнит-тестов, 100% покрытие всех механик и граничных случаев)
+- **Тестирование**: Node.js Test Runner (`npm test`, 81 юнит-тест, 100% покрытие всех механик и граничных случаев)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
 

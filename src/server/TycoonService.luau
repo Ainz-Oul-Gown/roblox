@@ -187,6 +187,7 @@ function TycoonService.onPlayerRemoving(player: Player)
         playerDataMap[player.UserId] = nil
     end
     rebirthLock[player.UserId] = nil
+    DataStoreManager.clearPlayerSession(player.UserId)
 end
 
 -- Ссылка на внешний расчет экстра-множителей (MonetizationService, PetService)

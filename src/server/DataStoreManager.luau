@@ -25,6 +25,7 @@ local DataStoreManager = {}
 local tycoonDataStore: any = nil
 local dataStoreChecked = false
 local dataStoreAvailable = false
+local failedToLoad: { [number]: boolean } = {}
 
 local function ensureDataStore()
     if dataStoreChecked then return end
@@ -72,7 +73,7 @@ function DataStoreManager.validateAndMigrate(raw: any): PlayerSaveData
     }
 end
 
--- Загрузка данных игрока
+-- Загрузка данных игрока с защитой от Data Wipe при сбоях сети
 function DataStoreManager.loadData(userId: number): PlayerSaveData
     ensureDataStore()
     if not dataStoreAvailable or not tycoonDataStore then
@@ -81,17 +82,31 @@ function DataStoreManager.loadData(userId: number): PlayerSaveData
 
     local key = string.format("Player_%d", userId)
     local loadedData: any = nil
-    local ok, err = pcall(function()
-        loadedData = tycoonDataStore:GetAsync(key)
-    end)
+    local ok = false
+    local err: any = nil
 
-    if ok and loadedData ~= nil then
-        print(string.format("[DataStoreManager] Loaded save data for UserId: %d", userId))
-        return DataStoreManager.validateAndMigrate(loadedData)
-    elseif not ok then
-        warn(string.format("[DataStoreManager] Error loading data for %d: %s. Using default.", userId, tostring(err)))
+    for attempt = 1, 3 do
+        ok, err = pcall(function()
+            loadedData = tycoonDataStore:GetAsync(key)
+        end)
+        if ok then break end
+        warn(string.format("[DataStoreManager] Attempt %d failed loading for %d: %s", attempt, userId, tostring(err)))
+        task.wait(attempt * 1.0)
     end
 
+    if ok and loadedData ~= nil then
+        failedToLoad[userId] = nil
+        print(string.format("[DataStoreManager] Loaded save data for UserId: %d", userId))
+        return DataStoreManager.validateAndMigrate(loadedData)
+    elseif ok and loadedData == nil then
+        -- Новый игрок без сохранений: загрузка успешна
+        failedToLoad[userId] = nil
+        return DataStoreManager.getDefaultData()
+    end
+
+    -- КРИТИЧНО: При сбое сети блокируем последующее сохранение нулей поверх реальных данных!
+    failedToLoad[userId] = true
+    warn(string.format("[SECURITY] Critical DataStore load failure for %d. Saving disabled for this session to prevent wipe.", userId))
     return DataStoreManager.getDefaultData()
 end
 
@@ -100,6 +115,11 @@ function DataStoreManager.saveData(userId: number, data: PlayerSaveData): boolea
     ensureDataStore()
     if not dataStoreAvailable or not tycoonDataStore then
         return true -- В режиме сессии считаем успешно
+    end
+
+    if failedToLoad[userId] then
+        warn(string.format("[SECURITY] Aborted saving for UserId %d: load failed on join, preventing data wipe!", userId))
+        return false
     end
 
     local key = string.format("Player_%d", userId)
@@ -119,11 +139,15 @@ function DataStoreManager.saveData(userId: number, data: PlayerSaveData): boolea
             break
         else
             warn(string.format("[DataStoreManager] Attempt %d failed saving %d: %s", attempt, userId, tostring(err)))
-            task.wait(1)
+            task.wait(attempt * 1.5)
         end
     end
 
     return successSave
+end
+
+function DataStoreManager.clearPlayerSession(userId: number)
+    failedToLoad[userId] = nil
 end
 
 return DataStoreManager
