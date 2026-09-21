@@ -80,16 +80,21 @@ local function pruneOldRocks(countToFree: number)
 end
 
 -- Определение фактической точки пола под объектом (защита от парения эффектов в воздухе при прыжках)
-local function getGroundPosition(pos: Vector3, maxDrop: number?): Vector3
+local function getGroundPosition(pos: Vector3, maxDrop: number?, extraIgnore: Instance?): Vector3
     local drop = maxDrop or 30
     local rayParams = RaycastParams.new()
     rayParams.FilterType = Enum.RaycastFilterType.Exclude
     local ignoreList = {}
-    if localPlayer.Character then
-        table.insert(ignoreList, localPlayer.Character)
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character then
+            table.insert(ignoreList, p.Character)
+        end
+    end
+    if extraIgnore then
+        table.insert(ignoreList, extraIgnore)
     end
     rayParams.FilterDescendantsInstances = ignoreList
-    local result = Workspace:Raycast(pos + Vector3.new(0, 1.5, 0), Vector3.new(0, -drop, 0), rayParams)
+    local result = Workspace:Raycast(pos + Vector3.new(0, 1.5, 0), Vector3.new(0, -(drop + 1.5), 0), rayParams)
     if result then
         return result.Position
     end
@@ -424,19 +429,20 @@ end
 AbilityVFX.spawnMagicCircle = spawnMagicCircle
 
 -- Атмосферный вход падающего объекта с неба (метеорит, наковальня, банхаммер, пицца)
-local function spawnFallingSkyProp(targetPos: Vector3, propBuilder: () -> BasePart, onImpact: () -> (), fallHeight: number?)
+local function spawnFallingSkyProp(targetPos: Vector3, propBuilder: () -> BasePart, onImpact: () -> (), fallHeight: number?, customCrater: boolean?)
     local h = fallHeight or 55
     -- Наклонная траектория падения (динамический угол входа в атмосферу)
     local spawnPos = targetPos + Vector3.new(10, h, 8)
     local prop = propBuilder()
-    prop.CFrame = CFrame.new(spawnPos)
+    local rot = prop.CFrame.Rotation
+    prop.CFrame = CFrame.new(spawnPos) * rot
     prop.Anchored = true
     prop.CanCollide = false
     prop.Parent = Workspace
 
     local fallTime = 0.42
     local tween = TweenService:Create(prop, TweenInfo.new(fallTime, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        CFrame = CFrame.new(targetPos),
+        CFrame = CFrame.new(targetPos) * rot,
     })
     tween:Play()
     Debris:AddItem(prop, fallTime + 1.0)
@@ -444,11 +450,13 @@ local function spawnFallingSkyProp(targetPos: Vector3, propBuilder: () -> BasePa
         if prop and prop.Parent then
             prop:Destroy()
         end
-        -- Комплексный физический кратер при детонации падающего объекта
-        spawnEarthFracture(targetPos, 12, 8)
-        spawnGroundCracks(targetPos, 14, Color3.fromRGB(35, 35, 40), 2.8)
-        if JuiceEffects.spawnLightBurst then
-            JuiceEffects.spawnLightBurst(targetPos, Color3.fromRGB(255, 190, 80), 18, 45, 0.25)
+        -- Базовый физический кратер при детонации падающего объекта (если колбэк не реализует кастомный)
+        if not customCrater then
+            spawnEarthFracture(targetPos, 12, 8)
+            spawnGroundCracks(targetPos, 14, Color3.fromRGB(35, 35, 40), 2.8)
+            if JuiceEffects.spawnLightBurst then
+                JuiceEffects.spawnLightBurst(targetPos, Color3.fromRGB(255, 190, 80), 18, 45, 0.25)
+            end
         end
         onImpact()
     end)
@@ -458,12 +466,14 @@ AbilityVFX.spawnFallingSkyProp = spawnFallingSkyProp
 -- Главная функция проигрывания VFX/SFX способности
 function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: Vector3, lookVector: Vector3)
     local isSelf = (caster == localPlayer)
-    local pos = originPos
+    local pos = originPos or Vector3.zero
+    local look = if lookVector and lookVector.Magnitude > 0 then lookVector.Unit else Vector3.new(0, 0, -1)
     local currentFaction = fId
     if not currentFaction or currentFaction == "" then
         currentFaction = "Skibidi"
     end
     local fId = currentFaction
+    local lookVector = look
 
     print(string.format("[AbilityVFX] Playing %s VFX for %s (slot: %s, isSelf: %s)", fId, tostring(caster and caster.Name), tostring(slot), tostring(isSelf)))
 
@@ -550,7 +560,7 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
                     JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 215, 0), 0.4)
                     JuiceEffects.hitstop(0.07)
                 end
-            end, 55)
+            end, 55, true)
         end
 
     -- 2. GIGACHAD MEWING (Looksmaxing / Diamond & Granite Monolith)
@@ -1075,7 +1085,7 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
                     JuiceEffects.screenBloomFlash(Color3.fromRGB(230, 126, 34), 0.45)
                     JuiceEffects.hitstop(0.07)
                 end
-            end, 55)
+            end, 55, true)
         end
     end
 end

@@ -147,3 +147,26 @@ test('AbilityVFX: Step 3 - all 48 ability slots integrate 4-phase VFX, earth fra
     assert.ok(playFn.includes('JuiceEffects.screenBloomFlash('), 'AbilityVFX.play must invoke screenBloomFlash for ultimate/godmode');
 });
 
+test('AbilityVFX: Step 3 Review Fixes - player character raycast filtering, prop rotation preservation, customCrater flag, and originPos/lookVector fallbacks', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const content = fs.readFileSync(vfxPath, 'utf8');
+
+    // Bug 1: getGroundPosition must exclude all players' characters
+    assert.ok(content.includes('Players:GetPlayers()'), 'getGroundPosition must iterate Players:GetPlayers() to exclude all characters');
+    assert.ok(content.includes('table.insert(ignoreList, p.Character)'), 'getGroundPosition must ignore remote player characters');
+
+    // Bug 2: spawnFallingSkyProp supports customCrater to avoid double craters and Z-fighting
+    assert.ok(content.includes('customCrater: boolean?'), 'spawnFallingSkyProp must accept customCrater parameter');
+    assert.ok(content.includes('if not customCrater then'), 'spawnFallingSkyProp must guard default crater with not customCrater');
+
+    // Bug 3: propBuilder rotation preservation
+    assert.ok(content.includes('local rot = prop.CFrame.Rotation'), 'spawnFallingSkyProp must preserve builder rotation');
+    assert.ok(content.includes('CFrame.new(spawnPos) * rot'), 'spawnFallingSkyProp must apply rotation to spawn CFrame');
+    assert.ok(content.includes('CFrame.new(targetPos) * rot'), 'spawnFallingSkyProp must apply rotation to target CFrame');
+
+    // Bug 4: originPos and lookVector nil-safe fallbacks
+    assert.ok(content.includes('local pos = originPos or Vector3.zero'), 'AbilityVFX.play must provide safe fallback for originPos');
+    assert.ok(content.includes('local look = if lookVector and lookVector.Magnitude > 0 then lookVector.Unit else Vector3.new(0, 0, -1)'), 'AbilityVFX.play must provide safe fallback for lookVector');
+});
+
+

@@ -59,12 +59,13 @@
 - **Язык**: Luau (strict typing `--!strict`)
 - **Мультиплеер**: 8 баз ($R = 180$ studs), остров $R = 250$ studs, центральная площадь
 - **Сохранение**: Roblox DataStoreService (`TycoonSave_v1`)
-- **Тестирование**: Node.js Test Runner (`npm test`, 117 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
+- **Тестирование**: Node.js Test Runner (`npm test`, 118 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
-- **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` (JuiceEffects: 8.7/10), `REVIEW_REPORT_STEP2.md` (AbilityVFX Физика мира: 9.4/10) и `REVIEW_REPORT_STEP3.md` (Оверхол 48 способностей: 9.1/10).
+- **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` (JuiceEffects: 8.7/10), `REVIEW_REPORT_STEP2.md` (AbilityVFX Физика мира: 9.4/10) и `REVIEW_REPORT_STEP3.md` (Оверхол 48 способностей: 9.1/10 — все 4 бага [Bug 1-4] успешно устранены).
 
-- **Полный аудит надежности и безопасности (117/117 тестов пройдено)**:
+- **Полный аудит надежности и безопасности (118/118 тестов пройдено)**:
+  - `AbilityVFX (Step 3 Hotfix)`: Исключение коллизии луча `getGroundPosition` с персонажами всех игроков (`Players:GetPlayers()`), устранение дублирования кратеров и Z-Fighting через `customCrater`, сохранение поворота цилиндрических падающих пропов (`rot = prop.CFrame.Rotation`) и безопасные fallback-значения для `originPos` и `lookVector`.
   - `MonetizationService`: Изоляция кэша `processedReceipts` по каждому игроку (`[UserId][receiptKey]`) и очистка на `PlayerRemoving`, устраняющая утечку памяти и кросс-пользовательские коллизии.
   - `TycoonService`: Передача `preloadedData` в `onPlayerAdded` исключает двойные вызовы `DataStoreManager.loadData`. Санитизация сумм (`sanitizeNum`) и `addCashRaw` при PvP трансфере исключают дюп и порчу баланса. Очистка экипированных Tool из `Character` при Rebirth.
   - `LeaderboardService`: Оптимизация памяти — удаление игроков с 0 фрагами при выходе с сервера, сохранение и авто-восстановление статистики реальных киллеров.
