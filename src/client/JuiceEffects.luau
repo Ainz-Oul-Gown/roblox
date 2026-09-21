@@ -136,12 +136,13 @@ function JuiceEffects.traumaShake(trauma: number, maxRot: number?, maxPos: numbe
             local shakeIntensity = currentTrauma * currentTrauma -- Квадратичный закон затухания
             local t = tick() * 32
 
-            local rx = (math.noise(t, 0, seed) - 0.5) * 2 * rotLimit * shakeIntensity
-            local ry = (math.noise(0, t, seed) - 0.5) * 2 * rotLimit * shakeIntensity
-            local rz = (math.noise(seed, t, 0) - 0.5) * 2 * (rotLimit * 0.5) * shakeIntensity
+            -- P1 Fix: math.noise в Roblox возвращает [-0.5, 0.5], поэтому центрируем без вычитания 0.5
+            local rx = math.noise(t, 0, seed) * 2 * rotLimit * shakeIntensity
+            local ry = math.noise(0, t, seed) * 2 * rotLimit * shakeIntensity
+            local rz = math.noise(seed, t, 0) * rotLimit * shakeIntensity
 
-            local px = (math.noise(t + 50, 0, seed) - 0.5) * 2 * posLimit * shakeIntensity
-            local py = (math.noise(0, t + 50, seed) - 0.5) * 2 * posLimit * shakeIntensity
+            local px = math.noise(t + 50, 0, seed) * 2 * posLimit * shakeIntensity
+            local py = math.noise(0, t + 50, seed) * 2 * posLimit * shakeIntensity
 
             camera.CFrame = camera.CFrame * CFrame.new(px, py, 0) * CFrame.Angles(math.rad(rx), math.rad(ry), math.rad(rz))
 
@@ -164,6 +165,10 @@ function JuiceEffects.screenShake(intensity: number?, duration: number?)
     JuiceEffects.traumaShake(math.clamp(str * 0.8, 0.2, 1.0))
 end
 
+-- P0 Fix: Счетчик активных хитстопов и кэш оригинальной скорости (защита от зануления скорости при комбо)
+local activeHitstopCount: number = 0
+local cachedOriginalWalkSpeed: number = 16
+
 -- Хитстоп (Hitstop / Micro-Freeze) для колоссального ощущения веса удара
 function JuiceEffects.hitstop(duration: number?)
     local dur = duration or 0.05
@@ -172,12 +177,18 @@ function JuiceEffects.hitstop(duration: number?)
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     if not humanoid then return end
 
-    local origWalkSpeed = humanoid.WalkSpeed
-    humanoid.WalkSpeed = 0
+    if activeHitstopCount == 0 then
+        if humanoid.WalkSpeed > 0 then
+            cachedOriginalWalkSpeed = humanoid.WalkSpeed
+        end
+        humanoid.WalkSpeed = 0
+    end
+    activeHitstopCount += 1
 
     task.delay(dur, function()
-        if humanoid and humanoid.Parent then
-            humanoid.WalkSpeed = origWalkSpeed
+        activeHitstopCount = math.max(0, activeHitstopCount - 1)
+        if activeHitstopCount == 0 and humanoid and humanoid.Parent then
+            humanoid.WalkSpeed = cachedOriginalWalkSpeed
         end
     end)
 end
@@ -240,7 +251,7 @@ function JuiceEffects.spawnLightBurst(pos: Vector3, color: Color3, brightness: n
 end
 
 -- Пост-процессинг вспышка Bloom / ColorCorrection
-function JuiceEffects.screenBloomFlash(color: Color3, duration: number?)
+function JuiceEffects.screenBloomFlash(color: Color3?, duration: number?)
     local dur = duration or 0.18
     local bloom = Lighting:FindFirstChild("CombatBloomPulse") :: BloomEffect?
     if not bloom then
@@ -253,10 +264,26 @@ function JuiceEffects.screenBloomFlash(color: Color3, duration: number?)
     end
 
     bloom.Intensity = 2.4
-    local tween = TweenService:Create(bloom, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    local tweenBloom = TweenService:Create(bloom, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Intensity = 0,
     })
-    tween:Play()
+    tweenBloom:Play()
+
+    -- P2 Fix: Полноценное задействование параметра color через ColorCorrectionEffect
+    if color then
+        local cc = Lighting:FindFirstChild("CombatColorPulse") :: ColorCorrectionEffect?
+        if not cc then
+            cc = Instance.new("ColorCorrectionEffect")
+            cc.Name = "CombatColorPulse"
+            cc.TintColor = Color3.new(1, 1, 1)
+            cc.Parent = Lighting
+        end
+        cc.TintColor = color
+        local tweenCC = TweenService:Create(cc, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            TintColor = Color3.new(1, 1, 1),
+        })
+        tweenCC:Play()
+    end
 end
 
 local activeFovTweenUp: Tween? = nil
