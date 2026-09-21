@@ -56,10 +56,14 @@
   - Дистанция отображения кнопок снижена до 28-30 стадов, исключая наслоения.
 
 ## Сочность и Game Feel (JuiceEffects)
-- **SFX**: Воспроизведение звуков кассы (`cash`), покупки (`buy`), ошибок (`error`), сирены (`siren`), фанфар (`fanfare`), способностей (`powerup`).
+- **SFX & Pitch Jitter**: Воспроизведение звуков кассы (`cash`), покупки (`buy`), ошибок (`error`), сирены (`siren`), фанфар (`fanfare`), способностей (`powerup`, `slam`, `parry` и др.) со случайной вариацией высоты тона (`PlaybackSpeed 0.94..1.06`) для устранения монотонности.
 - **Floating Numbers**: Всплывающий в 3D пространстве текст (+$$$ / урон / фраги).
 - **Кнопки**: Анимация сжатия (Squash & Stretch) при покупке и вибрация при недостатке средств.
-- **Вспышки экрана**: Золотой эффект при сборе кассы/лута, красный при смерти.
+- **Вспышки экрана и Bloom Pulse**: Золотой эффект при сборе кассы/лута, красный при смерти, динамический импульс Bloom (`screenBloomFlash`) при ультимейтах.
+- **Trauma-based Camera Shake**: Физическая тряска экрана по шуму Перлина с квадратичным затуханием ($Trauma^2$), направленный толчок камеры (`cameraKick`).
+- **Хитстоп (Hitstop Engine)**: Микро-фриз на 0.05с (`hitstop`) кастера и цели для ощущения сокрушительной массы удара.
+- **Target Impact Flash**: Кратковременный белый световой оверлей на теле жертвы (`impactFlash`) при получении урона.
+- **PointLight Dynamic Burst**: Вспышка динамического источника света (`spawnLightBurst`) с тенями и экспоненциальным затуханием.
 
 ## Серверные службы
 - `TycoonService`: Экономика, Сейф (`vaultCashMap`), DataStore (`UpdateAsync` с compare-and-set), PvP-лут (`creator` тег), безопасное списание `deductCash` и `addCashRaw` (без множителя для трансферов), NaN/Infinity guard (`sanitizeNum`), проверка владения в `withdrawVault`, параллельное сохранение в `BindToClose` (25с deadline), подключение составных множителей `getExtraMultiplier`, очистка Tools при Rebirth, полная persistence через callbacks (`getPetDataForSave`, `getRetentionDataForSave`, `getProcessedReceipts`, `getPvPStatsForSave`).

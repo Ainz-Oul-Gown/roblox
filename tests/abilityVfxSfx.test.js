@@ -21,6 +21,13 @@ test('JuiceEffects: exports comprehensive sound catalog and dynamic screen effec
     assert.ok(content.includes('function JuiceEffects.play3DSound'), 'JuiceEffects must implement play3DSound');
     assert.ok(content.includes('function JuiceEffects.screenShake'), 'JuiceEffects must implement screenShake');
     assert.ok(content.includes('function JuiceEffects.fovPulse'), 'JuiceEffects must implement fovPulse');
+    assert.ok(content.includes('function JuiceEffects.traumaShake'), 'JuiceEffects must implement traumaShake');
+    assert.ok(content.includes('function JuiceEffects.cameraKick'), 'JuiceEffects must implement cameraKick');
+    assert.ok(content.includes('function JuiceEffects.hitstop'), 'JuiceEffects must implement hitstop');
+    assert.ok(content.includes('function JuiceEffects.impactFlash'), 'JuiceEffects must implement impactFlash');
+    assert.ok(content.includes('function JuiceEffects.spawnLightBurst'), 'JuiceEffects must implement spawnLightBurst');
+    assert.ok(content.includes('function JuiceEffects.screenBloomFlash'), 'JuiceEffects must implement screenBloomFlash');
+    assert.ok(content.includes('sound.PlaybackSpeed ='), 'JuiceEffects must randomize PlaybackSpeed for pitch variation');
 });
 
 test('AbilityVFX: implements audiovisual rendering for all 8 factions and 6 ability slots', () => {

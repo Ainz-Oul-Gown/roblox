@@ -10,6 +10,7 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 local SoundService = game:GetService("SoundService")
+local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 
 local localPlayer = Players.LocalPlayer
@@ -50,6 +51,7 @@ function JuiceEffects.playSound(soundName: string, volume: number?)
     local sound = Instance.new("Sound")
     sound.SoundId = assetId
     sound.Volume = volume or 0.85
+    sound.PlaybackSpeed = math.random(94, 106) / 100
     sound.Parent = SoundService
     sound:Play()
     Debris:AddItem(sound, 4)
@@ -83,6 +85,7 @@ function JuiceEffects.play3DSound(soundName: string, position: Vector3, volume: 
     local sound = Instance.new("Sound")
     sound.SoundId = assetId
     sound.Volume = volume or 0.85
+    sound.PlaybackSpeed = math.random(94, 106) / 100
     sound.RollOffMode = Enum.RollOffMode.InverseTapered
     sound.RollOffMinDistance = 10
     sound.RollOffMaxDistance = maxDist or 120
@@ -94,34 +97,166 @@ end
 
 -- P1-05: Защита от наложения трясок
 local activeShakeThread: thread? = nil
+local currentTrauma: number = 0
 
--- Динамическая тряска камеры (Screen Shake) при мощных ударах
-function JuiceEffects.screenShake(intensity: number?, duration: number?)
-    local dur = duration or 0.45
-    local str = intensity or 0.7
+-- Добавление травмы для упругой физической тряски экрана (Trauma-based Shake)
+function JuiceEffects.addTrauma(amount: number)
+    currentTrauma = math.clamp(currentTrauma + amount, 0, 1)
+end
+
+-- Кинематический толчок камеры в заданном направлении (Directional Camera Kick)
+function JuiceEffects.cameraKick(direction: Vector3, strength: number?)
     local camera = Workspace.CurrentCamera
     if not camera then return end
+    local kickStr = strength or 0.5
+    local dirNorm = if direction.Magnitude > 0 then direction.Unit else Vector3.new(0, 1, 0)
+    local kickAngleX = -dirNorm.Y * kickStr * 1.5
+    local kickAngleY = dirNorm.X * kickStr * 1.5
 
-    -- Отменяем предыдущую тряску
+    camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(kickAngleX), math.rad(kickAngleY), 0)
+end
+
+-- Trauma-based Screen Shake по шуму Перлина с квадратичным затуханием (Trauma^2)
+function JuiceEffects.traumaShake(trauma: number, maxRot: number?, maxPos: number?)
+    local camera = Workspace.CurrentCamera
+    if not camera then return end
+    JuiceEffects.addTrauma(trauma)
+
     if activeShakeThread then
         task.cancel(activeShakeThread)
         activeShakeThread = nil
     end
 
-    local startTime = tick()
-    activeShakeThread = task.spawn(function()
-        while tick() - startTime < dur do
-            local elapsed = tick() - startTime
-            local decay = 1 - (elapsed / dur)
-            local rx = (math.random() - 0.5) * 2 * str * decay
-            local ry = (math.random() - 0.5) * 2 * str * decay
-            local rz = (math.random() - 0.5) * 2 * str * decay * 0.5
+    local rotLimit = maxRot or 4.5
+    local posLimit = maxPos or 0.6
+    local seed = math.random(1, 10000)
 
-            camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(rx), math.rad(ry), math.rad(rz))
-            task.wait(0.02)
+    activeShakeThread = task.spawn(function()
+        while currentTrauma > 0.01 do
+            local shakeIntensity = currentTrauma * currentTrauma -- Квадратичный закон затухания
+            local t = tick() * 32
+
+            local rx = (math.noise(t, 0, seed) - 0.5) * 2 * rotLimit * shakeIntensity
+            local ry = (math.noise(0, t, seed) - 0.5) * 2 * rotLimit * shakeIntensity
+            local rz = (math.noise(seed, t, 0) - 0.5) * 2 * (rotLimit * 0.5) * shakeIntensity
+
+            local px = (math.noise(t + 50, 0, seed) - 0.5) * 2 * posLimit * shakeIntensity
+            local py = (math.noise(0, t + 50, seed) - 0.5) * 2 * posLimit * shakeIntensity
+
+            camera.CFrame = camera.CFrame * CFrame.new(px, py, 0) * CFrame.Angles(math.rad(rx), math.rad(ry), math.rad(rz))
+
+            -- Экспоненциальное затухание травмы
+            currentTrauma = math.clamp(currentTrauma - 0.045, 0, 1)
+            task.wait(0.016)
         end
+        currentTrauma = 0
         activeShakeThread = nil
     end)
+end
+
+-- Обратно совместимая динамическая тряска камеры
+function JuiceEffects.screenShake(intensity: number?, duration: number?)
+    if activeShakeThread then
+        task.cancel(activeShakeThread)
+        activeShakeThread = nil
+    end
+    local str = intensity or 0.7
+    JuiceEffects.traumaShake(math.clamp(str * 0.8, 0.2, 1.0))
+end
+
+-- Хитстоп (Hitstop / Micro-Freeze) для колоссального ощущения веса удара
+function JuiceEffects.hitstop(duration: number?)
+    local dur = duration or 0.05
+    local char = localPlayer.Character
+    if not char then return end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    local origWalkSpeed = humanoid.WalkSpeed
+    humanoid.WalkSpeed = 0
+
+    task.delay(dur, function()
+        if humanoid and humanoid.Parent then
+            humanoid.WalkSpeed = origWalkSpeed
+        end
+    end)
+end
+
+-- Target Impact Flash (кратковременный белый силуэт цели при получении урона)
+function JuiceEffects.impactFlash(targetChar: Model, color: Color3?, duration: number?)
+    if not targetChar or not targetChar:IsA("Model") then return end
+    local dur = duration or 0.08
+    local flashColor = color or Color3.fromRGB(255, 255, 255)
+
+    local existingHighlight = targetChar:FindFirstChild("ImpactFlashHighlight")
+    if existingHighlight then
+        existingHighlight:Destroy()
+    end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ImpactFlashHighlight"
+    highlight.FillColor = flashColor
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.2
+    highlight.OutlineTransparency = 0.1
+    highlight.Parent = targetChar
+
+    local tween = TweenService:Create(highlight, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        FillTransparency = 1,
+        OutlineTransparency = 1,
+    })
+    tween:Play()
+    Debris:AddItem(highlight, dur + 0.02)
+end
+
+-- Динамический импульсный свет (PointLight Impact Burst) для мгновенных объемных теней
+function JuiceEffects.spawnLightBurst(pos: Vector3, color: Color3, brightness: number?, radius: number?, duration: number?)
+    local dur = duration or 0.22
+    local b = brightness or 16
+    local r = radius or 40
+
+    local lightPart = Instance.new("Part")
+    lightPart.Name = "ImpactLightBurst"
+    lightPart.Size = Vector3.new(0.1, 0.1, 0.1)
+    lightPart.CFrame = CFrame.new(pos)
+    lightPart.Transparency = 1
+    lightPart.CanCollide = false
+    lightPart.Anchored = true
+    lightPart.Parent = Workspace
+
+    local pointLight = Instance.new("PointLight")
+    pointLight.Color = color
+    pointLight.Brightness = b
+    pointLight.Range = r
+    pointLight.Shadows = true
+    pointLight.Parent = lightPart
+
+    local tween = TweenService:Create(pointLight, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Brightness = 0,
+        Range = r * 1.3,
+    })
+    tween:Play()
+    Debris:AddItem(lightPart, dur + 0.05)
+end
+
+-- Пост-процессинг вспышка Bloom / ColorCorrection
+function JuiceEffects.screenBloomFlash(color: Color3, duration: number?)
+    local dur = duration or 0.18
+    local bloom = Lighting:FindFirstChild("CombatBloomPulse") :: BloomEffect?
+    if not bloom then
+        bloom = Instance.new("BloomEffect")
+        bloom.Name = "CombatBloomPulse"
+        bloom.Intensity = 0
+        bloom.Size = 24
+        bloom.Threshold = 0.8
+        bloom.Parent = Lighting
+    end
+
+    bloom.Intensity = 2.4
+    local tween = TweenService:Create(bloom, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Intensity = 0,
+    })
+    tween:Play()
 end
 
 local activeFovTweenUp: Tween? = nil
