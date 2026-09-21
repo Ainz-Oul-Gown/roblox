@@ -450,6 +450,19 @@ if plotStateEvent then
     end)
 end
 
+-- Синхронизация визуализатора питомцев (Pet Simulator standard)
+local equippedPetsEvent = ReplicatedStorage:WaitForChild("EquippedPetsEvent", 5) :: RemoteEvent?
+if equippedPetsEvent then
+    equippedPetsEvent.OnClientEvent:Connect(function(petDefs: any, newHatchedId: any)
+        if PetFollower and type(petDefs) == "table" then
+            PetFollower.syncEquippedPets(petDefs)
+            if newHatchedId and type(newHatchedId) == "string" then
+                showToast(string.format("🥚 ВЫЛУПЛЕН ПИТОМЕЦ: %s!", newHatchedId), Color3.fromRGB(241, 196, 15))
+            end
+        end
+    end)
+end
+
 -- Всплывающее уведомление (Toast)
 local toastFrame = Instance.new("Frame")
 toastFrame.Name = "ToastFrame"

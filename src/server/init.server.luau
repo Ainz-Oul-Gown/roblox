@@ -166,7 +166,15 @@ if not equippedPetsEvent then
     equippedPetsEvent.Parent = ReplicatedStorage
 end
 
+local eggOpenDebounce: { [number]: number } = {}
+
 openEggEvent.OnServerEvent:Connect(function(player: Player, eggId: any)
+    local now = os.clock()
+    if (eggOpenDebounce[player.UserId] or 0) > now then
+        return
+    end
+    eggOpenDebounce[player.UserId] = now + 0.6
+
     if type(eggId) ~= "string" then return end
     local eggDef = PetConfig.EGGS[eggId]
     if not eggDef then return end
@@ -226,6 +234,29 @@ end
 promptPurchaseEvent.OnServerEvent:Connect(function(player: Player, purchaseType: any, assetId: any)
     local id = tonumber(assetId)
     if not id then return end
+
+    local isWhitelisted = false
+    if purchaseType == "Gamepass" then
+        for _, item in pairs(MonetizationConfig.GAMEPASSES) do
+            if item.id == id then
+                isWhitelisted = true
+                break
+            end
+        end
+    elseif purchaseType == "Product" then
+        for _, item in pairs(MonetizationConfig.PRODUCTS) do
+            if item.id == id then
+                isWhitelisted = true
+                break
+            end
+        end
+    end
+
+    if not isWhitelisted then
+        warn(string.format("[SECURITY] Blocked unauthorized purchase prompt for ID %s from %s", tostring(assetId), player.Name))
+        return
+    end
+
     local MarketplaceService = game:GetService("MarketplaceService")
     if purchaseType == "Gamepass" then
         MarketplaceService:PromptGamePassPurchase(player, id)
@@ -333,6 +364,7 @@ Players.PlayerRemoving:Connect(function(player: Player)
     TycoonService.onPlayerRemoving(player)
     RetentionService.removePlayer(player)
     PetService.removePlayer(player)
+    eggOpenDebounce[player.UserId] = nil
 end)
 
 -- 6. Автосохранение каждые 60 секунд

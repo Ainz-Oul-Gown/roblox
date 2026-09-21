@@ -86,3 +86,28 @@ test('Multi-Agent All Skills Integration: Economy Simulation CLI Execution', () 
     assert.match(output, /Время до первого Rebirth \(TTFR\)/, 'Must output TTFR metric');
     assert.match(output, /БАЛАНС ИДЕАЛЕН/, 'Simulation must complete successfully');
 });
+
+test('Zero-Trust Adversarial Audit: P0 and P1 Security & Performance Fixes', () => {
+    const serverInitPath = path.join(__dirname, '..', 'src', 'server', 'init.server.luau');
+    const serverCode = fs.readFileSync(serverInitPath, 'utf8');
+
+    // P0: OpenEggEvent debounce
+    assert.match(serverCode, /eggOpenDebounce\[player\.UserId\]/, 'Must enforce egg open debounce');
+    assert.match(serverCode, /eggOpenDebounce\[player\.UserId\] = nil/, 'Must clean up debounce on PlayerRemoving');
+
+    // P0: PromptPurchaseEvent whitelist validation
+    assert.match(serverCode, /isWhitelisted/, 'Must validate purchase ID against whitelist');
+    assert.match(serverCode, /Blocked unauthorized purchase prompt/, 'Must log and block unauthorized product/gamepass prompts');
+
+    // P1: Client connects to EquippedPetsEvent
+    const clientInitPath = path.join(__dirname, '..', 'src', 'client', 'init.client.luau');
+    const clientCode = fs.readFileSync(clientInitPath, 'utf8');
+    assert.match(clientCode, /equippedPetsEvent\.OnClientEvent/, 'Client must connect to EquippedPetsEvent');
+    assert.match(clientCode, /PetFollower\.syncEquippedPets/, 'Client must call PetFollower.syncEquippedPets on event');
+
+    // P1: PetFollower performance optimization
+    const followerPath = path.join(__dirname, '..', 'src', 'client', 'PetFollower.luau');
+    const followerCode = fs.readFileSync(followerPath, 'utf8');
+    assert.match(followerCode, /computeBaseOffset/, 'Must precalculate baseOffset on registration');
+    assert.doesNotMatch(followerCode, /getTargetOffset/, 'Must not compute dynamic offset inside loop');
+});
