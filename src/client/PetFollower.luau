@@ -36,7 +36,8 @@ function PetFollower.registerPet(petModel: Model, slotIndex: number, totalSlots:
     })
 
     if not updateConnection then
-        updateConnection = RunService.RenderStepped:Connect(PetFollower.onRenderStep)
+        -- P1-06: Heartbeat вместо RenderStepped (не блокирует рендер)
+        updateConnection = RunService.Heartbeat:Connect(PetFollower.onRenderStep)
     end
 end
 
@@ -114,7 +115,14 @@ function PetFollower.createPetVisual(def: { id: string, name: string, rarity: st
     lbl.Font = Enum.Font.FredokaOne
     lbl.Parent = bGui
 
-    model.Parent = Workspace
+    -- P1-07: Парентим в специальную папку (не засоряет корень Workspace)
+    local petFolder = Workspace:FindFirstChild("PetModels")
+    if not petFolder then
+        petFolder = Instance.new("Folder")
+        petFolder.Name = "PetModels"
+        petFolder.Parent = Workspace
+    end
+    model.Parent = petFolder
     return model
 end
 

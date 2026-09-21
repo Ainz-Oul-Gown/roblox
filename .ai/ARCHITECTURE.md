@@ -55,11 +55,11 @@
 - **Вспышки экрана**: Золотой эффект при сборе кассы/лута, красный при смерти.
 
 ## Серверные службы
-- `TycoonService`: Экономика, Сейф (`vaultCashMap`), DataStore, PvP-лут (`creator` тег), безопасное списание `deductCash`, параллельное сохранение в `BindToClose`, подключение составных множителей `getExtraMultiplier`.
-- `MonetizationService`: Промышленная обработка чеков `MarketplaceService.ProcessReceipt` с идемпотентностью и кэшированием геймпасов (VIP x2, Double Cash x2).
+- `TycoonService`: Экономика, Сейф (`vaultCashMap`), DataStore (`UpdateAsync` с compare-and-set), PvP-лут (`creator` тег), безопасное списание `deductCash` и `addCashRaw` (без множителя для трансферов), NaN/Infinity guard (`sanitizeNum`), проверка владения в `withdrawVault`, параллельное сохранение в `BindToClose` (25с deadline), подключение составных множителей `getExtraMultiplier`, очистка Tools при Rebirth, полная persistence через callbacks (`getPetDataForSave`, `getRetentionDataForSave`, `getProcessedReceipts`, `getPvPStatsForSave`).
+- `MonetizationService`: Промышленная обработка чеков `MarketplaceService.ProcessReceipt` с двойной идемпотентностью (RAM + DataStore `ProcessedReceipts_v1`), кэшированием геймпасов (VIP x2, Double Cash x2), реализацией AUTO_COLLECT и SPEED_PERK.
 - `RetentionService`: Механика удержания игроков (сессионные подарки Playtime Gifts 5..60м и ежедневный стрик Daily Streak по UTC).
-- `PetService`: Индустриальный движок питомцев (взвешенный генератор шансов яиц, `PetService.getEquippedPetDefs`, `equipBest`, суммирование множителей). Сетевой мост через `OpenEggEvent` и `EquippedPetsEvent`.
-- `PetFollower` (клиентский модуль): Высокопроизводительный рендеринг питомцев на клиенте без физических лагов сервера. Поддерживает позиционирование по кругу за спиной персонажа, плавную интерполяцию (Lerp) и синусоидальное парение (`math.sin(time)`).
+- `PetService`: Индустриальный движок питомцев (взвешенный генератор шансов яиц, `PetService.getEquippedPetDefs`, `equipBest`, суммирование множителей, лимит инвентаря `MAX_INVENTORY_SIZE=75`, `HttpService:GenerateGUID` для UUID). Persistence через `initPlayer(savedPets)` / `getInventoryForSave()`. Сетевой мост через `OpenEggEvent` и `EquippedPetsEvent`.
+- `PetFollower` (клиентский модуль): Высокопроизводительный рендеринг питомцев на клиенте через `Heartbeat` (не `RenderStepped`), parenting в `Workspace.PetModels` folder. Поддерживает позиционирование по кругу за спиной персонажа, плавную интерполяцию (Lerp) и синусоидальное парение (`math.sin(time)`).
 - `LightingThemes`: Архитектурный модуль атмосферы и освещения по стандарту Future Lighting (`Technology.Future`). Конфигурирует `Atmosphere`, `BloomEffect`, `ColorCorrectionEffect` и `SunRaysEffect`, предоставляя 6 художественных тем (`Cyberpunk`, `SunsetGlow`, `MidnightSciFi`, `CandyDream`, `Wasteland`, `CleanStudio`).
 - `PlotManager`: Распределение 8 баз, привязка владельцев.
 - `PlotBuilder`: Генерация баз, конвейеров, апгрейдеров, портала Rebirth и монументов:
@@ -74,14 +74,14 @@
     - Мощные люстры 1-го этажа (`Lighting_Floor1`: 5 люстр с `PointLight` `3.6` и `SurfaceLight` `3.2`).
     - Пентхаус-освещение 2-го этажа (`Lighting_Floor2`: 6 пилонов + центральная гранд-люстра `Brightness = 4.2`, `Range = 65`).
     - Потолочные световые балки под крышей (`TycoonRoof`, `Brightness = 3.2`, `SurfaceLight = 3.0`).
-- `AbilityService`: Инвентарные тулы способностей, надежные обработчики `.Activated` на клиенте и сервере (клик мышью / hotbar [1..6] / клавиши [E, R, Q, F, Z, X]), кулдауны с очисткой по `PlayerRemoving`, PvP-урон, безопасная кража валюты FanumTax, серверная репликация эффектов на всех клиентов через `AbilityVFXEvent:FireAllClients`.
+- `AbilityService`: Инвентарные тулы способностей, серверный rate-limit (0.3с debounce на `OnServerEvent`), `os.clock()` для субсекундных кулдаунов, PvP-урон с `addCashRaw` (без множителя), `MaxHealth` cap 250, восстановление `WalkSpeed` из `getBaseWalkSpeed`, сохранение transparency при invisibility, обработка уже подключённых игроков, серверная репликация через `AbilityVFXEvent:FireAllClients`.
 - `AbilityVFX` (клиентский движок эффектов):
   - 48 уникальных наборов визуальных и звуковых эффектов (8 фракций x 6 слотов способностей).
   - Световые неоновые столбы (`createPillarOfLight`), ударные волны расширения (`createShockwaveRing`), лазерные лучи (`createBeamLine`), небесные объекты (`spawnFallingSkyProp`: падающие метеориты КейсОха, банхаммеры, наковальни и пиццы).
   - Пространственный 3D-звук (`JuiceEffects.play3DSound`) с затуханием по дистанции.
   - Динамическая кинематографическая отдача: тряска экрана (`JuiceEffects.screenShake`) при взрывах и импульс FOV (`JuiceEffects.fovPulse`) с защитой от накопления дрейфа.
 - `JuiceEffects`: Каталог 3D/2D звуков (`laser`, `dash`, `explosion`, `electric`, `magic`, `teleport`, `meteor`, `hammer`, `splash`, `whoosh`, `chime`, `horn`, `parry`, `snatch`, `anvil`), парящие мемные надписи, вспышки экрана, процедурный праздничный салют конфетти (`spawnConfetti`).
-- `LeaderboardService`: Автоматический учет и визуализация топа богатства и фрагов с очисткой `pvpStatsMap` при `PlayerRemoving`.
+- `LeaderboardService`: Автоматический учет и визуализация топа богатства и фрагов. Статистика сохраняется до рестарта сервера (не стирается при выходе игрока). Поддерживает `restorePvPStats` для восстановления из DataStore.
 - `AirDropService`: Фоновый таймер и спавн ящиков с парашютами и захватом.
 - `Сетевые RemoteEvents`:
   - `BuyItemEvent`, `WithdrawCashEvent`, `RebirthEvent`, `ToggleGateEvent`.

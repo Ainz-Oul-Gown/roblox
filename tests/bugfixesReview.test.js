@@ -122,8 +122,9 @@ test('AbilityService cooldown logic and base validation', () => {
 
     // Verify AbilityService checks plot ownership before consuming cooldown
     const abilityServiceContent = fs.readFileSync(path.join(__dirname, '../src/server/AbilityService.luau'), 'utf8');
+    // P1-02: cooldowns[player.UserId] dead write removed, now uses cdKey
     const plotIndexPos = abilityServiceContent.indexOf('local plotIndex = PlotManager.getPlayerPlotIndex');
-    const cooldownPos = abilityServiceContent.indexOf('cooldowns[player.UserId] = now');
+    const cooldownPos = abilityServiceContent.indexOf('cooldowns[cdKey] = now');
     assert.ok(
         plotIndexPos < cooldownPos,
         'AbilityService must validate player base ownership BEFORE recording cooldown timestamp'

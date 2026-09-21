@@ -148,13 +148,13 @@ local function spawnAirDrop()
                         bLbl.Text = string.format("⏳ ЗАХВАТ: %s (%dс)...", p.Name, captureSecondsLeft)
                         task.wait(1.0)
                         -- Проверяем жив ли и рядом ли
-                        local char = p.Character
-                        if not char then
+                        local captureChar = p.Character
+                        if not captureChar then
                             capturingPlayer = nil
                             break
                         end
-                        local hum = char:FindFirstChildOfClass("Humanoid")
-                        local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+                        local hum = captureChar:FindFirstChildOfClass("Humanoid")
+                        local hrp = captureChar:FindFirstChild("HumanoidRootPart") :: BasePart?
                         if not hum or hum.Health <= 0 or not hrp then
                             capturingPlayer = nil
                             break
@@ -169,7 +169,7 @@ local function spawnAirDrop()
                     if captureSecondsLeft <= 0 and not isCaptured then
                         isCaptured = true
                         bLbl.Text = string.format("🎉 ЗАХВАЧЕНО: %s!", p.Name)
-                        TycoonService.addCash(p, AIRDROP_REWARD)
+                        TycoonService.addCashRaw(p, AIRDROP_REWARD)
 
                         -- Салют и фейерверк
                         local spark = Instance.new("ParticleEmitter")

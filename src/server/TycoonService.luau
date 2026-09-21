@@ -4,6 +4,8 @@
     TycoonService
     Управляет экономикой Ауры, хранилищем базы (Vault), покупками,
     5 уровнями перерождений, PvP-лутом кошелька при смерти и начислением множителей.
+    
+    AUDIT FIXES: P0-08, P0-09, P0-10, P1-01, P1-18, P1-24
 ]=]
 
 local Players = game:GetService("Players")
@@ -26,6 +28,13 @@ local playerDataMap: { [number]: PlayerData } = {}
 -- Хранилище накопленной руды в сборщиках баз (не уязвимо к PvP-смерти!)
 local vaultCashMap: { [number]: number } = {}
 local rebirthLock: { [number]: boolean } = {}
+
+-- P0-09: NaN/Infinity guard для числовых операций
+local function sanitizeNum(val: number): number
+    if val ~= val then return 0 end -- NaN
+    if val == math.huge or val == -math.huge then return 0 end
+    return val
+end
 
 local function getOrCreateRemote(name: string): RemoteEvent
     local existing = ReplicatedStorage:FindFirstChild(name) :: RemoteEvent?
@@ -74,6 +83,15 @@ function TycoonService.applyRebirthPerks(player: Player)
     end
 end
 
+-- Получить базовый WalkSpeed игрока с учётом rebirth-перков (P1-01)
+function TycoonService.getBaseWalkSpeed(player: Player): number
+    local rebirths = TycoonService.getRebirths(player)
+    if rebirths >= 4 then
+        return 22
+    end
+    return 16
+end
+
 -- Обработка PvP гибели персонажа: убийца забирает весь наличный кошелек жертвы
 function TycoonService.handlePlayerDeath(victim: Player)
     local char = victim.Character
@@ -105,7 +123,7 @@ function TycoonService.handlePlayerDeath(victim: Player)
     end
 
     if killer then
-        -- Убийца получает 100% кошелька жертвы!
+        -- Убийца получает 100% кошелька жертвы (без множителя — прямой трансфер)
         local killerData = playerDataMap[killer.UserId]
         if killerData then
             killerData.cash += stolenCash
@@ -175,16 +193,58 @@ function TycoonService.onPlayerAdded(player: Player): PlayerData
     return currentData
 end
 
+-- Получить полные saved данные для сохранения (включая внешние системы)
+-- Внешние системы (PetService, RetentionService, LeaderboardService) подключаются через callbacks
+TycoonService.getPetDataForSave = nil :: ((player: Player) -> { DataStoreManager.PetSaveEntry }?)?
+TycoonService.getRetentionDataForSave = nil :: ((player: Player) -> (number?, number?)?)?
+TycoonService.getProcessedReceipts = nil :: (() -> { string })?
+TycoonService.getPvPStatsForSave = nil :: ((player: Player) -> (number, number))?
+
+function TycoonService.buildSavePayload(player: Player): DataStoreManager.PlayerSaveData
+    local data = playerDataMap[player.UserId]
+    if not data then return DataStoreManager.getDefaultData() end
+
+    local pets: { DataStoreManager.PetSaveEntry }? = nil
+    if TycoonService.getPetDataForSave then
+        pets = TycoonService.getPetDataForSave(player)
+    end
+
+    local streakDay: number? = nil
+    local lastClaim: number? = nil
+    if TycoonService.getRetentionDataForSave then
+        streakDay, lastClaim = TycoonService.getRetentionDataForSave(player)
+    end
+
+    local receipts: { string }? = nil
+    if TycoonService.getProcessedReceipts then
+        receipts = TycoonService.getProcessedReceipts()
+    end
+
+    local pvpKills: number? = nil
+    local pvpBounty: number? = nil
+    if TycoonService.getPvPStatsForSave then
+        pvpKills, pvpBounty = TycoonService.getPvPStatsForSave(player)
+    end
+
+    return {
+        version = 2,
+        cash = data.cash,
+        rebirths = data.rebirths,
+        ownedItems = data.ownedItems,
+        lastSaved = os.time(),
+        pets = pets,
+        dailyStreakDay = streakDay,
+        lastDailyClaimTimestamp = lastClaim,
+        processedReceipts = receipts,
+        pvpKills = pvpKills,
+        pvpBountyStolen = pvpBounty,
+    }
+end
+
 function TycoonService.onPlayerRemoving(player: Player)
     local data = playerDataMap[player.UserId]
     if data then
-        DataStoreManager.saveData(player.UserId, {
-            version = 1,
-            cash = data.cash,
-            rebirths = data.rebirths,
-            ownedItems = data.ownedItems,
-            lastSaved = os.time(),
-        })
+        DataStoreManager.saveData(player.UserId, TycoonService.buildSavePayload(player))
         playerDataMap[player.UserId] = nil
     end
     rebirthLock[player.UserId] = nil
@@ -202,23 +262,35 @@ local function getPlayerTotalMultiplier(player: Player, rebirths: number): numbe
             mult *= extra
         end
     end
-    return mult
+    return sanitizeNum(mult)
 end
 
+-- P0-08: saveAllPlayers с ожиданием завершения всех корутин
 function TycoonService.saveAllPlayers()
-    for _, player in ipairs(Players:GetPlayers()) do
+    local players = Players:GetPlayers()
+    local remaining = #players
+    if remaining == 0 then return end
+
+    for _, player in ipairs(players) do
         local data = playerDataMap[player.UserId]
         if data then
             task.spawn(function()
-                DataStoreManager.saveData(player.UserId, {
-                    version = 1,
-                    cash = data.cash,
-                    rebirths = data.rebirths,
-                    ownedItems = data.ownedItems,
-                    lastSaved = os.time(),
-                })
+                DataStoreManager.saveData(player.UserId, TycoonService.buildSavePayload(player))
+                remaining -= 1
             end)
+        else
+            remaining -= 1
         end
+    end
+
+    -- Ждём завершения всех save-корутин (макс 25 секунд)
+    local deadline = os.clock() + 25
+    while remaining > 0 and os.clock() < deadline do
+        task.wait(0.1)
+    end
+
+    if remaining > 0 then
+        warn(string.format("[TycoonService] saveAllPlayers timeout: %d saves did not complete", remaining))
     end
 end
 
@@ -240,13 +312,36 @@ function TycoonService.getOwnedItems(player: Player): { [string]: boolean }
     return items
 end
 
--- Начисление напрямую в кошелек (используется для бонуса Центральной Арены "Царь Горы")
+-- Начисление С МНОЖИТЕЛЕМ в кошелек (для дохода от руды, бонуса арены и т.д.)
 function TycoonService.addCash(player: Player, amount: number)
     local data = playerDataMap[player.UserId]
     if not data then return end
 
+    -- P0-09: NaN guard
+    local safeAmount = sanitizeNum(amount)
+    if safeAmount <= 0 then return end
+
     local mult = getPlayerTotalMultiplier(player, data.rebirths)
-    data.cash = EconomyManager.addCash(data.cash, amount, mult)
+    data.cash = EconomyManager.addCash(data.cash, safeAmount, mult)
+
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if leaderstats then
+        local auraVal = leaderstats:FindFirstChild("Aura") :: IntValue?
+        if auraVal then
+            auraVal.Value = data.cash
+        end
+    end
+end
+
+-- P0-02: Начисление БЕЗ множителя (для фиксированных наград, трансферов, PvP-кражи)
+function TycoonService.addCashRaw(player: Player, amount: number)
+    local data = playerDataMap[player.UserId]
+    if not data then return end
+
+    local safeAmount = sanitizeNum(amount)
+    if safeAmount <= 0 then return end
+
+    data.cash += math.floor(safeAmount)
 
     local leaderstats = player:FindFirstChild("leaderstats")
     if leaderstats then
@@ -260,9 +355,13 @@ end
 -- Безопасное списание наличных из кошелька (не опускается ниже 0, обновляет leaderstats)
 function TycoonService.deductCash(player: Player, amount: number): number
     local data = playerDataMap[player.UserId]
-    if not data or amount <= 0 then return 0 end
+    if not data then return 0 end
 
-    local actualDeducted = math.min(data.cash, math.floor(amount))
+    -- P0-09: NaN guard
+    local safeAmount = sanitizeNum(amount)
+    if safeAmount <= 0 then return 0 end
+
+    local actualDeducted = math.min(data.cash, math.floor(safeAmount))
     data.cash -= actualDeducted
 
     local leaderstats = player:FindFirstChild("leaderstats")
@@ -286,7 +385,7 @@ function TycoonService.addToVault(plotIndex: number, amount: number, owner: Play
         end
     end
 
-    local added = math.floor(amount * mult)
+    local added = math.floor(sanitizeNum(amount) * mult)
     current += added
     vaultCashMap[plotIndex] = current
 
@@ -307,8 +406,17 @@ end
 
 TycoonService.getPlayerPlotIndex = nil :: ((player: Player) -> number?)?
 
--- Вывод накопленных денег из сейфа базы в кошелек игрока
+-- P0-10: Вывод накопленных денег из сейфа базы с проверкой владения
 function TycoonService.withdrawVault(player: Player, plotIndex: number): number
+    -- Проверка владения базой
+    if TycoonService.getPlayerPlotIndex then
+        local ownerPlot = TycoonService.getPlayerPlotIndex(player)
+        if ownerPlot ~= plotIndex then
+            warn(string.format("[SECURITY] %s tried to withdraw from base %d (owns %s)", player.Name, plotIndex, tostring(ownerPlot)))
+            return 0
+        end
+    end
+
     local stored = vaultCashMap[plotIndex] or 0
     if stored <= 0 then return 0 end
 
@@ -380,6 +488,7 @@ function TycoonService.performRebirth(player: Player): (boolean, string?)
         return false, reason
     end
 
+    -- P1-24: Полный сброс тайкуна (design intent — все деньги и постройки обнуляются)
     data.cash = 0
     data.rebirths += 1
     data.ownedItems = {}
@@ -397,6 +506,24 @@ function TycoonService.performRebirth(player: Player): (boolean, string?)
 
         local rebirthVal = leaderstats:FindFirstChild("Rebirths") :: IntValue?
         if rebirthVal then rebirthVal.Value = data.rebirths end
+    end
+
+    -- P1-18: Очистка Tool-предметов из Backpack и StarterGear
+    local backpack = player:FindFirstChild("Backpack")
+    if backpack then
+        for _, tool in backpack:GetChildren() do
+            if tool:IsA("Tool") and tool:GetAttribute("AbilitySlot") then
+                tool:Destroy()
+            end
+        end
+    end
+    local starterGear = player:FindFirstChild("StarterGear")
+    if starterGear then
+        for _, tool in starterGear:GetChildren() do
+            if tool:IsA("Tool") and tool:GetAttribute("AbilitySlot") then
+                tool:Destroy()
+            end
+        end
     end
 
     TycoonService.applyRebirthPerks(player)
@@ -419,5 +546,11 @@ end
 
 -- Проверяет, захватил ли игрок хоть какую-то базу (используется CentralArena)
 TycoonService.hasAnyBase = nil :: ((player: Player) -> boolean)?
+
+-- Загруженные данные из DataStore (для передачи в PetService, RetentionService и т.д.)
+function TycoonService.getLoadedSaveData(player: Player): DataStoreManager.PlayerSaveData?
+    local saved = DataStoreManager.loadData(player.UserId)
+    return saved
+end
 
 return TycoonService

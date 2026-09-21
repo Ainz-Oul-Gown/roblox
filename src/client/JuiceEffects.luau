@@ -64,9 +64,10 @@ function JuiceEffects.play3DSound(soundName: string, position: Vector3, volume: 
     local root = if char then char:FindFirstChild("HumanoidRootPart") :: BasePart? else nil
     local dist = if root then (root.Position - position).Magnitude else 999
 
-    -- Если кастер или игрок рядом (до 30 стадов) — проигрываем чистый 2D-звук напрямую
+    -- P1-04: Если кастер или игрок рядом (до 30 стадов) — проигрываем только 2D-звук (не дублируем 3D)
     if dist <= 30 then
         JuiceEffects.playSound(soundName, volume)
+        return
     end
 
     -- Позиционный 3D-звук для пространственной локализации в мире
@@ -91,6 +92,9 @@ function JuiceEffects.play3DSound(soundName: string, position: Vector3, volume: 
     Debris:AddItem(soundPart, 5)
 end
 
+-- P1-05: Защита от наложения трясок
+local activeShakeThread: thread? = nil
+
 -- Динамическая тряска камеры (Screen Shake) при мощных ударах
 function JuiceEffects.screenShake(intensity: number?, duration: number?)
     local dur = duration or 0.45
@@ -98,8 +102,14 @@ function JuiceEffects.screenShake(intensity: number?, duration: number?)
     local camera = Workspace.CurrentCamera
     if not camera then return end
 
+    -- Отменяем предыдущую тряску
+    if activeShakeThread then
+        task.cancel(activeShakeThread)
+        activeShakeThread = nil
+    end
+
     local startTime = tick()
-    task.spawn(function()
+    activeShakeThread = task.spawn(function()
         while tick() - startTime < dur do
             local elapsed = tick() - startTime
             local decay = 1 - (elapsed / dur)
@@ -110,6 +120,7 @@ function JuiceEffects.screenShake(intensity: number?, duration: number?)
             camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(rx), math.rad(ry), math.rad(rz))
             task.wait(0.02)
         end
+        activeShakeThread = nil
     end)
 end
 

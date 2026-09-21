@@ -3,11 +3,19 @@
 --[=[
     DataStoreManager
     Обеспечивает надежное сохранение и загрузку данных игроков в Roblox DataStore
-    с безопасной обработкой ошибок (pcall), защитой от блокировок в Studio и валидацией схемы.
+    с безопасной обработкой ошибок (pcall), защитой от блокировок в Studio,
+    валидацией схемы и защитой от NaN/Infinity (P0-09).
+    Использует UpdateAsync вместо SetAsync для атомарности (P0-07).
 ]=]
 
 local DataStoreService = game:GetService("DataStoreService")
 local RunService = game:GetService("RunService")
+
+export type PetSaveEntry = {
+    uuid: string,
+    petId: string,
+    isEquipped: boolean,
+}
 
 export type PlayerSaveData = {
     version: number,
@@ -15,10 +23,19 @@ export type PlayerSaveData = {
     rebirths: number,
     ownedItems: { [string]: boolean },
     lastSaved: number,
+    -- P0-06: Persistence для питомцев и retention
+    pets: { PetSaveEntry }?,
+    dailyStreakDay: number?,
+    lastDailyClaimTimestamp: number?,
+    -- P0-04: Persistence для обработанных чеков
+    processedReceipts: { string }?,
+    -- P1-09: PvP статистика
+    pvpKills: number?,
+    pvpBountyStolen: number?,
 }
 
 local DATASTORE_NAME = "TycoonSave_v1"
-local CURRENT_VERSION = 1
+local CURRENT_VERSION = 2
 
 local DataStoreManager = {}
 
@@ -42,6 +59,14 @@ local function ensureDataStore()
     end
 end
 
+-- P0-09: Проверка числа на NaN и Infinity
+local function sanitizeNumber(val: any, default: number): number
+    if type(val) ~= "number" then return default end
+    if val ~= val then return default end -- NaN check
+    if val == math.huge or val == -math.huge then return default end
+    return val
+end
+
 -- Дефолтные данные для нового игрока
 function DataStoreManager.getDefaultData(): PlayerSaveData
     return {
@@ -50,7 +75,53 @@ function DataStoreManager.getDefaultData(): PlayerSaveData
         rebirths = 0,
         ownedItems = {},
         lastSaved = os.time(),
+        pets = {},
+        dailyStreakDay = 1,
+        lastDailyClaimTimestamp = 0,
+        processedReceipts = {},
+        pvpKills = 0,
+        pvpBountyStolen = 0,
     }
+end
+
+-- P1-25: Глубокая валидация ownedItems — только string -> boolean
+local function deepValidateOwnedItems(raw: any): { [string]: boolean }
+    if type(raw) ~= "table" then return {} end
+    local cleaned: { [string]: boolean } = {}
+    for k, v in pairs(raw) do
+        if type(k) == "string" and type(v) == "boolean" then
+            cleaned[k] = v
+        end
+    end
+    return cleaned
+end
+
+-- Валидация массива питомцев
+local function validatePets(raw: any): { PetSaveEntry }
+    if type(raw) ~= "table" then return {} end
+    local result: { PetSaveEntry } = {}
+    for _, entry in ipairs(raw) do
+        if type(entry) == "table" and type(entry.uuid) == "string" and type(entry.petId) == "string" then
+            table.insert(result, {
+                uuid = entry.uuid,
+                petId = entry.petId,
+                isEquipped = entry.isEquipped == true,
+            })
+        end
+    end
+    return result
+end
+
+-- Валидация массива receipt IDs
+local function validateReceipts(raw: any): { string }
+    if type(raw) ~= "table" then return {} end
+    local result: { string } = {}
+    for _, v in ipairs(raw) do
+        if type(v) == "string" then
+            table.insert(result, v)
+        end
+    end
+    return result
 end
 
 -- Валидация и миграция данных
@@ -60,16 +131,43 @@ function DataStoreManager.validateAndMigrate(raw: any): PlayerSaveData
         return defaultData
     end
 
-    local validCash = if type(raw.cash) == "number" and raw.cash >= 0 then math.floor(raw.cash) else 0
-    local validRebirths = if type(raw.rebirths) == "number" and raw.rebirths >= 0 then math.floor(raw.rebirths) else 0
-    local validOwnedItems = if type(raw.ownedItems) == "table" then raw.ownedItems else {}
+    -- P0-09: Sanitize all numbers against NaN/Infinity
+    local validCash = sanitizeNumber(raw.cash, 0)
+    if validCash < 0 then validCash = 0 end
+    validCash = math.floor(validCash)
+
+    local validRebirths = sanitizeNumber(raw.rebirths, 0)
+    if validRebirths < 0 then validRebirths = 0 end
+    validRebirths = math.floor(validRebirths)
+
+    local validStreakDay = sanitizeNumber(raw.dailyStreakDay, 1)
+    if validStreakDay < 1 or validStreakDay > 7 then validStreakDay = 1 end
+    validStreakDay = math.floor(validStreakDay)
+
+    local validLastClaim = sanitizeNumber(raw.lastDailyClaimTimestamp, 0)
+    if validLastClaim < 0 then validLastClaim = 0 end
+    validLastClaim = math.floor(validLastClaim)
+
+    local validPvpKills = sanitizeNumber(raw.pvpKills, 0)
+    if validPvpKills < 0 then validPvpKills = 0 end
+    validPvpKills = math.floor(validPvpKills)
+
+    local validPvpBounty = sanitizeNumber(raw.pvpBountyStolen, 0)
+    if validPvpBounty < 0 then validPvpBounty = 0 end
+    validPvpBounty = math.floor(validPvpBounty)
 
     return {
         version = CURRENT_VERSION,
         cash = validCash,
         rebirths = validRebirths,
-        ownedItems = validOwnedItems,
+        ownedItems = deepValidateOwnedItems(raw.ownedItems),
         lastSaved = os.time(),
+        pets = validatePets(raw.pets),
+        dailyStreakDay = validStreakDay,
+        lastDailyClaimTimestamp = validLastClaim,
+        processedReceipts = validateReceipts(raw.processedReceipts),
+        pvpKills = validPvpKills,
+        pvpBountyStolen = validPvpBounty,
     }
 end
 
@@ -110,7 +208,7 @@ function DataStoreManager.loadData(userId: number): PlayerSaveData
     return DataStoreManager.getDefaultData()
 end
 
--- Сохранение данных игрока с повторными попытками
+-- P0-07: Сохранение данных с UpdateAsync вместо SetAsync (атомарность)
 function DataStoreManager.saveData(userId: number, data: PlayerSaveData): boolean
     ensureDataStore()
     if not dataStoreAvailable or not tycoonDataStore then
@@ -130,7 +228,15 @@ function DataStoreManager.saveData(userId: number, data: PlayerSaveData): boolea
 
     for attempt = 1, retries do
         local ok, err = pcall(function()
-            tycoonDataStore:SetAsync(key, validated)
+            tycoonDataStore:UpdateAsync(key, function(oldData)
+                -- Защита от перезаписи более свежих данных другого сервера
+                if type(oldData) == "table" and type(oldData.lastSaved) == "number" then
+                    if oldData.lastSaved > validated.lastSaved then
+                        return nil -- Не перезаписываем более свежие данные
+                    end
+                end
+                return validated
+            end)
         end)
 
         if ok then

@@ -39,7 +39,7 @@ test('TycoonService.deductCash: safely deducts cash without underflow and handle
     // Проверка исходного кода TycoonService.luau
     const tycoonServiceSrc = fs.readFileSync(path.join(__dirname, '../src/server/TycoonService.luau'), 'utf8');
     assert.ok(tycoonServiceSrc.includes('function TycoonService.deductCash'), 'TycoonService must export deductCash');
-    assert.ok(tycoonServiceSrc.includes('math.min(data.cash, math.floor(amount))'), 'deductCash must clamp to available balance');
+    assert.ok(tycoonServiceSrc.includes('math.min(data.cash, math.floor(safeAmount))'), 'deductCash must clamp to available balance');
 });
 
 // 2. Тест защиты FanumTax от дюпа валюты
@@ -51,7 +51,8 @@ test('AbilityService: FanumTax uses deductCash and only awards actual stolen amo
 
     // Проверяем что вызывается deductCash
     assert.ok(abilityServiceSrc.includes('local stolen = TycoonService.deductCash(other, tax)'), 'Must call deductCash on victim');
-    assert.ok(abilityServiceSrc.includes('TycoonService.addCash(player, stolen)'), 'Must only grant actually stolen cash to caster');
+    // P0-02: FanumTax now uses addCashRaw (no multiplier on stolen cash)
+    assert.ok(abilityServiceSrc.includes('TycoonService.addCashRaw(player, stolen)'), 'Must use addCashRaw to grant stolen cash without multiplier');
 });
 
 // 3. Тест защиты Admin-фишек и RemoteEvent
@@ -70,8 +71,9 @@ test('Memory cleanup: PlayerRemoving cleans up cooldowns and pvpStats', () => {
     assert.ok(abilityServiceSrc.includes('Players.PlayerRemoving:Connect'), 'AbilityService must listen to PlayerRemoving');
 
     const leaderboardServiceSrc = fs.readFileSync(path.join(__dirname, '../src/server/LeaderboardService.luau'), 'utf8');
+    // P1-09: LeaderboardService теперь НЕ стирает статистику при выходе (хранит до рестарта)
     assert.ok(leaderboardServiceSrc.includes('function LeaderboardService.removePlayer'), 'LeaderboardService must have removePlayer');
-    assert.ok(leaderboardServiceSrc.includes('Players.PlayerRemoving:Connect'), 'LeaderboardService must listen to PlayerRemoving');
+    assert.ok(leaderboardServiceSrc.includes('function LeaderboardService.restorePvPStats'), 'LeaderboardService must have restorePvPStats for persistence');
 });
 
 // 5. Тест интеграции MonetizationService, RetentionService и PetService
@@ -84,11 +86,12 @@ test('init.server.luau integrates MonetizationService, RetentionService, and Pet
 
     // Retention
     assert.ok(initServerSrc.includes('RetentionService.setRewardHandler'), 'RetentionService reward handler must be registered');
-    assert.ok(initServerSrc.includes('RetentionService.initPlayer(player)'), 'RetentionService must initialize player on join');
+    // P0-06: RetentionService.initPlayer теперь принимает saved-данные
+    assert.ok(initServerSrc.includes('RetentionService.initPlayer(player'), 'RetentionService must initialize player on join');
     assert.ok(initServerSrc.includes('RetentionService.removePlayer(player)'), 'RetentionService must cleanup on leave');
 
     // Pets
-    assert.ok(initServerSrc.includes('PetService.initPlayer(player)'), 'PetService must initialize player on join');
+    assert.ok(initServerSrc.includes('PetService.initPlayer(player'), 'PetService must initialize player on join');
     assert.ok(initServerSrc.includes('PetService.removePlayer(player)'), 'PetService must cleanup on leave');
 
     // Multipliers link

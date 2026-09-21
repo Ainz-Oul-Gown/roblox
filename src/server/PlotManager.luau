@@ -77,15 +77,15 @@ end
 
 initPlots()
 
--- Получить список статусов всех баз для клиентов
-function PlotManager.getPlotStatuses(): { [number]: { isClaimed: boolean, ownerName: string?, faction: TycoonConfig.Faction } }
+-- P1-20: Минимальный payload (только isClaimed, ownerName, factionId — без полного faction)
+function PlotManager.getPlotStatuses(): { [number]: { isClaimed: boolean, ownerName: string?, factionId: string } }
     local res = {}
     for i = 1, TycoonConfig.TOTAL_PLOTS do
         local p = plots[i]
         res[i] = {
             isClaimed = p.owner ~= nil,
             ownerName = if p.owner then p.owner.Name else nil,
-            faction = p.faction,
+            factionId = p.faction.id,
         }
     end
     return res

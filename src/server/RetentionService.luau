@@ -1,5 +1,12 @@
 --!strict
 
+--[=[
+    RetentionService
+    Механика удержания: Playtime Gifts и Daily Streak.
+    
+    AUDIT FIX P0-06: Persistence — принимает и экспортирует saved данные.
+]=]
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -22,6 +29,7 @@ function RetentionService.setRewardHandler(handler: RewardCallback)
     onRewardGranted = handler
 end
 
+-- P0-06: initPlayer принимает сохранённые данные стрика
 function RetentionService.initPlayer(player: Player, savedStreakDay: number?, lastClaimTimestamp: number?)
     local now = os.time()
     local streakDay = savedStreakDay or 1
@@ -121,6 +129,13 @@ function RetentionService.claimDailyReward(player: Player): (boolean, string)
     end
 
     return true, `Забран {dayConfig.label}: +{dayConfig.rewardCash} Cash!`
+end
+
+-- P0-06: Экспорт данных для сохранения в DataStore
+function RetentionService.getRetentionDataForSave(player: Player): (number?, number?)
+    local data = playerDataMap[player.UserId]
+    if not data then return nil, nil end
+    return data.dailyStreakDay, data.lastDailyClaimTimestamp
 end
 
 function RetentionService.removePlayer(player: Player)

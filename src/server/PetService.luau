@@ -1,6 +1,14 @@
 --!strict
 
+--[=[
+    PetService
+    Система питомцев: взвешенный RNG из яиц, инвентарь, equipBest, множители.
+    
+    AUDIT FIXES: P0-06 (persistence), P1-15 (inventory limit), P1-16 (UUID fix)
+]=]
+
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PetConfig = require(ReplicatedStorage.Shared.PetConfig)
@@ -13,9 +21,13 @@ export type OwnedPet = {
 
 local PetService = {}
 
+-- P1-15: Лимит размера инвентаря питомцев
+local MAX_INVENTORY_SIZE = 75
+
 -- Инвентари игроков: [UserId] -> { OwnedPet }
 local playerInventories: { [number]: { OwnedPet } } = {}
 
+-- P0-06: initPlayer принимает сохранённых питомцев
 function PetService.initPlayer(player: Player, savedPets: { OwnedPet }?)
     playerInventories[player.UserId] = savedPets or {}
 end
@@ -53,8 +65,26 @@ function PetService.addPet(player: Player, petId: string): OwnedPet?
         playerInventories[player.UserId] = inv
     end
 
+    -- P1-15: Проверка лимита инвентаря
+    if #inv >= MAX_INVENTORY_SIZE then
+        warn(string.format("[PetService] %s inventory full (%d/%d)", player.Name, #inv, MAX_INVENTORY_SIZE))
+        return nil
+    end
+
+    -- P1-16: Надёжный UUID через HttpService:GenerateGUID
+    local guid: string
+    local guidOk, guidResult = pcall(function()
+        return HttpService:GenerateGUID(false)
+    end)
+    if guidOk and type(guidResult) == "string" then
+        guid = guidResult
+    else
+        -- Fallback с высокой энтропией
+        guid = string.format("%s_%d_%d_%d", petId, os.time(), math.random(100000, 999999), math.random(100000, 999999))
+    end
+
     local newPet: OwnedPet = {
-        uuid = `{petId}_{os.time()}_{math.random(1000, 9999)}`,
+        uuid = guid,
         petId = petId,
         isEquipped = false,
     }
@@ -128,6 +158,13 @@ function PetService.getEquippedPetDefs(player: Player): { PetConfig.PetDefinitio
         end
     end
     return result
+end
+
+-- P0-06: Получить инвентарь для сохранения в DataStore
+function PetService.getInventoryForSave(player: Player): { OwnedPet }
+    local inv = playerInventories[player.UserId]
+    if not inv then return {} end
+    return inv
 end
 
 function PetService.removePlayer(player: Player)

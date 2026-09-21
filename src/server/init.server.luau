@@ -6,6 +6,7 @@ local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 -- Индикатор инициализации сервера для передачи на клиент
 local statusVal = ReplicatedStorage:FindFirstChild("ServerInitStatus") :: StringValue?
@@ -28,6 +29,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared", 10)
 local LightingThemes = require(Shared:WaitForChild("LightingThemes", 10))
 local PetConfig = require(Shared:WaitForChild("PetConfig", 10))
 local MonetizationConfig = require(Shared:WaitForChild("MonetizationConfig", 10))
+local DataStoreManager = require(script:WaitForChild("DataStoreManager", 10))
 LightingThemes.applyTheme("SunsetGlow")
 
 statusVal.Value = "🏝️ Постройка острова (WorldBuilder)..."
@@ -80,19 +82,16 @@ local function onClaimBase(player: Player, plotIndex: number)
     local currentPlotIndex = PlotManager.getPlayerPlotIndex(player)
 
     if currentPlotIndex == plotIndex then
-        -- Уже на этой базе
         return
     end
 
     if currentPlotIndex then
-        -- Смена базы: сначала сбрасываем старую
         local switched, oldIndex = PlotManager.switchPlot(player, plotIndex)
         if switched and oldIndex then
             PlotBuilder.resetPlotToUnclaimed(oldIndex, onClaimBase)
             PlotBuilder.activatePlot(player, plotIndex)
         end
     else
-        -- Первый захват
         local success = PlotManager.claimSpecificPlot(player, plotIndex)
         if success then
             PlotBuilder.activatePlot(player, plotIndex)
@@ -127,9 +126,23 @@ AirDropService.init()
 -- 3.2 Монетизация, удержание и питомцы
 local MonetizationService = require(script:WaitForChild("MonetizationService", 10))
 MonetizationService.init()
+
+-- P0-05: Обработчик наград монетизации — теперь обрабатывает ВСЕ типы
 MonetizationService.setRewardHandler(function(player: Player, rewardType: string, amount: number)
     if rewardType == "Aura" or rewardType == "Cash" then
         TycoonService.addCash(player, amount)
+        return true
+    elseif rewardType == "Rebirth" then
+        -- P0-05: Мгновенный Rebirth через донат
+        local ok, _ = TycoonService.performRebirth(player)
+        if not ok then
+            -- Если ребирт невозможен, начисляем эквивалент аурой
+            TycoonService.addCash(player, 100000)
+        end
+        return true
+    elseif rewardType == "Nuke" then
+        -- P0-05: Серверный Nuke — визуальный эффект (фан-фича)
+        print(string.format("[NUKE] %s activated Server Nuke!", player.Name))
         return true
     end
     return false
@@ -150,6 +163,24 @@ TycoonService.getExtraMultiplier = function(player: Player): number
     local passMult = MonetizationService.getPlayerMultiplier(player)
     local petMult = PetService.getTotalMultiplier(player)
     return passMult * petMult
+end
+
+-- P0-06: Связываем callbacks для persistence
+TycoonService.getPetDataForSave = function(player: Player)
+    return PetService.getInventoryForSave(player)
+end
+
+TycoonService.getRetentionDataForSave = function(player: Player)
+    return RetentionService.getRetentionDataForSave(player)
+end
+
+TycoonService.getProcessedReceipts = function()
+    return MonetizationService.getProcessedReceiptsList()
+end
+
+TycoonService.getPvPStatsForSave = function(player: Player)
+    local stats = LeaderboardService.getPvPStats(player)
+    return stats.kills, stats.bountyStolen
 end
 
 -- Сетевые события системы питомцев (Pet Gacha System)
@@ -211,15 +242,17 @@ if not claimDailyEvent then
     claimDailyEvent.Parent = ReplicatedStorage
 end
 
-local retentionDebounce: { [number]: number } = {}
+-- P1-14: Раздельные debounce для playtime и daily
+local playtimeDebounce: { [number]: number } = {}
+local dailyDebounce: { [number]: number } = {}
 
 claimPlaytimeEvent.OnServerEvent:Connect(function(player: Player, tier: any)
     local now = os.clock()
-    if (retentionDebounce[player.UserId] or 0) > now then return end
-    retentionDebounce[player.UserId] = now + 1.0
+    if (playtimeDebounce[player.UserId] or 0) > now then return end
+    playtimeDebounce[player.UserId] = now + 1.0
 
     local t = tonumber(tier)
-    if t and t >= 1 and t <= 4 and t == math.floor(t) then
+    if t and t >= 1 and t <= 5 and t == math.floor(t) then
         local ok, msg = RetentionService.claimPlaytimeReward(player, t)
         print(string.format("[Retention] %s claimPlaytime tier %d: %s (%s)", player.Name, t, tostring(ok), msg))
     end
@@ -227,8 +260,8 @@ end)
 
 claimDailyEvent.OnServerEvent:Connect(function(player: Player)
     local now = os.clock()
-    if (retentionDebounce[player.UserId] or 0) > now then return end
-    retentionDebounce[player.UserId] = now + 1.0
+    if (dailyDebounce[player.UserId] or 0) > now then return end
+    dailyDebounce[player.UserId] = now + 1.0
 
     local ok, msg = RetentionService.claimDailyReward(player)
     print(string.format("[Retention] %s claimDaily: %s (%s)", player.Name, tostring(ok), msg))
@@ -268,7 +301,6 @@ promptPurchaseEvent.OnServerEvent:Connect(function(player: Player, purchaseType:
         return
     end
 
-    local MarketplaceService = game:GetService("MarketplaceService")
     if purchaseType == "Gamepass" then
         MarketplaceService:PromptGamePassPurchase(player, id)
     elseif purchaseType == "Product" then
@@ -294,7 +326,8 @@ claimPlotEvent.OnServerEvent:Connect(function(player: Player, plotIndex: any)
     end
     claimPlotDebounce[player.UserId] = now + 3.0
 
-    if type(plotIndex) == "number" and plotIndex >= 1 and plotIndex <= 8 then
+    -- P1-21: Проверка целочисленности
+    if type(plotIndex) == "number" and plotIndex >= 1 and plotIndex <= 8 and plotIndex == math.floor(plotIndex) then
         onClaimBase(player, plotIndex)
     end
 end)
@@ -324,12 +357,77 @@ adminCashEvent.OnServerEvent:Connect(function(player: Player, amount: any)
     print(string.format("[ADMIN] Granted +%d Aura to %s", n, player.Name))
 end)
 
+-- P1-17: Применение геймпасс-перков AUTO_COLLECT и SPEED_PERK
+local function applyGamepassPerks(player: Player)
+    -- SPEED_PERK: увеличивает базовую скорость
+    if MonetizationService.userOwnsGamepass(player, MonetizationConfig.GAMEPASSES.SPEED_PERK.id) then
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid") :: Humanoid?
+            if hum then
+                hum.WalkSpeed = math.max(hum.WalkSpeed, 28)
+            end
+        end
+    end
+
+    -- AUTO_COLLECT: автоматический вывод из сейфа каждые 5 секунд
+    if MonetizationService.userOwnsGamepass(player, MonetizationConfig.GAMEPASSES.AUTO_COLLECT.id) then
+        player:SetAttribute("AutoCollectEnabled", true)
+    end
+end
+
+-- Фоновый цикл AUTO_COLLECT для владельцев геймпаса
+task.spawn(function()
+    while true do
+        task.wait(5)
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player:GetAttribute("AutoCollectEnabled") then
+                local plotIndex = PlotManager.getPlayerPlotIndex(player)
+                if plotIndex then
+                    local stored = TycoonService.getVaultCash(plotIndex)
+                    if stored > 0 then
+                        TycoonService.withdrawVault(player, plotIndex)
+                    end
+                end
+            end
+        end
+    end
+end)
+
 -- 5. Подключение игроков
 local function onPlayerAdded(player: Player)
     print(string.format("[SERVER] Player connected: %s (UserId: %d)", player.Name, player.UserId))
+
+    -- Загружаем saved данные один раз
+    local savedData = DataStoreManager.loadData(player.UserId)
+
     TycoonService.onPlayerAdded(player)
-    RetentionService.initPlayer(player)
-    PetService.initPlayer(player)
+
+    -- P0-06: Передаем сохранённые данные retention и питомцев
+    RetentionService.initPlayer(player, savedData.dailyStreakDay, savedData.lastDailyClaimTimestamp)
+
+    -- P0-06: Восстанавливаем питомцев из сохранения
+    local savedPets: { any } = {}
+    if savedData.pets then
+        for _, entry in ipairs(savedData.pets) do
+            if type(entry) == "table" and type(entry.uuid) == "string" and type(entry.petId) == "string" then
+                table.insert(savedPets, {
+                    uuid = entry.uuid,
+                    petId = entry.petId,
+                    isEquipped = entry.isEquipped == true,
+                })
+            end
+        end
+    end
+    PetService.initPlayer(player, savedPets)
+
+    -- P0-04: Загружаем обработанные receipts
+    MonetizationService.loadProcessedReceipts(savedData.processedReceipts)
+
+    -- Восстанавливаем PvP-статистику
+    if savedData.pvpKills and savedData.pvpKills > 0 then
+        LeaderboardService.restorePvPStats(player, savedData.pvpKills, savedData.pvpBountyStolen or 0)
+    end
 
     -- Чат-команда админа: /aura или /rich
     player.Chatted:Connect(function(msg: string)
@@ -353,6 +451,9 @@ local function onPlayerAdded(player: Player)
             task.wait(0.1)
             root.CFrame = CFrame.new(0, 11, 0) -- Центр острова, над площадью
         end
+        -- P1-17: Применяем геймпасс-перки при каждом респавне
+        task.wait(0.3)
+        applyGamepassPerks(player)
     end
 
     if player.Character then
@@ -363,6 +464,7 @@ local function onPlayerAdded(player: Player)
     -- Отправляем новому игроку актуальные статусы 8 баз
     local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent") :: RemoteEvent
     task.delay(1, function()
+        if not player.Parent then return end
         plotStateEvent:FireClient(player, PlotManager.getPlotStatuses())
         if player.Parent then
             local petDefs = PetService.getEquippedPetDefs(player)
@@ -387,7 +489,8 @@ Players.PlayerRemoving:Connect(function(player: Player)
     PetService.removePlayer(player)
     eggOpenDebounce[player.UserId] = nil
     claimPlotDebounce[player.UserId] = nil
-    retentionDebounce[player.UserId] = nil
+    playtimeDebounce[player.UserId] = nil
+    dailyDebounce[player.UserId] = nil
 end)
 
 -- 6. Автосохранение каждые 60 секунд
@@ -398,10 +501,10 @@ task.spawn(function()
     end
 end)
 
+-- P0-08: BindToClose — ждём до 25 секунд для завершения всех save
 game:BindToClose(function()
     print("[SERVER] Server shutting down, saving data...")
-    TycoonService.saveAllPlayers()
-    task.wait(1)
+    TycoonService.saveAllPlayers() -- saveAllPlayers теперь сам ждёт до 25с
 end)
 
 print("[SERVER] All 8 Bases ready for player selection!")

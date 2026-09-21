@@ -93,7 +93,7 @@ function CentralArena.init()
             end
 
             if currentKing then
-                TycoonService.addCash(currentKing, AURA_REWARD_PER_SEC)
+                TycoonService.addCashRaw(currentKing, AURA_REWARD_PER_SEC)
                 label.Text = string.format("👑 ЦАРЬ: %s\n+25 AURA / СЕК", currentKing.Name)
             else
                 label.Text = "👑 ЦАРЬ ГОРЫ АУРЫ\nЗАХВАТИ ЗОНУ (+25/СЕК)!"

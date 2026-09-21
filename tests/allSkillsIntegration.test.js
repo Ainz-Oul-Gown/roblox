@@ -120,10 +120,11 @@ test('Zero-Trust Adversarial Audit Iteration 2: DoS & Input Validation', () => {
     assert.match(serverCode, /claimPlotDebounce\[player\.UserId\]/, 'Must enforce claim plot debounce');
     assert.match(serverCode, /claimPlotDebounce\[player\.UserId\] = nil/, 'Must clean up claim plot debounce on PlayerRemoving');
 
-    // P1: Retention rewards debounce and strict tier range check
-    assert.match(serverCode, /retentionDebounce\[player\.UserId\]/, 'Must enforce retention debounce');
-    assert.match(serverCode, /t >= 1 and t <= 4 and t == math\.floor\(t\)/, 'Must strictly validate tier as integer between 1 and 4');
-    assert.match(serverCode, /retentionDebounce\[player\.UserId\] = nil/, 'Must clean up retention debounce on PlayerRemoving');
+    // P1-14: Split debounce maps for playtime and daily
+    assert.match(serverCode, /playtimeDebounce\[player\.UserId\]/, 'Must enforce playtime debounce');
+    assert.match(serverCode, /dailyDebounce\[player\.UserId\]/, 'Must enforce daily debounce');
+    assert.match(serverCode, /t >= 1 and t <= 5 and t == math\.floor\(t\)/, 'Must strictly validate tier as integer between 1 and 5');
+    assert.match(serverCode, /playtimeDebounce\[player\.UserId\] = nil/, 'Must clean up playtime debounce on PlayerRemoving');
 
     // P1: AbilityService strict rejection of invalid slots (no fallback to base)
     const abilityPath = path.join(__dirname, '..', 'src', 'server', 'AbilityService.luau');

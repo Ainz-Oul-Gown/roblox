@@ -210,16 +210,19 @@ function LeaderboardService.init()
         end
     end)
 
-    -- Очистка статистики вышедших игроков для предотвращения утечек памяти
-    Players.PlayerRemoving:Connect(function(player: Player)
-        LeaderboardService.removePlayer(player)
-    end)
+    -- P1-09: Не стираем статистику при выходе — данные живут до рестарта сервера
+    -- (pvpStatsMap не очищается, чтобы лидеры не пропадали с доски)
 
     print("[LeaderboardService] Central plaza cyber leaderboards created and active!")
 end
 
 function LeaderboardService.removePlayer(player: Player)
-    pvpStatsMap[player.UserId] = nil
+    -- P1-09: Не стираем — статы живут до конца сервера для лидерборда
+end
+
+-- P0-06: Восстановление PvP-статистики из DataStore
+function LeaderboardService.restorePvPStats(player: Player, kills: number, bountyStolen: number)
+    pvpStatsMap[player.UserId] = { kills = kills, bountyStolen = bountyStolen }
 end
 
 return LeaderboardService

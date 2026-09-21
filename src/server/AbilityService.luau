@@ -41,8 +41,11 @@ end
 local abilityEvent = getOrCreateRemote("AbilityEvent")
 local abilityVFXEvent = getOrCreateRemote("AbilityVFXEvent")
 
--- Кулдауны хранятся по ключу: userId_slot
+-- Кулдауны хранятся по ключу: userId_slot (P0-01: os.clock() для субсекундной точности)
 local cooldowns: { [string]: number } = {}
+
+-- P0-01: Серверный debounce на RemoteEvent (0.3с между вызовами)
+local lastCastTime: { [number]: number } = {}
 
 -- Пометка цели тегом создателя урона для PvP-лута кошелька
 local function tagHumanoid(targetHum: Humanoid, attacker: Player)
@@ -174,17 +177,17 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
         return
     end
 
-    -- Проверка кулдауна
+    -- P0-01: Проверка кулдауна с os.clock() (субсекундная точность)
     local cdKey = string.format("%d_%s", player.UserId, slot)
-    local now = os.time()
+    local now = os.clock()
     local lastCast = cooldowns[cdKey] or 0
     if now - lastCast < abilityInfo.cooldown then
-        local rem = abilityInfo.cooldown - (now - lastCast)
+        local rem = math.ceil(abilityInfo.cooldown - (now - lastCast))
         abilityEvent:FireClient(player, "COOLDOWN", "Перезарядка", rem, slot)
         return
     end
     cooldowns[cdKey] = now
-    cooldowns[player.UserId] = now
+    -- P1-02: Удалена мёртвая запись cooldowns[player.UserId]
 
     local fId = faction.id
 
@@ -211,7 +214,8 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             end
         elseif slot == "tactical" then
             hum.WalkSpeed = 26
-            task.delay(6, function() if hum.Parent then hum.WalkSpeed = 16 end end)
+            local _prevSpeed = TycoonService.getBaseWalkSpeed(player)
+            task.delay(6, function() if hum.Parent then hum.WalkSpeed = _prevSpeed end end)
         elseif slot == "ultimate" then
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
@@ -229,7 +233,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             end
         elseif slot == "special" then
             -- Skibidi Dop Dop Anthem: оглушение + аура
-            TycoonService.addCash(player, 2500)
+            TycoonService.addCashRaw(player, 2500)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
                     local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -261,6 +265,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
         else
             -- Титан Скибиди: колоссальный сплэш
             hum.WalkSpeed = 28
+            local _prevSpeedGod = TycoonService.getBaseWalkSpeed(player)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
                     local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -272,7 +277,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     end
                 end
             end
-            task.delay(8, function() if hum.Parent then hum.WalkSpeed = 16 end end)
+            task.delay(8, function() if hum.Parent then hum.WalkSpeed = _prevSpeedGod end end)
         end
 
     elseif fId == "Mewing" then
@@ -294,7 +299,8 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 end
             end
         elseif slot == "tactical" then
-            hum.MaxHealth = hum.MaxHealth + 30
+            -- P0-03: Потолок MaxHealth 250 (было бесконечное наращивание)
+            hum.MaxHealth = math.min(hum.MaxHealth + 30, 250)
             hum.Health = math.min(hum.MaxHealth, hum.Health + 30)
         elseif slot == "ultimate" then
             for _, other in ipairs(Players:GetPlayers()) do
@@ -317,8 +323,9 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 28 then
                         tagHumanoid(oHum, player)
                         oHum:TakeDamage(25)
+                        local _prevSpeedVictim = oHum.WalkSpeed
                         oHum.WalkSpeed = 4
-                        task.delay(4, function() if oHum.Parent then oHum.WalkSpeed = 16 end end)
+                        task.delay(4, function() if oHum.Parent then oHum.WalkSpeed = _prevSpeedVictim end end)
                     end
                 end
             end
@@ -341,6 +348,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             -- Альфа Доминация: 100% отхил и нокдаун
             hum.Health = hum.MaxHealth
             hum.WalkSpeed = 24
+            local _prevSpeedAlpha = TycoonService.getBaseWalkSpeed(player)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
                     local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -352,13 +360,14 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     end
                 end
             end
-            task.delay(7, function() if hum.Parent then hum.WalkSpeed = 16 end end)
+            task.delay(7, function() if hum.Parent then hum.WalkSpeed = _prevSpeedAlpha end end)
         end
 
     elseif fId == "Sigma" then
         if slot == "base" then
+            local _prevSpeedSigma = TycoonService.getBaseWalkSpeed(player)
             hum.WalkSpeed = 32
-            task.delay(6, function() if hum.Parent then hum.WalkSpeed = 16 end end)
+            task.delay(6, function() if hum.Parent then hum.WalkSpeed = _prevSpeedSigma end end)
         elseif slot == "tactical" then
             player:SetAttribute("SigmaParryActive", true)
             task.delay(4, function() player:SetAttribute("SigmaParryActive", false) end)
@@ -370,15 +379,19 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 28 then
                         tagHumanoid(oHum, player)
                         oHum:TakeDamage(55)
+                        local _psSigmaUlt = oHum.WalkSpeed
                         oHum.WalkSpeed = 6
-                        task.delay(5, function() if oHum.Parent then oHum.WalkSpeed = 16 end end)
+                        task.delay(5, function() if oHum.Parent then oHum.WalkSpeed = _psSigmaUlt end end)
                     end
                 end
             end
         elseif slot == "special" then
             -- Lone Wolf Grindset: невидимость + крит
+            -- P1-13: Сохраняем оригинальные transparency
+            local savedTransparency: { [BasePart]: number } = {}
             for _, p in ipairs(char:GetDescendants()) do
                 if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then
+                    savedTransparency[p :: BasePart] = p.Transparency
                     p.Transparency = 0.9
                 end
             end
@@ -386,9 +399,9 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             task.delay(5, function()
                 player:SetAttribute("SigmaCritActive", false)
                 if char.Parent then
-                    for _, p in ipairs(char:GetDescendants()) do
-                        if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then
-                            p.Transparency = 0
+                    for part, origTrans in pairs(savedTransparency) do
+                        if part.Parent then
+                            part.Transparency = origTrans
                         end
                     end
                 end
@@ -422,6 +435,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             end
         else
             -- Brazilian Phonk Overload
+            local _prevSpeedPhonk = TycoonService.getBaseWalkSpeed(player)
             hum.WalkSpeed = 36
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
@@ -434,7 +448,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     end
                 end
             end
-            task.delay(8, function() if hum.Parent then hum.WalkSpeed = 16 end end)
+            task.delay(8, function() if hum.Parent then hum.WalkSpeed = _prevSpeedPhonk end end)
         end
 
     elseif fId == "FanumTax" then
@@ -451,7 +465,8 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                         if tax > 0 then
                             local stolen = TycoonService.deductCash(other, tax)
                             if stolen > 0 then
-                                TycoonService.addCash(player, stolen)
+                                -- P0-02: addCashRaw — без множителя для PvP-кражи
+                                TycoonService.addCashRaw(player, stolen)
                             end
                         end
                         break
@@ -480,7 +495,8 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                         if tax > 0 then
                             local stolen = TycoonService.deductCash(other, tax)
                             if stolen > 0 then
-                                TycoonService.addCash(player, stolen)
+                                -- P0-02: addCashRaw — без множителя для PvP-кражи
+                                TycoonService.addCashRaw(player, stolen)
                             end
                         end
                     end
@@ -499,8 +515,9 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                             if oRoot and oHum and (oRoot.Position - (root.Position + look * (i * 12))).Magnitude <= 14 then
                                 tagHumanoid(oHum, player)
                                 oHum:TakeDamage(18)
+                                local _psFries = oHum.WalkSpeed
                                 oHum.WalkSpeed = 6
-                                task.delay(3, function() if oHum.Parent then oHum.WalkSpeed = 16 end end)
+                                task.delay(3, function() if oHum.Parent then oHum.WalkSpeed = _psFries end end)
                             end
                         end
                     end
@@ -555,22 +572,38 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
     print(string.format("[AbilityService] %s cast %s (%s)", player.Name, abilityInfo.name, slot))
 end
 
--- Подключение удаленного вызова
+-- P0-01: Подключение с серверным debounce (0.3с)
 abilityEvent.OnServerEvent:Connect(function(player: Player, slot: any)
     if slot == "base" or slot == "tactical" or slot == "ultimate" or slot == "special" or slot == "mobility" or slot == "godmode" then
+        local now = os.clock()
+        local last = lastCastTime[player.UserId] or 0
+        if now - last < 0.3 then return end
+        lastCastTime[player.UserId] = now
         AbilityService.castAbility(player, slot)
     else
         return
     end
 end)
 
--- Автоматическая выдача тулов при респавне персонажа
-Players.PlayerAdded:Connect(function(player: Player)
+-- P1-03: Автоматическая выдача тулов + обработка уже подключённых игроков
+local function setupAbilityPlayer(player: Player)
     player.CharacterAdded:Connect(function()
         task.wait(0.5)
         AbilityService.syncPlayerTools(player)
     end)
-end)
+    -- Если персонаж уже есть, синхронизируем
+    if player.Character then
+        task.spawn(function()
+            task.wait(0.5)
+            AbilityService.syncPlayerTools(player)
+        end)
+    end
+end
+
+Players.PlayerAdded:Connect(setupAbilityPlayer)
+for _, p in ipairs(Players:GetPlayers()) do
+    task.spawn(setupAbilityPlayer, p)
+end
 
 -- Связываем покупку стойки способности в TycoonService с моментальной выдачей предмета
 TycoonService.onItemPurchased = function(player: Player, itemId: string)
@@ -579,14 +612,15 @@ TycoonService.onItemPurchased = function(player: Player, itemId: string)
     end
 end
 
--- Очистка кэша кулдаунов при выходе игрока
+-- Очистка кэша кулдаунов и debounce при выходе игрока
 function AbilityService.removePlayer(player: Player)
     local prefix = string.format("%d_", player.UserId)
     for key in pairs(cooldowns) do
-        if string.sub(key, 1, #prefix) == prefix then
+        if type(key) == "string" and string.sub(key, 1, #prefix) == prefix then
             cooldowns[key] = nil
         end
     end
+    lastCastTime[player.UserId] = nil
 end
 
 Players.PlayerRemoving:Connect(function(player: Player)
