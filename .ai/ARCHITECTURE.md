@@ -96,3 +96,10 @@
 7. `roblox-ci-cd-opencloud`: Настройка GitHub Actions, сборка .rbxl и деплой через Open Cloud API.
 8. `roblox-game-mode-templates`: Готовые шаблоны режимов (Tycoon, Simulator, Minigames/Arena, Obby).
 9. `roblox-ability-combat-system`: Боевой цикл способностей (хитбоксы, воздействие, VFX, 3D/2D SFX, camera shake).
+10. `roblox-monetization-core`: Защищенный ProcessReceipt (Developer Hub standard), геймпасы и донаты.
+11. `roblox-retention-engine`: Playtime Gifts (5-60м), Daily Streak (UTC дни 1-7) для продвижения в алгоритмах.
+12. `roblox-pet-gacha-system`: Стандарт Pet Simulator (взвешенный RNG, инвентарь, Equip Best, полет за игроком).
+13. `roblox-economy-simulator`: CLI балансировщик (расчет TTFR, симуляция 1000 циклов, устранение затыков).
+14. `roblox-lighting-themes`: 6 кинематографичных пресетов освещения Future Lighting (Cyberpunk, Sunset, Sci-Fi и др.).
+15. `roblox-juice-kit`: Каталог легальных звуков Roblox и процедурные эффекты (конфетти, всплески, 3D цифры).
+16. `roblox-map-templates`: 4 математически выверенных 3D-шаблона карт (Circular Hub, Simulator Zones, PvP Arena, Obby Course).
