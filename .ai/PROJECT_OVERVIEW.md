@@ -59,12 +59,12 @@
 - **Язык**: Luau (strict typing `--!strict`)
 - **Мультиплеер**: 8 баз ($R = 180$ studs), остров $R = 250$ studs, центральная площадь
 - **Сохранение**: Roblox DataStoreService (`TycoonSave_v1`)
-- **Тестирование**: Node.js Test Runner (`npm test`, 116 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
+- **Тестирование**: Node.js Test Runner (`npm test`, 117 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
-- **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` (JuiceEffects: 8.7/10) и `REVIEW_REPORT_STEP2.md` (AbilityVFX Физика мира и бюджетирование: 9.4/10).
+- **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` (JuiceEffects: 8.7/10), `REVIEW_REPORT_STEP2.md` (AbilityVFX Физика мира и бюджетирование: 9.4/10) и Шаг 3 (Оверхол всех 48 способностей с 4-фазным AAA VFX и уникальным фракционным стилем).
 
-- **Полный аудит надежности и безопасности (116/116 тестов пройдено)**:
+- **Полный аудит надежности и безопасности (117/117 тестов пройдено)**:
   - `MonetizationService`: Изоляция кэша `processedReceipts` по каждому игроку (`[UserId][receiptKey]`) и очистка на `PlayerRemoving`, устраняющая утечку памяти и кросс-пользовательские коллизии.
   - `TycoonService`: Передача `preloadedData` в `onPlayerAdded` исключает двойные вызовы `DataStoreManager.loadData`. Санитизация сумм (`sanitizeNum`) и `addCashRaw` при PvP трансфере исключают дюп и порчу баланса. Очистка экипированных Tool из `Character` при Rebirth.
   - `LeaderboardService`: Оптимизация памяти — удаление игроков с 0 фрагами при выходе с сервера, сохранение и авто-восстановление статистики реальных киллеров.
@@ -81,7 +81,7 @@
   - `roblox-monetization-core`: Защищенный RemoteEvent `PromptPurchaseEvent` для Developer Products и GamePasses, обработка чеков в `MarketplaceService.ProcessReceipt` с идемпотентностью.
   - `roblox-economy-simulator`: CLI инструмент `npm run simulate` (`bin/simulate-economy.js`) для математического моделирования прогрессии и валидации TTFR (~8.4 мин до первого Rebirth).
   - `roblox-game-mode-templates` & `roblox-map-templates`: 2-этажные базы 56x76, защитная крыша, подвесной наклонный желоб сброса руды, святилище Rebirth и монументы на крыше с 400-стадовыми Sky Beacons.
-  - `roblox-ability-combat-system`: 48 уникальных мемных способностей (8 фракций x 6 слотов [1..6] / [E, R, Q, F, Z, X]) с репликацией VFX/SFX.
+  - `roblox-ability-combat-system`: 48 уникальных мемных способностей (8 фракций x 6 слотов [1..6] / [E, R, Q, F, Z, X]) с 4-фазной моделью визуализации (Anticipation -> Release -> World Fracture -> Dissipation), объемными двухконтурными лазерами, разломами земли, вихрями затяжки, руническими кругами, падением пропсов с неба и кинематографичной отдачей камеры.
   - `rojo-toolchain-master` & `wally-package-manager`: Стандартизированная сборка, sourcemap и скрипты в `package.json`.
 
 ## Быстрый старт

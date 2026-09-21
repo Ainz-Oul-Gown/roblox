@@ -98,3 +98,52 @@ test('Replication: Server fires AbilityVFXEvent to all clients and Client connec
     assert.ok(clientContent.includes('local abilityVFXEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15)'), 'Client must resolve AbilityVFXEvent');
     assert.ok(clientContent.includes('AbilityVFX.play(caster, fId, slot, originPos, lookVector)'), 'Client must route AbilityVFXEvent to AbilityVFX.play');
 });
+
+test('AbilityVFX: Step 3 - all 48 ability slots integrate 4-phase VFX, earth fracture, and camera trauma', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const content = fs.readFileSync(vfxPath, 'utf8');
+
+    const factions = [
+        'Skibidi', 'Mewing', 'Sigma', 'FanumTax',
+        'Grimace', 'CaseOh', 'Rizzler', 'TungTung'
+    ];
+    const slots = ['base', 'tactical', 'ultimate', 'special', 'mobility', 'godmode'];
+
+    // Verify each faction's section contains all 6 slots
+    for (const f of factions) {
+        const startIdx = content.indexOf(`fId == "${f}"`);
+        assert.ok(startIdx !== -1, `AbilityVFX must handle faction ${f}`);
+        // Find end of faction block (next faction or end of function)
+        const nextFactionIdx = content.indexOf('elseif fId ==', startIdx + 1);
+        const sectionEnd = nextFactionIdx !== -1 ? nextFactionIdx : content.indexOf('return AbilityVFX', startIdx);
+        const section = content.slice(startIdx, sectionEnd);
+
+        for (const s of slots) {
+            assert.ok(
+                section.includes(`slot == "${s}"`),
+                `Faction ${f} must handle slot "${s}" in AbilityVFX.play`
+            );
+        }
+    }
+
+    // Verify AAA 4-phase VFX functions are actively called inside AbilityVFX.play
+    const playFnStart = content.indexOf('function AbilityVFX.play');
+    const playFn = content.slice(playFnStart);
+
+    assert.ok(playFn.includes('spawnEarthFracture('), 'AbilityVFX.play must invoke spawnEarthFracture');
+    assert.ok(playFn.includes('spawnGroundCracks('), 'AbilityVFX.play must invoke spawnGroundCracks');
+    assert.ok(playFn.includes('spawnAnticipationVortex('), 'AbilityVFX.play must invoke spawnAnticipationVortex');
+    assert.ok(playFn.includes('spawnMagicCircle('), 'AbilityVFX.play must invoke spawnMagicCircle');
+    assert.ok(playFn.includes('spawnVolumetricLaser('), 'AbilityVFX.play must invoke spawnVolumetricLaser');
+    assert.ok(playFn.includes('spawnTexturedShockwave('), 'AbilityVFX.play must invoke spawnTexturedShockwave');
+    assert.ok(playFn.includes('spawnFallingSkyProp('), 'AbilityVFX.play must invoke spawnFallingSkyProp');
+    assert.ok(playFn.includes('JuiceEffects.spawnLightBurst('), 'AbilityVFX.play must invoke JuiceEffects.spawnLightBurst');
+
+    // Camera & Juice feel
+    assert.ok(playFn.includes('JuiceEffects.traumaShake('), 'AbilityVFX.play must invoke traumaShake for high impact feel');
+    assert.ok(playFn.includes('JuiceEffects.cameraKick('), 'AbilityVFX.play must invoke cameraKick for directional impact');
+    assert.ok(playFn.includes('JuiceEffects.fovPulse('), 'AbilityVFX.play must invoke fovPulse for mobility abilities');
+    assert.ok(playFn.includes('JuiceEffects.hitstop('), 'AbilityVFX.play must invoke hitstop for critical weight');
+    assert.ok(playFn.includes('JuiceEffects.screenBloomFlash('), 'AbilityVFX.play must invoke screenBloomFlash for ultimate/godmode');
+});
+

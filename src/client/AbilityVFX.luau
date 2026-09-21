@@ -467,284 +467,388 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
 
     print(string.format("[AbilityVFX] Playing %s VFX for %s (slot: %s, isSelf: %s)", fId, tostring(caster and caster.Name), tostring(slot), tostring(isSelf)))
 
-    -- 1. SKIBIDI TOILET
+    -- 1. SKIBIDI TOILET (Hydro-Chaos & Gold / Porcelain)
     if fId == "Skibidi" then
         if slot == "base" then
-            -- Вихрь смыва
-            createShockwaveRing(pos, 18, Color3.fromRGB(0, 180, 255), 0.5)
-            JuiceEffects.play3DSound("splash", pos, 0.9)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🌊 СМЫВ!", Color3.fromRGB(0, 180, 255))
-            if isSelf then JuiceEffects.screenShake(0.4, 0.3) end
+            -- Skibidi Spin (Вихрь смыва)
+            spawnAnticipationVortex(pos, Color3.fromRGB(0, 180, 255), 0.15)
+            spawnTexturedShockwave(pos, 22, Color3.fromRGB(0, 180, 255), 0.45)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(0, 200, 255), 14, 30, 0.2)
+            JuiceEffects.play3DSound("splash", pos, 1.0)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🌊 ВИХРЬ СМЫВА!", Color3.fromRGB(0, 180, 255))
+            if isSelf then JuiceEffects.traumaShake(0.4) end
 
         elseif slot == "tactical" then
-            -- Скибиди Броня
-            createPillarOfLight(pos, 8, 4, Color3.fromRGB(240, 240, 255), 0.5)
+            -- Скибиди Броня (Керамический панцирь)
+            spawnMagicCircle(pos, Color3.fromRGB(241, 196, 15), 0.7)
+            createPillarOfLight(pos, 10, 4.5, Color3.fromRGB(240, 240, 255), 0.5)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(241, 196, 15), 12, 25, 0.2)
             JuiceEffects.play3DSound("magic", pos, 0.8)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🛡️ КЕРАМИЧЕСКИЙ ЩИТ!", Color3.fromRGB(255, 255, 255))
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🛡️ КЕРАМИЧЕСКИЙ ПАНЦИРЬ!", Color3.fromRGB(255, 255, 255))
 
         elseif slot == "ultimate" then
-            -- Мега-Смыв 3000
-            createShockwaveRing(pos, 32, Color3.fromRGB(0, 120, 255), 0.8)
-            createPillarOfLight(pos, 25, 8, Color3.fromRGB(0, 200, 255), 0.8)
-            JuiceEffects.play3DSound("splash", pos, 1.2)
-            JuiceEffects.play3DSound("slam", pos, 1.0)
+            -- Мега-Смыв 3000 (Титанический водоворот)
+            spawnAnticipationVortex(pos, Color3.fromRGB(0, 120, 255), 0.25)
+            spawnMagicCircle(pos, Color3.fromRGB(0, 220, 255), 0.8)
+            spawnTexturedShockwave(pos, 36, Color3.fromRGB(0, 180, 255), 0.7)
+            spawnEarthFracture(pos, 14, 7)
+            spawnGroundCracks(pos, 16, Color3.fromRGB(0, 100, 180), 2.8)
+            createPillarOfLight(pos, 28, 8, Color3.fromRGB(0, 220, 255), 0.8)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(0, 200, 255), 20, 50, 0.3)
+            JuiceEffects.play3DSound("splash", pos, 1.3)
+            JuiceEffects.play3DSound("slam", pos, 1.1)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🌀 МЕГА-СМЫВ 3000!", Color3.fromRGB(0, 220, 255))
-            if isSelf then JuiceEffects.screenShake(0.8, 0.5) end
+            if isSelf then
+                JuiceEffects.traumaShake(0.85)
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(0, 180, 255), 0.25)
+                JuiceEffects.hitstop(0.05)
+            end
 
         elseif slot == "special" then
-            -- Skibidi Dop Dop Anthem
+            -- Skibidi Dop Dop Anthem (Звуковой мем-взрыв)
             for i = 1, 3 do
                 task.delay((i - 1) * 0.12, function()
-                    createShockwaveRing(pos, 12 * i, Color3.fromRGB(255, 215, 0), 0.4)
+                    spawnTexturedShockwave(pos, 12 * i + 4, Color3.fromRGB(255, 215, 0), 0.4)
                 end)
             end
-            JuiceEffects.play3DSound("horn", pos, 1.0)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 215, 0), 16, 35, 0.25)
+            JuiceEffects.play3DSound("horn", pos, 1.1)
+            JuiceEffects.play3DSound("chime", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "🎶 SKIBIDI DOP DOP YES YES!", Color3.fromRGB(255, 215, 0))
+            if isSelf then JuiceEffects.traumaShake(0.55) end
 
         elseif slot == "mobility" then
             -- Скибиди Ракета
-            createBeamLine(pos, pos + lookVector * 30, Color3.fromRGB(255, 140, 0), 1.2, 0.35)
-            JuiceEffects.play3DSound("dash", pos, 0.9)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🚀 РАКЕТНЫЙ ВЫХЛОП!", Color3.fromRGB(255, 120, 0))
-            if isSelf then JuiceEffects.fovPulse(15, 0.4) end
+            spawnVolumetricLaser(pos, pos + lookVector * 34, Color3.fromRGB(255, 140, 0), 1.4, 0.35)
+            spawnTexturedShockwave(pos, 14, Color3.fromRGB(255, 120, 0), 0.35)
+            JuiceEffects.play3DSound("dash", pos, 1.0)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🚀 РАКЕТНЫЙ СМЫВ!", Color3.fromRGB(255, 120, 0))
+            if isSelf then
+                JuiceEffects.fovPulse(16, 0.4)
+                JuiceEffects.cameraKick(lookVector, 0.55)
+            end
 
         elseif slot == "godmode" then
-            -- Титан Скибиди-Крушитель
-            createPillarOfLight(pos, 40, 14, Color3.fromRGB(255, 215, 0), 1.2)
-            createShockwaveRing(pos, 45, Color3.fromRGB(255, 80, 0), 1.0)
-            JuiceEffects.play3DSound("slam", pos, 1.5)
-            JuiceEffects.play3DSound("fanfare", pos, 1.2)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "⚡ ТИТАН КРУШИТЕЛЬ!", Color3.fromRGB(255, 215, 0))
-            if isSelf then
-                JuiceEffects.screenShake(1.2, 0.8)
-                JuiceEffects.screenFlash(Color3.fromRGB(255, 215, 0), 0.5)
-            end
+            -- Титан Скибиди-Крушитель (Падение Золотого Унитаза Титана)
+            spawnFallingSkyProp(pos, function()
+                local titanProp = Instance.new("Part")
+                titanProp.Size = Vector3.new(10, 8, 8)
+                titanProp.Material = Enum.Material.Neon
+                titanProp.Color = Color3.fromRGB(241, 196, 15)
+                return titanProp
+            end, function()
+                spawnEarthFracture(pos, 18, 10)
+                spawnGroundCracks(pos, 20, Color3.fromRGB(200, 150, 0), 3.5)
+                createPillarOfLight(pos, 45, 16, Color3.fromRGB(255, 215, 0), 1.2)
+                spawnTexturedShockwave(pos, 48, Color3.fromRGB(255, 120, 0), 1.0)
+                JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 215, 0), 24, 65, 0.35)
+                JuiceEffects.play3DSound("slam", pos, 1.5)
+                JuiceEffects.play3DSound("fanfare", pos, 1.2)
+                JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "⚡ ТИТАН СКИБИДИ-КРУШИТЕЛЬ!", Color3.fromRGB(255, 215, 0))
+                if isSelf then
+                    JuiceEffects.traumaShake(1.3, 6, 0.8)
+                    JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 215, 0), 0.4)
+                    JuiceEffects.hitstop(0.07)
+                end
+            end, 55)
         end
 
-    -- 2. GIGACHAD MEWING
+    -- 2. GIGACHAD MEWING (Looksmaxing / Diamond & Granite Monolith)
     elseif fId == "Mewing" then
         if slot == "base" then
-            -- Mewing Stare
-            createBeamLine(pos + Vector3.new(0, 2, 0), pos + lookVector * 28 + Vector3.new(0, 2, 0), Color3.fromRGB(0, 210, 255), 0.6, 0.35)
-            JuiceEffects.play3DSound("laser", pos, 0.8)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🤫 MEWING STARE!", Color3.fromRGB(0, 210, 255))
+            -- Mewing Stare (Челюстной лазерный стан)
+            spawnVolumetricLaser(pos + Vector3.new(0, 2, 0), pos + lookVector * 32 + Vector3.new(0, 2, 0), Color3.fromRGB(0, 220, 255), 0.85, 0.35)
+            spawnTexturedShockwave(pos, 12, Color3.fromRGB(0, 220, 255), 0.3)
+            JuiceEffects.play3DSound("laser", pos, 0.9)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🤫 MEWING STARE!", Color3.fromRGB(0, 220, 255))
+            if isSelf then JuiceEffects.traumaShake(0.35) end
 
         elseif slot == "tactical" then
-            -- Алмазный Подбородок
-            createPillarOfLight(pos, 7, 3.5, Color3.fromRGB(180, 240, 255), 0.5)
-            JuiceEffects.play3DSound("parry", pos, 0.9)
+            -- Алмазный Подбородок (Отражающий кристалл)
+            createPillarOfLight(pos, 9, 4, Color3.fromRGB(180, 240, 255), 0.5)
+            spawnMagicCircle(pos, Color3.fromRGB(0, 240, 255), 0.6)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(0, 240, 255), 15, 30, 0.2)
+            JuiceEffects.play3DSound("parry", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "💎 АЛМАЗНЫЙ ПОДБОРОДОК!", Color3.fromRGB(0, 230, 255))
 
         elseif slot == "ultimate" then
-            -- Bye Bye Shockwave
-            createShockwaveRing(pos, 35, Color3.fromRGB(0, 220, 255), 0.7)
-            JuiceEffects.play3DSound("slam", pos, 1.1)
+            -- Bye Bye Shockwave (Сверхзвуковой плоский срез)
+            spawnTexturedShockwave(pos, 38, Color3.fromRGB(0, 240, 255), 0.65)
+            spawnEarthFracture(pos, 15, 8)
+            spawnGroundCracks(pos, 16, Color3.fromRGB(0, 180, 220), 2.5)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(0, 240, 255), 22, 50, 0.25)
+            JuiceEffects.play3DSound("slam", pos, 1.2)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🤫🧏 BYE BYE!", Color3.fromRGB(0, 240, 255))
-            if isSelf then JuiceEffects.screenShake(0.8, 0.5) end
+            if isSelf then
+                JuiceEffects.traumaShake(0.9)
+                JuiceEffects.hitstop(0.06)
+                JuiceEffects.cameraKick(-lookVector, 0.7)
+            end
 
         elseif slot == "special" then
-            -- Looksmaxing Flash
-            createShockwaveRing(pos, 22, Color3.fromRGB(255, 255, 255), 0.3)
-            createPillarOfLight(pos, 16, 6, Color3.fromRGB(0, 220, 255), 0.4)
+            -- Looksmaxing Flash (Вспышка ультра-резкости)
+            spawnTexturedShockwave(pos, 25, Color3.fromRGB(0, 220, 255), 0.4)
+            createPillarOfLight(pos, 20, 7, Color3.fromRGB(255, 255, 255), 0.45)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 255, 255), 24, 45, 0.2)
             JuiceEffects.play3DSound("magic", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "✨ LOOKSMAXING FLASH!", Color3.fromRGB(255, 255, 255))
-            if isSelf then JuiceEffects.screenFlash(Color3.fromRGB(255, 255, 255), 0.3) end
+            if isSelf then JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 255, 255), 0.35) end
 
         elseif slot == "mobility" then
-            -- Гигачад Рывок
-            createBeamLine(pos, pos + lookVector * 26, Color3.fromRGB(0, 210, 255), 1.0, 0.3)
-            JuiceEffects.play3DSound("dash", pos, 0.9)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🗿 ГИГАЧАД ТАРАН!", Color3.fromRGB(0, 210, 255))
-            if isSelf then JuiceEffects.fovPulse(14, 0.35) end
+            -- Гигачад Рывок (Таран плечом)
+            spawnVolumetricLaser(pos, pos + lookVector * 30, Color3.fromRGB(0, 220, 255), 1.2, 0.3)
+            spawnTexturedShockwave(pos, 14, Color3.fromRGB(189, 195, 199), 0.35)
+            JuiceEffects.play3DSound("dash", pos, 1.0)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🗿 ТАРАН ГИГАЧАДА!", Color3.fromRGB(0, 220, 255))
+            if isSelf then
+                JuiceEffects.fovPulse(15, 0.35)
+                JuiceEffects.cameraKick(lookVector, 0.5)
+            end
 
         elseif slot == "godmode" then
-            -- Альфа Доминация
-            createPillarOfLight(pos, 50, 18, Color3.fromRGB(0, 220, 255), 1.4)
-            createShockwaveRing(pos, 50, Color3.fromRGB(255, 255, 255), 1.0)
-            JuiceEffects.play3DSound("fanfare", pos, 1.5)
-            JuiceEffects.play3DSound("slam", pos, 1.3)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "👑 АЛЬФА ДОМИНАЦИЯ!", Color3.fromRGB(0, 220, 255))
+            -- Альфа Доминация (Монументальное сокрушение)
+            spawnAnticipationVortex(pos, Color3.fromRGB(0, 240, 255), 0.3)
+            spawnEarthFracture(pos, 18, 10)
+            spawnGroundCracks(pos, 20, Color3.fromRGB(0, 160, 200), 3.2)
+            createPillarOfLight(pos, 48, 14, Color3.fromRGB(0, 240, 255), 1.1)
+            spawnTexturedShockwave(pos, 45, Color3.fromRGB(255, 255, 255), 0.9)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(0, 240, 255), 24, 60, 0.35)
+            JuiceEffects.play3DSound("slam", pos, 1.5)
+            JuiceEffects.play3DSound("fanfare", pos, 1.2)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "👑 АЛЬФА ДОМИНАЦИЯ!", Color3.fromRGB(0, 240, 255))
             if isSelf then
-                JuiceEffects.screenShake(1.3, 0.8)
-                JuiceEffects.screenFlash(Color3.fromRGB(0, 220, 255), 0.5)
+                JuiceEffects.traumaShake(1.25)
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(0, 240, 255), 0.4)
+                JuiceEffects.hitstop(0.06)
             end
         end
 
-    -- 3. PATRICK SIGMA
+    -- 3. PATRICK SIGMA (Phonk Rage / Dark Neon Crimson & Shadow Glitch)
     elseif fId == "Sigma" then
         if slot == "base" then
-            -- Phonk Rage
-            createPillarOfLight(pos, 8, 4, Color3.fromRGB(231, 76, 60), 0.5)
-            JuiceEffects.play3DSound("powerup", pos, 0.9)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🎧 PHONK RAGE!", Color3.fromRGB(231, 76, 60))
+            -- Phonk Rage (Багрово-пурпурная ярость)
+            spawnTexturedShockwave(pos, 20, Color3.fromRGB(231, 76, 60), 0.45)
+            spawnMagicCircle(pos, Color3.fromRGB(142, 68, 173), 0.7)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(231, 76, 60), 15, 30, 0.2)
+            JuiceEffects.play3DSound("electric", pos, 0.9)
+            JuiceEffects.play3DSound("slam", pos, 0.8)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🔥 PHONK RAGE!", Color3.fromRGB(231, 76, 60))
+            if isSelf then JuiceEffects.traumaShake(0.4) end
 
         elseif slot == "tactical" then
-            -- Сигма Парирование
-            createShockwaveRing(pos, 10, Color3.fromRGB(20, 20, 20), 0.4)
-            JuiceEffects.play3DSound("parry", pos, 1.1)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🍷 СИГМА ПАРИРОВАНИЕ!", Color3.fromRGB(231, 76, 60))
+            -- Сигма Парирование (Багровый защитный крест)
+            spawnVolumetricLaser(pos + Vector3.new(-3, 1.5, 0), pos + Vector3.new(3, 1.5, 0), Color3.fromRGB(255, 50, 50), 0.8, 0.2)
+            spawnVolumetricLaser(pos + Vector3.new(0, -1.5, 0), pos + Vector3.new(0, 4.5, 0), Color3.fromRGB(255, 50, 50), 0.8, 0.2)
+            JuiceEffects.spawnLightBurst(pos + lookVector * 3, Color3.fromRGB(255, 50, 50), 18, 25, 0.15)
+            JuiceEffects.play3DSound("parry", pos, 1.2)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "⚡ СИГМА ПАРИРОВАНИЕ!", Color3.fromRGB(255, 50, 50))
+            if isSelf then JuiceEffects.hitstop(0.06) end
 
         elseif slot == "ultimate" then
-            -- Сигма Доминация
-            createShockwaveRing(pos, 35, Color3.fromRGB(200, 20, 20), 0.7)
-            createPillarOfLight(pos, 20, 7, Color3.fromRGB(231, 76, 60), 0.7)
-            JuiceEffects.play3DSound("slam", pos, 1.2)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🍷 ИСТИННЫЙ СИГМА!", Color3.fromRGB(231, 76, 60))
-            if isSelf then JuiceEffects.screenShake(0.8, 0.5) end
+            -- Сигма Доминация (Аура превосходства)
+            spawnEarthFracture(pos, 15, 8)
+            spawnGroundCracks(pos, 16, Color3.fromRGB(60, 10, 20), 2.8)
+            spawnTexturedShockwave(pos, 36, Color3.fromRGB(231, 76, 60), 0.7)
+            createPillarOfLight(pos, 26, 8, Color3.fromRGB(142, 68, 173), 0.75)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(231, 76, 60), 22, 50, 0.3)
+            JuiceEffects.play3DSound("electric", pos, 1.2)
+            JuiceEffects.play3DSound("slam", pos, 1.1)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🕶️ СИГМА ДОМИНАЦИЯ!", Color3.fromRGB(231, 76, 60))
+            if isSelf then
+                JuiceEffects.traumaShake(0.9)
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(231, 76, 60), 0.3)
+            end
 
         elseif slot == "special" then
-            -- Lone Wolf Grindset
-            createShockwaveRing(pos, 14, Color3.fromRGB(40, 40, 40), 0.5)
-            JuiceEffects.play3DSound("teleport", pos, 0.9)
+            -- Lone Wolf Grindset (Теневая невидимость)
+            spawnTexturedShockwave(pos, 16, Color3.fromRGB(30, 30, 35), 0.5)
+            JuiceEffects.play3DSound("teleport", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🐺 LONE WOLF GRINDSET!", Color3.fromRGB(180, 180, 180))
 
         elseif slot == "mobility" then
-            -- Теневой Шаг
-            createBeamLine(pos, pos + lookVector * 28, Color3.fromRGB(80, 20, 20), 0.8, 0.25)
-            JuiceEffects.play3DSound("teleport", pos, 1.0)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "⚡ ТЕНЕВОЙ ШАГ!", Color3.fromRGB(231, 76, 60))
-            if isSelf then JuiceEffects.fovPulse(16, 0.3) end
+            -- Теневой Шаг (Телепорт за спину)
+            spawnVolumetricLaser(pos, pos + lookVector * 28, Color3.fromRGB(142, 68, 173), 1.0, 0.25)
+            JuiceEffects.play3DSound("teleport", pos, 0.9)
+            JuiceEffects.play3DSound("whoosh", pos, 0.8)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🔪 ТЕНЕВОЙ ШАГ!", Color3.fromRGB(142, 68, 173))
+            if isSelf then JuiceEffects.fovPulse(16, 0.35) end
 
         elseif slot == "godmode" then
-            -- Brazilian Phonk Overload
-            createPillarOfLight(pos, 45, 15, Color3.fromRGB(255, 30, 30), 1.2)
-            createShockwaveRing(pos, 45, Color3.fromRGB(150, 0, 0), 1.0)
+            -- Brazilian Phonk Overload (Перегрузка фонка и молний)
+            spawnEarthFracture(pos, 18, 9)
+            spawnGroundCracks(pos, 20, Color3.fromRGB(80, 10, 30), 3.5)
+            createPillarOfLight(pos, 45, 12, Color3.fromRGB(231, 76, 60), 1.1)
+            spawnTexturedShockwave(pos, 48, Color3.fromRGB(142, 68, 173), 1.0)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(231, 76, 60), 24, 60, 0.35)
             JuiceEffects.play3DSound("electric", pos, 1.4)
             JuiceEffects.play3DSound("slam", pos, 1.3)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "🔥 BRAZILIAN PHONK OVERLOAD!", Color3.fromRGB(255, 40, 40))
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "⚡ BRAZILIAN PHONK OVERLOAD!", Color3.fromRGB(231, 76, 60))
             if isSelf then
-                JuiceEffects.screenShake(1.3, 0.8)
-                JuiceEffects.screenFlash(Color3.fromRGB(231, 76, 60), 0.5)
+                JuiceEffects.traumaShake(1.3)
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(231, 76, 60), 0.4)
             end
         end
 
-    -- 4. FANUM TAX
+    -- 4. FANUM TAX (Grease / Street Food Feast / Cash & Sizzle)
     elseif fId == "FanumTax" then
         if slot == "base" then
-            -- Tax Snatch
-            createBeamLine(pos, pos + lookVector * 24, Color3.fromRGB(241, 196, 15), 0.6, 0.3)
-            JuiceEffects.play3DSound("snatch", pos, 0.9)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "💸 FANUM TAX!", Color3.fromRGB(241, 196, 15))
+            -- Tax Snatch (Выкачивание наличных)
+            spawnVolumetricLaser(pos + lookVector * 22, pos, Color3.fromRGB(241, 196, 15), 0.9, 0.35)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(241, 196, 15), 14, 25, 0.2)
+            JuiceEffects.play3DSound("snatch", pos, 1.1)
+            JuiceEffects.play3DSound("cash", pos, 1.0)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🍔 НАЛОГ ВЗЯТ!", Color3.fromRGB(241, 196, 15))
 
         elseif slot == "tactical" then
-            -- Ловушка Фастфуда
-            createShockwaveRing(pos, 12, Color3.fromRGB(230, 126, 34), 0.5)
-            JuiceEffects.play3DSound("explosion", pos, 0.8)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🍔 ЛОВУШКА ФАСТФУДА!", Color3.fromRGB(230, 126, 34))
+            -- Ловушка Фастфуда (Масляная лужа)
+            spawnGroundCracks(pos, 14, Color3.fromRGB(200, 130, 20), 3.2)
+            spawnTexturedShockwave(pos, 15, Color3.fromRGB(230, 126, 34), 0.5)
+            JuiceEffects.play3DSound("splash", pos, 0.9)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🍟 МАСЛЯНАЯ ЛОВУШКА!", Color3.fromRGB(230, 126, 34))
 
         elseif slot == "ultimate" then
-            -- Великий Налоговый Аудит
-            createShockwaveRing(pos, 35, Color3.fromRGB(241, 196, 15), 0.8)
-            createPillarOfLight(pos, 22, 8, Color3.fromRGB(241, 196, 15), 0.8)
+            -- Великий Налоговый Аудит (Вихрь купюр и монет)
+            spawnAnticipationVortex(pos, Color3.fromRGB(241, 196, 15), 0.25)
+            spawnEarthFracture(pos, 14, 7)
+            spawnGroundCracks(pos, 16, Color3.fromRGB(180, 90, 10), 2.8)
+            spawnTexturedShockwave(pos, 35, Color3.fromRGB(241, 196, 15), 0.7)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(241, 196, 15), 20, 50, 0.3)
             JuiceEffects.play3DSound("cash", pos, 1.3)
-            JuiceEffects.play3DSound("slam", pos, 1.0)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "💰 НАЛОГОВЫЙ АУДИТ!", Color3.fromRGB(255, 215, 0))
-            if isSelf then JuiceEffects.screenShake(0.8, 0.5) end
+            JuiceEffects.play3DSound("slam", pos, 1.1)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🍕 НАЛОГОВЫЙ АУДИТ!", Color3.fromRGB(241, 196, 15))
+            if isSelf then
+                JuiceEffects.traumaShake(0.85)
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(241, 196, 15), 0.25)
+            end
 
         elseif slot == "special" then
-            -- Fries Carpet Bomb
-            for i = 1, 4 do
-                task.delay((i - 1) * 0.1, function()
-                    local offset = Vector3.new((math.random() - 0.5) * 16, 0, (math.random() - 0.5) * 16)
-                    createShockwaveRing(pos + offset, 8, Color3.fromRGB(241, 196, 15), 0.3)
-                    JuiceEffects.play3DSound("explosion", pos + offset, 0.7)
+            -- Fries Carpet Bomb (Ковровая бомбардировка картошкой фри)
+            for i = 1, 3 do
+                task.delay((i - 1) * 0.12, function()
+                    local bombPos = pos + lookVector * (9 * i)
+                    spawnEarthFracture(bombPos, 8, 4)
+                    spawnTexturedShockwave(bombPos, 14, Color3.fromRGB(230, 126, 34), 0.35)
+                    JuiceEffects.spawnLightBurst(bombPos, Color3.fromRGB(255, 140, 0), 14, 25, 0.2)
                 end)
             end
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "🍟 FRIES CARPET BOMB!", Color3.fromRGB(241, 196, 15))
+            JuiceEffects.play3DSound("explosion", pos, 1.1)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "🍟 КОВРОВАЯ БОМБАРДИРОВКА!", Color3.fromRGB(230, 126, 34))
 
         elseif slot == "mobility" then
-            -- Cola Rocket Jump
-            createPillarOfLight(pos, 12, 3, Color3.fromRGB(120, 60, 20), 0.4)
-            JuiceEffects.play3DSound("splash", pos, 1.0)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🥤 COLA ROCKET JUMP!", Color3.fromRGB(200, 100, 30))
-            if isSelf then JuiceEffects.fovPulse(15, 0.4) end
+            -- Cola Rocket Jump (Струя шипучей колы)
+            createPillarOfLight(pos, 18, 5, Color3.fromRGB(100, 40, 20), 0.45)
+            spawnTexturedShockwave(pos, 12, Color3.fromRGB(230, 126, 34), 0.35)
+            JuiceEffects.play3DSound("dash", pos, 1.0)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🥤 COLA ROCKET JUMP!", Color3.fromRGB(211, 84, 0))
+            if isSelf then
+                JuiceEffects.fovPulse(17, 0.4)
+                JuiceEffects.cameraKick(Vector3.new(0, 1, 0), 0.6)
+            end
 
         elseif slot == "godmode" then
             -- Мега-Фанум Пиршество (Падение гигантской золотой пиццы)
             spawnFallingSkyProp(pos, function()
                 local pizza = Instance.new("Part")
                 pizza.Shape = Enum.PartType.Cylinder
-                pizza.Size = Vector3.new(1.5, 18, 18)
+                pizza.Size = Vector3.new(3, 14, 14)
                 pizza.CFrame = CFrame.Angles(0, 0, math.rad(90))
                 pizza.Material = Enum.Material.Neon
                 pizza.Color = Color3.fromRGB(241, 196, 15)
                 return pizza
             end, function()
-                createShockwaveRing(pos, 45, Color3.fromRGB(241, 196, 15), 1.0)
-                createPillarOfLight(pos, 35, 12, Color3.fromRGB(255, 140, 0), 1.0)
+                createPillarOfLight(pos, 45, 15, Color3.fromRGB(255, 140, 0), 1.2)
+                spawnTexturedShockwave(pos, 48, Color3.fromRGB(241, 196, 15), 1.0)
                 JuiceEffects.play3DSound("slam", pos, 1.5)
                 JuiceEffects.play3DSound("cash", pos, 1.4)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "🍕 МЕГА-ФАНУМ ПИРШЕСТВО!", Color3.fromRGB(255, 215, 0))
                 if isSelf then
-                    JuiceEffects.screenShake(1.3, 0.8)
-                    JuiceEffects.screenFlash(Color3.fromRGB(241, 196, 15), 0.5)
+                    JuiceEffects.traumaShake(1.35)
+                    JuiceEffects.screenBloomFlash(Color3.fromRGB(241, 196, 15), 0.4)
                 end
-            end, 50)
+            end, 55)
         end
 
-    -- 5. GRIMACE SHAKE
+    -- 5. GRIMACE SHAKE (Toxic Biohazard / Eldritch Purple)
     elseif fId == "Grimace" then
         if slot == "base" then
-            -- Grimace Cloud
-            createShockwaveRing(pos, 16, Color3.fromRGB(142, 68, 173), 0.6)
+            -- Grimace Cloud (Токсичное облако)
+            spawnTexturedShockwave(pos, 18, Color3.fromRGB(155, 89, 182), 0.6)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(155, 89, 182), 14, 28, 0.2)
             JuiceEffects.play3DSound("splash", pos, 0.9)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🥤 GRIMACE CLOUD!", Color3.fromRGB(155, 89, 182))
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🥤 ТОКСИЧНЫЙ ШЕЙК!", Color3.fromRGB(155, 89, 182))
 
         elseif slot == "tactical" then
-            -- Коктейльная Лужа
-            createShockwaveRing(pos, 14, Color3.fromRGB(120, 40, 150), 0.5)
-            JuiceEffects.play3DSound("splash", pos, 0.8)
+            -- Коктейльная Лужа (Липкая фиолетовая жижа)
+            spawnGroundCracks(pos, 15, Color3.fromRGB(74, 35, 90), 3.5)
+            spawnTexturedShockwave(pos, 15, Color3.fromRGB(142, 68, 173), 0.5)
+            JuiceEffects.play3DSound("splash", pos, 0.9)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🟣 КОКТЕЙЛЬНАЯ ЛУЖА!", Color3.fromRGB(142, 68, 173))
 
         elseif slot == "ultimate" then
-            -- Катаклизм Гримаса
-            createShockwaveRing(pos, 35, Color3.fromRGB(142, 68, 173), 0.8)
-            createPillarOfLight(pos, 25, 8, Color3.fromRGB(155, 89, 182), 0.8)
-            JuiceEffects.play3DSound("slam", pos, 1.1)
+            -- Катаклизм Гримаса (Аренный токсичный туман)
+            spawnAnticipationVortex(pos, Color3.fromRGB(155, 89, 182), 0.3)
+            spawnEarthFracture(pos, 16, 8)
+            spawnGroundCracks(pos, 18, Color3.fromRGB(60, 20, 80), 3.0)
+            spawnTexturedShockwave(pos, 38, Color3.fromRGB(155, 89, 182), 0.85)
+            createPillarOfLight(pos, 30, 9, Color3.fromRGB(142, 68, 173), 0.85)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(155, 89, 182), 22, 50, 0.3)
+            JuiceEffects.play3DSound("slam", pos, 1.2)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "💜 КАТАКЛИЗМ ГРИМАСА!", Color3.fromRGB(168, 85, 247))
-            if isSelf then JuiceEffects.screenShake(0.8, 0.5) end
+            if isSelf then
+                JuiceEffects.traumaShake(0.9)
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(155, 89, 182), 0.3)
+            end
 
         elseif slot == "special" then
-            -- Grimace Birthday Eclipse
-            createShockwaveRing(pos, 25, Color3.fromRGB(80, 20, 100), 0.6)
-            createPillarOfLight(pos, 15, 6, Color3.fromRGB(142, 68, 173), 0.6)
+            -- Grimace Birthday Eclipse (Затмение дня рождения)
+            spawnMagicCircle(pos, Color3.fromRGB(74, 35, 90), 0.9)
+            createPillarOfLight(pos, 22, 7, Color3.fromRGB(155, 89, 182), 0.6)
             JuiceEffects.play3DSound("magic", pos, 1.0)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "🎂 HAPPY BIRTHDAY GRIMACE!", Color3.fromRGB(168, 85, 247))
-            if isSelf then JuiceEffects.screenFlash(Color3.fromRGB(142, 68, 173), 0.4) end
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "🎂 GRIMACE BIRTHDAY ECLIPSE!", Color3.fromRGB(168, 85, 247))
+            if isSelf then JuiceEffects.screenBloomFlash(Color3.fromRGB(142, 68, 173), 0.35) end
 
         elseif slot == "mobility" then
             -- Слизистый Прыжок
-            createShockwaveRing(pos, 10, Color3.fromRGB(155, 89, 182), 0.4)
+            spawnVolumetricLaser(pos, pos + lookVector * 26, Color3.fromRGB(155, 89, 182), 1.1, 0.3)
+            spawnGroundCracks(pos, 10, Color3.fromRGB(74, 35, 90), 2.0)
             JuiceEffects.play3DSound("dash", pos, 0.9)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🟣 СЛИЗИСТЫЙ ПРЫЖОК!", Color3.fromRGB(155, 89, 182))
-            if isSelf then JuiceEffects.fovPulse(14, 0.35) end
+            if isSelf then JuiceEffects.fovPulse(15, 0.35) end
 
         elseif slot == "godmode" then
-            -- Ритуал 23 Июня (Фиолетовые щупальца бездны)
-            createPillarOfLight(pos, 45, 14, Color3.fromRGB(100, 10, 130), 1.2)
-            createShockwaveRing(pos, 45, Color3.fromRGB(142, 68, 173), 1.0)
-            JuiceEffects.play3DSound("slam", pos, 1.4)
-            JuiceEffects.play3DSound("electric", pos, 1.2)
+            -- Ритуал 23 Июня (Элдрические щупальца бездны)
+            spawnEarthFracture(pos, 18, 10)
+            spawnGroundCracks(pos, 20, Color3.fromRGB(50, 10, 70), 3.8)
+            createPillarOfLight(pos, 48, 15, Color3.fromRGB(100, 10, 130), 1.2)
+            spawnTexturedShockwave(pos, 48, Color3.fromRGB(142, 68, 173), 1.0)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(155, 89, 182), 24, 60, 0.35)
+            JuiceEffects.play3DSound("slam", pos, 1.5)
+            JuiceEffects.play3DSound("electric", pos, 1.3)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "💀 РИТУАЛ 23 ИЮНЯ!", Color3.fromRGB(168, 85, 247))
             if isSelf then
-                JuiceEffects.screenShake(1.3, 0.8)
-                JuiceEffects.screenFlash(Color3.fromRGB(142, 68, 173), 0.5)
+                JuiceEffects.traumaShake(1.35)
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(142, 68, 173), 0.45)
+                JuiceEffects.hitstop(0.07)
             end
         end
 
-    -- 6. CASEOH GRAVITY
+    -- 6. CASEOH GRAVITY (Singularity & Colossal Kinetic Mass)
     elseif fId == "CaseOh" then
         if slot == "base" then
-            -- CaseOh Slam
-            createShockwaveRing(pos, 20, Color3.fromRGB(230, 126, 34), 0.5)
-            JuiceEffects.play3DSound("slam", pos, 1.1)
+            -- CaseOh Slam (Гравитационный слэм)
+            spawnEarthFracture(pos, 14, 7)
+            spawnTexturedShockwave(pos, 22, Color3.fromRGB(230, 126, 34), 0.5)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(230, 126, 34), 16, 35, 0.2)
+            JuiceEffects.play3DSound("slam", pos, 1.2)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "💥 CASEOH SLAM!", Color3.fromRGB(230, 126, 34))
-            if isSelf then JuiceEffects.screenShake(0.6, 0.35) end
+            if isSelf then JuiceEffects.traumaShake(0.6) end
 
         elseif slot == "tactical" then
-            -- Горизонт Событий
-            createShockwaveRing(pos, 18, Color3.fromRGB(20, 20, 25), 0.6)
-            JuiceEffects.play3DSound("magic", pos, 0.9)
+            -- Горизонт Событий (Черная дыра)
+            spawnAnticipationVortex(pos, Color3.fromRGB(241, 196, 15), 0.4)
+            spawnMagicCircle(pos, Color3.fromRGB(30, 30, 35), 0.8)
+            createPillarOfLight(pos, 16, 6, Color3.fromRGB(241, 196, 15), 0.6)
+            JuiceEffects.play3DSound("magic", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🕳️ ГОРИЗОНТ СОБЫТИЙ!", Color3.fromRGB(230, 126, 34))
 
         elseif slot == "ultimate" then
@@ -752,164 +856,224 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
             spawnFallingSkyProp(pos + lookVector * 18, function()
                 local met = Instance.new("Part")
                 met.Shape = Enum.PartType.Ball
-                met.Size = Vector3.new(10, 10, 10)
+                met.Size = Vector3.new(12, 12, 12)
                 met.Material = Enum.Material.Neon
                 met.Color = Color3.fromRGB(230, 126, 34)
                 return met
             end, function()
-                createShockwaveRing(pos + lookVector * 18, 35, Color3.fromRGB(230, 126, 34), 0.8)
-                JuiceEffects.play3DSound("meteor", pos, 1.3)
+                createPillarOfLight(pos + lookVector * 18, 35, 12, Color3.fromRGB(230, 126, 34), 0.8)
+                spawnTexturedShockwave(pos + lookVector * 18, 42, Color3.fromRGB(230, 126, 34), 0.8)
+                JuiceEffects.play3DSound("meteor", pos, 1.4)
+                JuiceEffects.play3DSound("slam", pos, 1.2)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 6, 0), "☄️ МЕТЕОРИТ КЕЙСОХА!", Color3.fromRGB(230, 126, 34))
-                if isSelf then JuiceEffects.screenShake(1.0, 0.6) end
+                if isSelf then
+                    JuiceEffects.traumaShake(1.25)
+                    JuiceEffects.screenBloomFlash(Color3.fromRGB(230, 126, 34), 0.35)
+                end
             end, 60)
 
         elseif slot == "special" then
-            -- BAN HAMMER METEOR (Падение гигантского банхаммера)
+            -- BAN HAMMER METEOR (Падение колоссального банхаммера)
             spawnFallingSkyProp(pos + lookVector * 12, function()
                 local hammer = Instance.new("Part")
-                hammer.Size = Vector3.new(8, 4, 12)
+                hammer.Size = Vector3.new(8, 5, 12)
                 hammer.Material = Enum.Material.Neon
                 hammer.Color = Color3.fromRGB(231, 76, 60)
                 return hammer
             end, function()
-                createShockwaveRing(pos + lookVector * 12, 30, Color3.fromRGB(231, 76, 60), 0.7)
+                createPillarOfLight(pos + lookVector * 12, 30, 10, Color3.fromRGB(231, 76, 60), 0.8)
+                spawnTexturedShockwave(pos + lookVector * 12, 35, Color3.fromRGB(231, 76, 60), 0.7)
                 JuiceEffects.play3DSound("hammer", pos, 1.4)
                 JuiceEffects.play3DSound("slam", pos, 1.2)
-                JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🔨 YOU ARE BANNED!", Color3.fromRGB(255, 50, 50))
-                if isSelf then JuiceEffects.screenShake(1.0, 0.5) end
+                JuiceEffects.showFloatingText(pos + Vector3.new(0, 6, 0), "🔨 YOU ARE BANNED!", Color3.fromRGB(231, 76, 60))
+                if isSelf then
+                    JuiceEffects.traumaShake(1.1)
+                    JuiceEffects.hitstop(0.06)
+                end
             end, 55)
 
         elseif slot == "mobility" then
             -- Вафельный Каток
-            createBeamLine(pos, pos + lookVector * 28, Color3.fromRGB(230, 126, 34), 1.4, 0.35)
+            spawnVolumetricLaser(pos, pos + lookVector * 32, Color3.fromRGB(230, 126, 34), 1.4, 0.35)
+            spawnEarthFracture(pos, 10, 5)
             JuiceEffects.play3DSound("dash", pos, 1.0)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🧇 ВАФЕЛЬНЫЙ КАТОК!", Color3.fromRGB(230, 126, 34))
-            if isSelf then JuiceEffects.fovPulse(16, 0.4) end
+            JuiceEffects.play3DSound("slam", pos, 0.9)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🍩 ВАФЕЛЬНЫЙ КАТОК!", Color3.fromRGB(230, 126, 34))
+            if isSelf then
+                JuiceEffects.fovPulse(16, 0.4)
+                JuiceEffects.traumaShake(0.5)
+            end
 
         elseif slot == "godmode" then
-            -- Смещение Земной Оси
-            createPillarOfLight(pos, 50, 20, Color3.fromRGB(230, 126, 34), 1.4)
-            createShockwaveRing(pos, 60, Color3.fromRGB(255, 80, 0), 1.2)
+            -- Смещение Земной Оси (Планетарное сотрясение)
+            spawnEarthFracture(pos, 22, 10)
+            spawnGroundCracks(pos, 24, Color3.fromRGB(40, 45, 50), 3.8)
+            spawnTexturedShockwave(pos, 55, Color3.fromRGB(230, 126, 34), 1.1)
+            createPillarOfLight(pos, 55, 18, Color3.fromRGB(241, 196, 15), 1.3)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(241, 196, 15), 26, 70, 0.4)
             JuiceEffects.play3DSound("slam", pos, 1.6)
-            JuiceEffects.play3DSound("meteor", pos, 1.5)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "🪐 СМЕЩЕНИЕ ОСИ ЗЕМЛИ!", Color3.fromRGB(255, 120, 0))
+            JuiceEffects.play3DSound("meteor", pos, 1.4)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "🌍 СМЕЩЕНИЕ ЗЕМНОЙ ОСИ!", Color3.fromRGB(241, 196, 15))
             if isSelf then
-                JuiceEffects.screenShake(1.6, 1.0)
-                JuiceEffects.screenFlash(Color3.fromRGB(230, 126, 34), 0.6)
+                JuiceEffects.traumaShake(1.4)
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(230, 126, 34), 0.45)
+                JuiceEffects.hitstop(0.08)
             end
         end
 
-    -- 7. RIZZLER & GRONK
+    -- 7. RIZZLER & GRONK (Hypnotic Romance / Magenta & Roses)
     elseif fId == "Rizzler" then
         if slot == "base" then
-            -- Unspoken Rizz
-            createShockwaveRing(pos, 16, Color3.fromRGB(255, 105, 180), 0.5)
-            JuiceEffects.play3DSound("chime", pos, 0.9)
+            -- Unspoken Rizz (Розовый всплеск очарования)
+            spawnTexturedShockwave(pos, 18, Color3.fromRGB(255, 105, 180), 0.5)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 105, 180), 14, 28, 0.2)
+            JuiceEffects.play3DSound("chime", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "❤️ UNSPOKEN RIZZ!", Color3.fromRGB(255, 105, 180))
 
         elseif slot == "tactical" then
-            -- Ризз Гипноз
-            createShockwaveRing(pos, 14, Color3.fromRGB(255, 20, 147), 0.5)
-            createPillarOfLight(pos, 8, 3, Color3.fromRGB(255, 105, 180), 0.5)
+            -- Ризз Гипноз (Концентрические кольца любви)
+            spawnMagicCircle(pos, Color3.fromRGB(255, 20, 147), 0.8)
+            createPillarOfLight(pos, 10, 4, Color3.fromRGB(255, 105, 180), 0.5)
             JuiceEffects.play3DSound("magic", pos, 0.9)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🌀 РИЗЗ ГИПНОЗ!", Color3.fromRGB(255, 105, 180))
 
         elseif slot == "ultimate" then
-            -- W Rizz Ураган
-            createShockwaveRing(pos, 35, Color3.fromRGB(255, 105, 180), 0.8)
-            createPillarOfLight(pos, 22, 7, Color3.fromRGB(255, 20, 147), 0.8)
-            JuiceEffects.play3DSound("chime", pos, 1.2)
+            -- Взрыв Сверхризза (Ослепительная розовая вспышка)
+            spawnAnticipationVortex(pos, Color3.fromRGB(255, 105, 180), 0.25)
+            spawnTexturedShockwave(pos, 36, Color3.fromRGB(255, 20, 147), 0.75)
+            createPillarOfLight(pos, 26, 8, Color3.fromRGB(255, 105, 180), 0.8)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 20, 147), 20, 45, 0.25)
+            JuiceEffects.play3DSound("chime", pos, 1.3)
             JuiceEffects.play3DSound("slam", pos, 1.0)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "💖 W RIZZ УРАГАН!", Color3.fromRGB(255, 105, 180))
-            if isSelf then JuiceEffects.screenShake(0.7, 0.5) end
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "💖 ВЗРЫВ СВЕРХРИЗЗА!", Color3.fromRGB(255, 105, 180))
+            if isSelf then
+                JuiceEffects.traumaShake(0.8)
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 105, 180), 0.3)
+            end
 
         elseif slot == "special" then
-            -- Cupid's Brainrot Arrow
-            createBeamLine(pos + Vector3.new(0, 2, 0), pos + lookVector * 32 + Vector3.new(0, 2, 0), Color3.fromRGB(255, 20, 147), 0.7, 0.35)
-            JuiceEffects.play3DSound("laser", pos, 0.9)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "💘 СТРЕЛА АМУРА!", Color3.fromRGB(255, 105, 180))
+            -- Cupid's Brainrot Arrow (Стрела Купидона)
+            spawnVolumetricLaser(pos + Vector3.new(0, 2, 0), pos + lookVector * 34 + Vector3.new(0, 2, 0), Color3.fromRGB(255, 20, 147), 0.8, 0.35)
+            JuiceEffects.play3DSound("laser", pos, 1.0)
+            JuiceEffects.play3DSound("chime", pos, 0.9)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "💘 СТРЕЛА КУПИДОНА!", Color3.fromRGB(255, 105, 180))
 
         elseif slot == "mobility" then
-            -- Лепестковый Блинк
-            createShockwaveRing(pos, 12, Color3.fromRGB(255, 182, 193), 0.35)
-            JuiceEffects.play3DSound("teleport", pos, 0.9)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🌸 ЛЕПЕСТКОВЫЙ БЛИНК!", Color3.fromRGB(255, 105, 180))
-            if isSelf then JuiceEffects.fovPulse(14, 0.3) end
+            -- Лепестковый Блинк (Вихрь роз)
+            spawnVolumetricLaser(pos, pos + lookVector * 28, Color3.fromRGB(255, 105, 180), 1.0, 0.25)
+            spawnTexturedShockwave(pos, 12, Color3.fromRGB(255, 20, 147), 0.3)
+            JuiceEffects.play3DSound("dash", pos, 0.9)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🌹 ЛЕПЕСТКОВЫЙ БЛИНК!", Color3.fromRGB(255, 105, 180))
+            if isSelf then JuiceEffects.fovPulse(15, 0.35) end
 
         elseif slot == "godmode" then
-            -- Аура Гипер-Ризза за 999+
-            createPillarOfLight(pos, 45, 16, Color3.fromRGB(255, 20, 147), 1.2)
-            createShockwaveRing(pos, 45, Color3.fromRGB(255, 105, 180), 1.0)
-            JuiceEffects.play3DSound("fanfare", pos, 1.3)
-            JuiceEffects.play3DSound("chime", pos, 1.3)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "💋 MAXIMUM HYPER-RIZZ!", Color3.fromRGB(255, 20, 147))
+            -- Аура Гипер-Ризза 999+
+            spawnMagicCircle(pos, Color3.fromRGB(255, 20, 147), 1.2)
+            spawnTexturedShockwave(pos, 45, Color3.fromRGB(255, 105, 180), 0.9)
+            createPillarOfLight(pos, 42, 14, Color3.fromRGB(255, 20, 147), 1.1)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 105, 180), 24, 60, 0.35)
+            JuiceEffects.play3DSound("chime", pos, 1.5)
+            JuiceEffects.play3DSound("fanfare", pos, 1.2)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "💋 АУРА ГИПЕР-РИЗЗА 999+!", Color3.fromRGB(255, 20, 147))
             if isSelf then
-                JuiceEffects.screenShake(1.2, 0.8)
-                JuiceEffects.screenFlash(Color3.fromRGB(255, 105, 180), 0.5)
+                JuiceEffects.traumaShake(1.15)
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 105, 180), 0.4)
             end
         end
 
-    -- 8. TUNGTUNG SAHUR
+    -- 8. TUNG TUNG SAHUR (Blacksmith Volcano / Molten Steel & Sparks)
     elseif fId == "TungTung" then
         if slot == "base" then
-            -- Барабанный Дробь
-            createShockwaveRing(pos, 16, Color3.fromRGB(46, 204, 113), 0.4)
-            JuiceEffects.play3DSound("hammer", pos, 0.9)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🥁 БАРАБАННЫЙ ДРОБЬ!", Color3.fromRGB(46, 204, 113))
+            -- Tung Tung Hammer (Сокрушительный удар молотом)
+            spawnEarthFracture(pos, 12, 6)
+            spawnTexturedShockwave(pos, 20, Color3.fromRGB(46, 204, 113), 0.45)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(46, 204, 113), 15, 30, 0.2)
+            JuiceEffects.play3DSound("hammer", pos, 1.2)
+            JuiceEffects.play3DSound("slam", pos, 1.0)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🔨 МОЛОТ ТУНГ-ТУНГ!", Color3.fromRGB(46, 204, 113))
+            if isSelf then JuiceEffects.traumaShake(0.55) end
 
         elseif slot == "tactical" then
-            -- Рассветный Щит
-            createPillarOfLight(pos, 7, 3.5, Color3.fromRGB(39, 174, 96), 0.5)
-            JuiceEffects.play3DSound("anvil", pos, 1.0)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🛡️ РАССВЕТНЫЙ ЩИТ!", Color3.fromRGB(46, 204, 113))
-
-        elseif slot == "ultimate" then
-            -- Sahur Землетрясение
-            createShockwaveRing(pos, 35, Color3.fromRGB(46, 204, 113), 0.7)
-            JuiceEffects.play3DSound("slam", pos, 1.2)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🔨 SAHUR ЗЕМЛЕТРЯСЕНИЕ!", Color3.fromRGB(46, 204, 113))
-            if isSelf then JuiceEffects.screenShake(0.8, 0.5) end
-
-        elseif slot == "special" then
-            -- Tungsten Anvil Drop (Падение вольфрамовой наковальни)
-            spawnFallingSkyProp(pos + lookVector * 12, function()
+            -- Наковальня Сахура (Сброс вольфрамовой наковальни)
+            spawnFallingSkyProp(pos + lookVector * 10, function()
                 local anvil = Instance.new("Part")
-                anvil.Size = Vector3.new(6, 4, 4)
+                anvil.Size = Vector3.new(4, 3, 6)
                 anvil.Material = Enum.Material.DiamondPlate
                 anvil.Color = Color3.fromRGB(80, 80, 90)
                 return anvil
             end, function()
-                createShockwaveRing(pos + lookVector * 12, 25, Color3.fromRGB(46, 204, 113), 0.6)
+                spawnTexturedShockwave(pos + lookVector * 10, 25, Color3.fromRGB(46, 204, 113), 0.6)
+                JuiceEffects.spawnLightBurst(pos + lookVector * 10, Color3.fromRGB(46, 204, 113), 18, 35, 0.25)
                 JuiceEffects.play3DSound("anvil", pos, 1.4)
                 JuiceEffects.play3DSound("slam", pos, 1.1)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🔔 ВОЛЬФРАМОВАЯ НАКОВАЛЬНЯ!", Color3.fromRGB(46, 204, 113))
-                if isSelf then JuiceEffects.screenShake(0.9, 0.45) end
+                if isSelf then JuiceEffects.traumaShake(0.7) end
             end, 50)
 
+        elseif slot == "ultimate" then
+            -- Итальянский Торнадо (Вихрь рассекающих молотов)
+            spawnAnticipationVortex(pos, Color3.fromRGB(46, 204, 113), 0.25)
+            spawnMagicCircle(pos, Color3.fromRGB(39, 174, 96), 0.8)
+            spawnTexturedShockwave(pos, 38, Color3.fromRGB(46, 204, 113), 0.7)
+            spawnEarthFracture(pos, 15, 8)
+            spawnGroundCracks(pos, 16, Color3.fromRGB(30, 80, 40), 2.8)
+            createPillarOfLight(pos, 28, 8, Color3.fromRGB(46, 204, 113), 0.8)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(46, 204, 113), 22, 50, 0.3)
+            JuiceEffects.play3DSound("slam", pos, 1.2)
+            JuiceEffects.play3DSound("electric", pos, 1.1)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🌪️ ИТАЛЬЯНСКИЙ ТОРНАДО!", Color3.fromRGB(46, 204, 113))
+            if isSelf then
+                JuiceEffects.traumaShake(0.85)
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(46, 204, 113), 0.3)
+                JuiceEffects.hitstop(0.05)
+            end
+
+        elseif slot == "special" then
+            -- Базука Сахура (Выстрел тяжелым снарядом молота)
+            spawnVolumetricLaser(pos + Vector3.new(0, 2, 0), pos + lookVector * 36 + Vector3.new(0, 2, 0), Color3.fromRGB(46, 204, 113), 1.2, 0.35)
+            spawnEarthFracture(pos + lookVector * 36, 10, 5)
+            spawnTexturedShockwave(pos + lookVector * 36, 18, Color3.fromRGB(46, 204, 113), 0.4)
+            JuiceEffects.spawnLightBurst(pos + lookVector * 36, Color3.fromRGB(46, 204, 113), 18, 35, 0.25)
+            JuiceEffects.play3DSound("explosion", pos, 1.2)
+            JuiceEffects.play3DSound("hammer", pos, 1.1)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "💥 БАЗУКА САХУРА!", Color3.fromRGB(46, 204, 113))
+            if isSelf then
+                JuiceEffects.traumaShake(0.65)
+                JuiceEffects.cameraKick(-lookVector, 0.6)
+            end
+
         elseif slot == "mobility" then
-            -- Реактивный Молот
-            createBeamLine(pos, pos + lookVector * 26, Color3.fromRGB(46, 204, 113), 1.2, 0.3)
+            -- Молот-Джамп
+            spawnVolumetricLaser(pos, pos + lookVector * 26, Color3.fromRGB(46, 204, 113), 1.2, 0.3)
+            spawnTexturedShockwave(pos, 14, Color3.fromRGB(46, 204, 113), 0.35)
             JuiceEffects.play3DSound("dash", pos, 0.9)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "⚡ РЕАКТИВНЫЙ МОЛОТ!", Color3.fromRGB(46, 204, 113))
-            if isSelf then JuiceEffects.fovPulse(14, 0.35) end
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "⚡ МОЛОТ-ДЖАМП!", Color3.fromRGB(46, 204, 113))
+            if isSelf then
+                JuiceEffects.fovPulse(15, 0.35)
+                JuiceEffects.cameraKick(Vector3.new(0, 1, 0), 0.5)
+            end
 
         elseif slot == "godmode" then
-            -- Молот Бога Рассвета
+            -- Ярость Вулкана Этна (Падение раскаленного молота вулкана)
             spawnFallingSkyProp(pos, function()
                 local godHammer = Instance.new("Part")
                 godHammer.Size = Vector3.new(10, 6, 6)
                 godHammer.Material = Enum.Material.Neon
-                godHammer.Color = Color3.fromRGB(46, 204, 113)
+                godHammer.Color = Color3.fromRGB(230, 126, 34)
                 return godHammer
             end, function()
-                createPillarOfLight(pos, 50, 18, Color3.fromRGB(46, 204, 113), 1.3)
-                createShockwaveRing(pos, 50, Color3.fromRGB(39, 174, 96), 1.1)
+                spawnEarthFracture(pos, 20, 10)
+                spawnGroundCracks(pos, 22, Color3.fromRGB(192, 57, 43), 3.5)
+                createPillarOfLight(pos, 50, 18, Color3.fromRGB(230, 126, 34), 1.3)
+                spawnTexturedShockwave(pos, 50, Color3.fromRGB(192, 57, 43), 1.1)
+                JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(230, 126, 34), 26, 65, 0.35)
                 JuiceEffects.play3DSound("slam", pos, 1.5)
                 JuiceEffects.play3DSound("electric", pos, 1.3)
-                JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "⚡ МОЛОТ БОГА РАССВЕТА!", Color3.fromRGB(46, 204, 113))
+                JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "🌋 ЯРОСТЬ ВУЛКАНА ЭТНА!", Color3.fromRGB(230, 126, 34))
                 if isSelf then
-                    JuiceEffects.screenShake(1.4, 0.9)
-                    JuiceEffects.screenFlash(Color3.fromRGB(46, 204, 113), 0.5)
+                    JuiceEffects.traumaShake(1.35)
+                    JuiceEffects.screenBloomFlash(Color3.fromRGB(230, 126, 34), 0.45)
+                    JuiceEffects.hitstop(0.07)
                 end
             end, 55)
         end

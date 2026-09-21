@@ -87,7 +87,7 @@
     - Потолочные световые балки под крышей (`TycoonRoof`, `Brightness = 3.2`, `SurfaceLight = 3.0`).
 - `AbilityService`: Инвентарные тулы способностей, серверный rate-limit (0.3с debounce на `OnServerEvent`), `os.clock()` для субсекундных кулдаунов, PvP-урон с `addCashRaw` (без множителя), `MaxHealth` cap 250, восстановление `WalkSpeed` из `getBaseWalkSpeed`, сохранение transparency при invisibility, обработка уже подключённых игроков, серверная репликация через `AbilityVFXEvent:FireAllClients`.
 - `AbilityVFX` (клиентский движок эффектов):
-  - 48 уникальных наборов визуальных и звуковых эффектов (8 фракций x 6 слотов способностей).
+  - 48 уникальных наборов визуальных и звуковых эффектов (8 фракций x 6 слотов способностей), реализованных по 4-фазной модели (Anticipation -> Release -> World Fracture -> Dissipation).
   - Световые неоновые столбы (`createPillarOfLight`), ударные волны расширения (`createShockwaveRing`), двухконтурные текстурированные волны (`spawnTexturedShockwave`), лазерные лучи (`createBeamLine`), объемные лучи с белым сердечником (`spawnVolumetricLaser`).
   - Процедурная физика мира: вылет 3D-камней земли (`spawnEarthFracture`: материал Slate/Basalt с анти-гравитационным зависанием), декали трещин с растворением (`spawnGroundCracks`), втягивающий вихрь частиц (`spawnAnticipationVortex`), вращающийся рунический круг под ногами (`spawnMagicCircle`).
   - Атмосферный наклонный вход падающих объектов (`spawnFallingSkyProp`: метеориты КейсОха, банхаммеры, наковальни и пиццы) с формированием детонационного кратера, света и камней.
