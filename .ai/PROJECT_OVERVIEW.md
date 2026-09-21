@@ -59,12 +59,12 @@
 - **Язык**: Luau (strict typing `--!strict`)
 - **Мультиплеер**: 8 баз ($R = 180$ studs), остров $R = 250$ studs, центральная площадь
 - **Сохранение**: Roblox DataStoreService (`TycoonSave_v1`)
-- **Тестирование**: Node.js Test Runner (`npm test`, 115 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
+- **Тестирование**: Node.js Test Runner (`npm test`, 116 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
-- **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` в корне проекта (комплексная оценка Шага 1 JuiceEffects AAA Overhaul: 8.7/10).
+- **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` (JuiceEffects: 8.7/10) и `REVIEW_REPORT_STEP2.md` (AbilityVFX Физика мира и бюджетирование: 9.4/10).
 
-- **Полный аудит надежности и безопасности (115/115 тестов пройдено)**:
+- **Полный аудит надежности и безопасности (116/116 тестов пройдено)**:
   - `MonetizationService`: Изоляция кэша `processedReceipts` по каждому игроку (`[UserId][receiptKey]`) и очистка на `PlayerRemoving`, устраняющая утечку памяти и кросс-пользовательские коллизии.
   - `TycoonService`: Передача `preloadedData` в `onPlayerAdded` исключает двойные вызовы `DataStoreManager.loadData`. Санитизация сумм (`sanitizeNum`) и `addCashRaw` при PvP трансфере исключают дюп и порчу баланса. Очистка экипированных Tool из `Character` при Rebirth.
   - `LeaderboardService`: Оптимизация памяти — удаление игроков с 0 фрагами при выходе с сервера, сохранение и авто-восстановление статистики реальных киллеров.
