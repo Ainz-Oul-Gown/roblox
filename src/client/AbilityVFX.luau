@@ -40,6 +40,42 @@ local AbilityVFX = {}
 
 local localPlayer = Players.LocalPlayer
 
+-- ============================================================================
+-- ОПТИМИЗАЦИЯ И БЮДЖЕТИРОВАНИЕ (LOD & INSTANCE BUDGET)
+-- ============================================================================
+local MAX_ACTIVE_ROCKS = 24
+local activeRocks: { BasePart } = {}
+local LOD_DISTANCE = 120
+
+AbilityVFX.MAX_ACTIVE_ROCKS = MAX_ACTIVE_ROCKS
+
+-- Проверка дистанционного отсева тяжелых эффектов
+local function isWithinLOD(pos: Vector3): boolean
+    local camera = Workspace.CurrentCamera
+    if camera then
+        local dist = (camera.CFrame.Position - pos).Magnitude
+        if dist > LOD_DISTANCE then
+            return false
+        end
+    end
+    return true
+end
+AbilityVFX.isWithinLOD = isWithinLOD
+
+-- Вытеснение старейших камней при превышении лимита (FIFO)
+local function pruneOldRocks(countToFree: number)
+    while #activeRocks + countToFree > MAX_ACTIVE_ROCKS and #activeRocks > 0 do
+        local oldRock = table.remove(activeRocks, 1)
+        if oldRock and oldRock.Parent then
+            oldRock:Destroy()
+        end
+    end
+end
+
+-- ============================================================================
+-- БАЗОВЫЕ ГЕНЕРАТОРЫ И УДАРНЫЕ ВОЛНЫ
+-- ============================================================================
+
 -- Создание расширяющегося неонового ударного кольца на земле
 local function createShockwaveRing(pos: Vector3, maxRadius: number, color: Color3, duration: number?)
     local dur = duration or 0.5
@@ -62,6 +98,48 @@ local function createShockwaveRing(pos: Vector3, maxRadius: number, color: Color
     tween:Play()
     Debris:AddItem(ring, dur + 0.1)
 end
+AbilityVFX.createShockwaveRing = createShockwaveRing
+
+-- Двухконтурная текстурированная ударная волна (горячее ядро + приземная пыль)
+local function spawnTexturedShockwave(pos: Vector3, maxRadius: number, color: Color3, duration: number?)
+    local dur = duration or 0.5
+    createShockwaveRing(pos, maxRadius, color, dur)
+
+    if not isWithinLOD(pos) then return end
+
+    local dustPart = Instance.new("Part")
+    dustPart.Name = "ShockwaveDustEmitter"
+    dustPart.Size = Vector3.new(1, 0.2, 1)
+    dustPart.CFrame = CFrame.new(pos)
+    dustPart.Transparency = 1
+    dustPart.Anchored = true
+    dustPart.CanCollide = false
+    dustPart.Parent = Workspace
+
+    local attach = Instance.new("Attachment")
+    attach.Parent = dustPart
+
+    local dustEmitter = Instance.new("ParticleEmitter")
+    dustEmitter.Color = ColorSequence.new(color:Lerp(Color3.fromRGB(200, 200, 200), 0.5))
+    dustEmitter.Size = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 1.2),
+        NumberSequenceKeypoint.new(1, 4.5),
+    })
+    dustEmitter.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.3),
+        NumberSequenceKeypoint.new(1, 1),
+    })
+    dustEmitter.Speed = NumberRange.new(maxRadius * 1.5, maxRadius * 2.2)
+    dustEmitter.Drag = 7.5
+    dustEmitter.SpreadAngle = Vector2.new(90, 10)
+    dustEmitter.Lifetime = NumberRange.new(0.4, 0.7)
+    dustEmitter.Rate = 0
+    dustEmitter.Parent = attach
+    dustEmitter:Emit(20)
+
+    Debris:AddItem(dustPart, dur + 0.8)
+end
+AbilityVFX.spawnTexturedShockwave = spawnTexturedShockwave
 
 -- Вспышка вертикального энергетического столба
 local function createPillarOfLight(pos: Vector3, height: number, radius: number, color: Color3, duration: number?)
@@ -85,6 +163,7 @@ local function createPillarOfLight(pos: Vector3, height: number, radius: number,
     tween:Play()
     Debris:AddItem(pillar, dur + 0.1)
 end
+AbilityVFX.createPillarOfLight = createPillarOfLight
 
 -- Временный направленный неоновый лазер / луч
 local function createBeamLine(fromPos: Vector3, toPos: Vector3, color: Color3, thickness: number?, duration: number?)
@@ -109,18 +188,213 @@ local function createBeamLine(fromPos: Vector3, toPos: Vector3, color: Color3, t
     tween:Play()
     Debris:AddItem(beamPart, dur + 0.05)
 end
+AbilityVFX.createBeamLine = createBeamLine
 
--- Создание падающего объекта с неба (метеорит, наковальня, банхаммер, пицца)
+-- Объемный луч с высокоэнергетическим белым сердечником и рикошетными искрами
+local function spawnVolumetricLaser(fromPos: Vector3, toPos: Vector3, color: Color3, thickness: number?, duration: number?)
+    local dur = duration or 0.45
+    local thick = thickness or 1.0
+    local dist = (toPos - fromPos).Magnitude
+
+    -- Внешняя цветная оболочка
+    createBeamLine(fromPos, toPos, color, thick, dur)
+
+    -- Внутренний белоснежный сердечник
+    local corePart = Instance.new("Part")
+    corePart.Name = "LaserCorePart"
+    corePart.Size = Vector3.new(thick * 0.45, thick * 0.45, dist)
+    corePart.CFrame = CFrame.lookAt((fromPos + toPos) / 2, toPos)
+    corePart.Anchored = true
+    corePart.CanCollide = false
+    corePart.Material = Enum.Material.Neon
+    corePart.Color = Color3.fromRGB(255, 255, 255)
+    corePart.Transparency = 0.05
+    corePart.Parent = Workspace
+
+    local tweenCore = TweenService:Create(corePart, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Transparency = 1,
+        Size = Vector3.new(thick * 0.8, thick * 0.8, dist),
+    })
+    tweenCore:Play()
+    Debris:AddItem(corePart, dur + 0.05)
+
+    -- Вспышка в точке соприкосновения
+    if JuiceEffects.spawnLightBurst then
+        JuiceEffects.spawnLightBurst(toPos, color, 14, 25, 0.2)
+    end
+end
+AbilityVFX.spawnVolumetricLaser = spawnVolumetricLaser
+
+-- ============================================================================
+-- ПРОЦЕДУРНАЯ ФИЗИКА МИРА (EARTH FRACTURE & CRACKS)
+-- ============================================================================
+
+-- Процедурный взрыв земли (вылет 3D-камней с зависанием в воздухе)
+local function spawnEarthFracture(pos: Vector3, radius: number?, rockCount: number?)
+    if not isWithinLOD(pos) then return end
+
+    local rad = radius or 12
+    local count = math.clamp(rockCount or 8, 4, 10)
+    pruneOldRocks(count)
+
+    local rockColors = {
+        Color3.fromRGB(80, 85, 90),
+        Color3.fromRGB(65, 68, 72),
+        Color3.fromRGB(50, 52, 55),
+    }
+
+    for i = 1, count do
+        local angle = (i / count) * math.pi * 2 + (math.random(-15, 15) * math.pi / 180)
+        local dist = rad * (0.6 + math.random() * 0.4)
+        local spawnX = pos.X + math.cos(angle) * dist
+        local spawnZ = pos.Z + math.sin(angle) * dist
+        local groundY = pos.Y
+
+        local sx = 1.2 + math.random() * 1.8
+        local sy = 1.8 + math.random() * 2.4
+        local sz = 1.2 + math.random() * 1.8
+
+        local rock = Instance.new("Part")
+        rock.Name = "FractureRock"
+        rock.Size = Vector3.new(sx, sy, sz)
+        rock.CFrame = CFrame.new(spawnX, groundY - sy * 0.6, spawnZ)
+        rock.Material = Enum.Material.Slate
+        rock.Color = rockColors[math.random(1, #rockColors)]
+        rock.Anchored = true
+        rock.CanCollide = false
+        rock.Parent = Workspace
+
+        table.insert(activeRocks, rock)
+
+        local targetY = groundY + sy * 0.45
+        local tiltAngleX = math.random(-25, 25)
+        local tiltAngleZ = math.random(-25, 25)
+        local targetCF = CFrame.new(spawnX, targetY, spawnZ) * CFrame.Angles(math.rad(tiltAngleX), angle, math.rad(tiltAngleZ))
+
+        -- 1. Быстрый вылет из земли
+        local tUp = TweenService:Create(rock, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            CFrame = targetCF,
+        })
+        tUp:Play()
+
+        -- 2. Зависание и плавное погружение обратно под землю
+        task.delay(0.14 + 0.22, function()
+            if rock and rock.Parent then
+                local sinkCF = CFrame.new(spawnX, groundY - sy * 1.2, spawnZ) * CFrame.Angles(math.rad(tiltAngleX), angle, math.rad(tiltAngleZ))
+                local tDown = TweenService:Create(rock, TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                    CFrame = sinkCF,
+                    Transparency = 1,
+                })
+                tDown:Play()
+            end
+        end)
+
+        Debris:AddItem(rock, 1.1)
+    end
+end
+AbilityVFX.spawnEarthFracture = spawnEarthFracture
+
+-- Декаль трещин земли с плавным растворением
+local function spawnGroundCracks(pos: Vector3, radius: number?, color: Color3?, duration: number?)
+    if not isWithinLOD(pos) then return end
+
+    local rad = radius or 12
+    local dur = duration or 3.0
+    local crackColor = color or Color3.fromRGB(35, 35, 40)
+
+    local crackPlate = Instance.new("Part")
+    crackPlate.Name = "GroundCracksPlate"
+    crackPlate.Shape = Enum.PartType.Cylinder
+    crackPlate.Size = Vector3.new(0.04, rad * 2, rad * 2)
+    crackPlate.CFrame = CFrame.new(pos - Vector3.new(0, 0.45, 0)) * CFrame.Angles(0, 0, math.rad(90))
+    crackPlate.Anchored = true
+    crackPlate.CanCollide = false
+    crackPlate.Material = Enum.Material.Basalt
+    crackPlate.Color = crackColor
+    crackPlate.Transparency = 0.2
+    crackPlate.Parent = Workspace
+
+    local tween = TweenService:Create(crackPlate, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        Transparency = 1,
+    })
+    tween:Play()
+    Debris:AddItem(crackPlate, dur + 0.1)
+end
+AbilityVFX.spawnGroundCracks = spawnGroundCracks
+
+-- Втягивание частиц (Anticipation Vortex / Windup)
+local function spawnAnticipationVortex(pos: Vector3, color: Color3, duration: number?)
+    if not isWithinLOD(pos) then return end
+
+    local dur = duration or 0.3
+    local vortexPart = Instance.new("Part")
+    vortexPart.Name = "AnticipationVortex"
+    vortexPart.Size = Vector3.new(0.2, 0.2, 0.2)
+    vortexPart.CFrame = CFrame.new(pos)
+    vortexPart.Transparency = 1
+    vortexPart.Anchored = true
+    vortexPart.CanCollide = false
+    vortexPart.Parent = Workspace
+
+    local attach = Instance.new("Attachment")
+    attach.Parent = vortexPart
+
+    local emitter = Instance.new("ParticleEmitter")
+    emitter.Color = ColorSequence.new(color)
+    emitter.Size = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.8),
+        NumberSequenceKeypoint.new(1, 0.1),
+    })
+    emitter.Speed = NumberRange.new(-25, -12) -- Отрицательная скорость затягивает частицы внутрь
+    emitter.Drag = 5.0
+    emitter.SpreadAngle = Vector2.new(180, 180)
+    emitter.Lifetime = NumberRange.new(0.2, 0.35)
+    emitter.Rate = 0
+    emitter.Parent = attach
+    emitter:Emit(18)
+
+    Debris:AddItem(vortexPart, dur + 0.4)
+end
+AbilityVFX.spawnAnticipationVortex = spawnAnticipationVortex
+
+-- Вращающийся магический круг под ногами кастера
+local function spawnMagicCircle(pos: Vector3, color: Color3, duration: number?)
+    if not isWithinLOD(pos) then return end
+
+    local dur = duration or 0.8
+    local circle = Instance.new("Part")
+    circle.Name = "MagicRuneCircle"
+    circle.Shape = Enum.PartType.Cylinder
+    circle.Size = Vector3.new(0.05, 8, 8)
+    circle.CFrame = CFrame.new(pos - Vector3.new(0, 0.4, 0)) * CFrame.Angles(0, 0, math.rad(90))
+    circle.Anchored = true
+    circle.CanCollide = false
+    circle.Material = Enum.Material.Neon
+    circle.Color = color
+    circle.Transparency = 0.35
+    circle.Parent = Workspace
+
+    local tweenRot = TweenService:Create(circle, TweenInfo.new(dur, Enum.EasingStyle.Linear), {
+        CFrame = circle.CFrame * CFrame.Angles(math.rad(180), 0, 0),
+        Transparency = 1,
+    })
+    tweenRot:Play()
+    Debris:AddItem(circle, dur + 0.1)
+end
+AbilityVFX.spawnMagicCircle = spawnMagicCircle
+
+-- Атмосферный вход падающего объекта с неба (метеорит, наковальня, банхаммер, пицца)
 local function spawnFallingSkyProp(targetPos: Vector3, propBuilder: () -> BasePart, onImpact: () -> (), fallHeight: number?)
     local h = fallHeight or 55
-    local spawnPos = targetPos + Vector3.new(0, h, 0)
+    -- Наклонная траектория падения (динамический угол входа в атмосферу)
+    local spawnPos = targetPos + Vector3.new(10, h, 8)
     local prop = propBuilder()
     prop.CFrame = CFrame.new(spawnPos)
     prop.Anchored = true
     prop.CanCollide = false
     prop.Parent = Workspace
 
-    local fallTime = 0.45
+    local fallTime = 0.42
     local tween = TweenService:Create(prop, TweenInfo.new(fallTime, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
         CFrame = CFrame.new(targetPos),
     })
@@ -130,9 +404,16 @@ local function spawnFallingSkyProp(targetPos: Vector3, propBuilder: () -> BasePa
         if prop and prop.Parent then
             prop:Destroy()
         end
+        -- Комплексный физический кратер при детонации падающего объекта
+        spawnEarthFracture(targetPos, 12, 8)
+        spawnGroundCracks(targetPos, 14, Color3.fromRGB(35, 35, 40), 2.8)
+        if JuiceEffects.spawnLightBurst then
+            JuiceEffects.spawnLightBurst(targetPos, Color3.fromRGB(255, 190, 80), 18, 45, 0.25)
+        end
         onImpact()
     end)
 end
+AbilityVFX.spawnFallingSkyProp = spawnFallingSkyProp
 
 -- Главная функция проигрывания VFX/SFX способности
 function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: Vector3, lookVector: Vector3)

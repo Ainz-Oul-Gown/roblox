@@ -88,9 +88,12 @@
 - `AbilityService`: Инвентарные тулы способностей, серверный rate-limit (0.3с debounce на `OnServerEvent`), `os.clock()` для субсекундных кулдаунов, PvP-урон с `addCashRaw` (без множителя), `MaxHealth` cap 250, восстановление `WalkSpeed` из `getBaseWalkSpeed`, сохранение transparency при invisibility, обработка уже подключённых игроков, серверная репликация через `AbilityVFXEvent:FireAllClients`.
 - `AbilityVFX` (клиентский движок эффектов):
   - 48 уникальных наборов визуальных и звуковых эффектов (8 фракций x 6 слотов способностей).
-  - Световые неоновые столбы (`createPillarOfLight`), ударные волны расширения (`createShockwaveRing`), лазерные лучи (`createBeamLine`), небесные объекты (`spawnFallingSkyProp`: падающие метеориты КейсОха, банхаммеры, наковальни и пиццы).
+  - Световые неоновые столбы (`createPillarOfLight`), ударные волны расширения (`createShockwaveRing`), двухконтурные текстурированные волны (`spawnTexturedShockwave`), лазерные лучи (`createBeamLine`), объемные лучи с белым сердечником (`spawnVolumetricLaser`).
+  - Процедурная физика мира: вылет 3D-камней земли (`spawnEarthFracture`: материал Slate/Basalt с анти-гравитационным зависанием), декали трещин с растворением (`spawnGroundCracks`), втягивающий вихрь частиц (`spawnAnticipationVortex`), вращающийся рунический круг под ногами (`spawnMagicCircle`).
+  - Атмосферный наклонный вход падающих объектов (`spawnFallingSkyProp`: метеориты КейсОха, банхаммеры, наковальни и пиццы) с формированием детонационного кратера, света и камней.
+  - Оптимизация и бюджетирование: строгий лимит активных 3D-камней (`MAX_ACTIVE_ROCKS = 24`) с FIFO-вытеснением старых объектов и дистанционный отсев (`isWithinLOD`, порог 120 стадов) для сохранения 60 FPS на смартфонах и слабых ПК.
   - Пространственный 3D-звук (`JuiceEffects.play3DSound`) с затуханием по дистанции.
-  - Динамическая кинематографическая отдача: тряска экрана (`JuiceEffects.screenShake`) при взрывах и импульс FOV (`JuiceEffects.fovPulse`) с защитой от накопления дрейфа.
+  - Динамическая кинематографическая отдача: тряска экрана (`JuiceEffects.traumaShake`), направленный толчок (`cameraKick`) и импульс FOV (`JuiceEffects.fovPulse`) с защитой от накопления дрейфа.
 - `JuiceEffects`: Каталог 3D/2D звуков (`laser`, `dash`, `explosion`, `electric`, `magic`, `teleport`, `meteor`, `hammer`, `splash`, `whoosh`, `chime`, `horn`, `parry`, `snatch`, `anvil`), парящие мемные надписи, вспышки экрана, процедурный праздничный салют конфетти (`spawnConfetti`).
 - `LeaderboardService`: Автоматический учет и визуализация топа богатства и фрагов. Статистика сохраняется до рестарта сервера (не стирается при выходе игрока). Поддерживает `restorePvPStats` для восстановления из DataStore.
 - `AirDropService`: Фоновый таймер и спавн ящиков с парашютами и захватом.

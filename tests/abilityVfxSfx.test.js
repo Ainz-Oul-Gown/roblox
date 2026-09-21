@@ -61,6 +61,27 @@ test('AbilityVFX: implements audiovisual rendering for all 8 factions and 6 abil
     assert.ok(content.includes('spawnFallingSkyProp'), 'Must implement spawnFallingSkyProp');
 });
 
+test('AbilityVFX: implements Step 2 physical world fracture generators, LOD culling, and rock budgeting', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const content = fs.readFileSync(vfxPath, 'utf8');
+
+    // World fracture & physical generators
+    assert.ok(content.includes('AbilityVFX.spawnEarthFracture = spawnEarthFracture'), 'Must export spawnEarthFracture');
+    assert.ok(content.includes('AbilityVFX.spawnGroundCracks = spawnGroundCracks'), 'Must export spawnGroundCracks');
+    assert.ok(content.includes('AbilityVFX.spawnAnticipationVortex = spawnAnticipationVortex'), 'Must export spawnAnticipationVortex');
+    assert.ok(content.includes('AbilityVFX.spawnMagicCircle = spawnMagicCircle'), 'Must export spawnMagicCircle');
+    assert.ok(content.includes('AbilityVFX.spawnVolumetricLaser = spawnVolumetricLaser'), 'Must export spawnVolumetricLaser');
+    assert.ok(content.includes('AbilityVFX.spawnTexturedShockwave = spawnTexturedShockwave'), 'Must export spawnTexturedShockwave');
+
+    // Performance budgeting & LOD
+    assert.ok(content.includes('AbilityVFX.MAX_ACTIVE_ROCKS = MAX_ACTIVE_ROCKS'), 'Must export MAX_ACTIVE_ROCKS');
+    assert.ok(content.includes('MAX_ACTIVE_ROCKS = 24'), 'Must set rock budget limit to 24');
+    assert.ok(content.includes('AbilityVFX.isWithinLOD = isWithinLOD'), 'Must export isWithinLOD');
+    assert.ok(content.includes('LOD_DISTANCE = 120'), 'Must set LOD distance to 120 studs');
+    assert.ok(content.includes('pruneOldRocks'), 'Must implement FIFO queue pruning for active rocks');
+    assert.ok(content.includes('Slate'), 'Fracture rocks must use Slate material');
+});
+
 test('Replication: Server fires AbilityVFXEvent to all clients and Client connects to it', () => {
     const serverPath = path.join(__dirname, '../src/server/AbilityService.luau');
     const serverContent = fs.readFileSync(serverPath, 'utf8');
