@@ -28,6 +28,9 @@ local PlotManager = require(serverScript:WaitForChild("PlotManager", 10))
 
 local PlotBuilder = {}
 
+-- Callback для выдачи тула со стенда (устанавливается из init.server.luau, чтобы избежать циклического require)
+PlotBuilder.onStandPickup = nil :: ((player: Player, slotId: string) -> ())?
+
 -- Ссылки на табло вывода сейфа по базам для живого обновления суммы
 local vaultLabels: { [number]: TextLabel } = {}
 
@@ -178,7 +181,7 @@ local function createUpgrader(
 end
 
 -- Стойка способности с пьедесталом и витриной предмета
-local function createAbilityPedestal(parent: Instance, id: string, cf: CFrame, title: string, subtitle: string, color: Color3)
+local function createAbilityPedestal(parent: Instance, id: string, cf: CFrame, title: string, subtitle: string, color: Color3, owner: Player?, slotId: string?)
     local stand = Instance.new("Model")
     stand.Name = id
     stand.Parent = parent
@@ -215,6 +218,22 @@ local function createAbilityPedestal(parent: Instance, id: string, cf: CFrame, t
     orb.Parent = stand
 
     createBillboard(orb, title, subtitle, color, Vector3.new(0, 3, 0))
+
+    if owner and slotId then
+        local prompt = Instance.new("ProximityPrompt")
+        prompt.ActionText = string.format("Забрать %s", title)
+        prompt.ObjectText = subtitle
+        prompt.MaxActivationDistance = 10
+        prompt.HoldDuration = 0.3
+        prompt.RequiresLineOfSight = false
+        prompt.Parent = orb
+
+        prompt.Triggered:Connect(function(triggerPlayer: Player)
+            if triggerPlayer == owner and PlotBuilder.onStandPickup then
+                PlotBuilder.onStandPickup(triggerPlayer, slotId)
+            end
+        end)
+    end
 end
 
 local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfig.TycoonItem, baseCF: CFrame, faction: TycoonConfig.Faction)
@@ -466,7 +485,9 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             baseCF * CFrame.new(-18, 0, -12),
             faction.baseAbility.name,
             "ПРЕДМЕТ ИНВЕНТАРЯ [1] (E)",
-            faction.color
+            faction.color,
+            owner,
+            "base"
         )
 
     elseif item.id == "Dropper_Prime" then
@@ -496,7 +517,9 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             baseCF * CFrame.new(18, 0, -12),
             faction.tacticalAbility.name,
             "ПРЕДМЕТ ИНВЕНТАРЯ [2] (R)",
-            faction.secondaryColor
+            faction.secondaryColor,
+            owner,
+            "tactical"
         )
 
     elseif item.id == "Stairs_To_Floor2" then
@@ -798,14 +821,6 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
         rBack.Color = Color3.fromRGB(40, 40, 48)
         rBack.Parent = f2Walls
 
-        -- Правая стена 2 этажа
-        local rRight = Instance.new("Part")
-        rRight.Size = Vector3.new(1, 10, 76)
-        rRight.CFrame = baseCF * CFrame.new(28, 19, 0)
-        rRight.Anchored = true
-        rRight.Color = Color3.fromRGB(40, 40, 48)
-        rRight.Parent = f2Walls
-
         -- Левая стена 2 этажа
         -- 1. Левая и Правая стены 2 этажа (с панорамными оконными проемами Z = -6..18, Y = 16..22)
         for _, sideX in ipairs({ -28, 28 }) do
@@ -1031,7 +1046,9 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             baseCF * CFrame.new(20, 14, -20),
             faction.ultimateAbility.name,
             "👑 УЛЬТИМЕЙТ [3] (Q)",
-            Color3.fromRGB(255, 215, 0)
+            Color3.fromRGB(255, 215, 0),
+            owner,
+            "ultimate"
         )
 
     elseif item.id == "AbilityStand_Special" then
@@ -1042,7 +1059,9 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             baseCF * CFrame.new(-20, 14, -20),
             faction.specialAbility.name,
             "🔮 СПЕЦ-СПОСОБНОСТЬ [4] (F)",
-            Color3.fromRGB(168, 85, 247)
+            Color3.fromRGB(168, 85, 247),
+            owner,
+            "special"
         )
 
     elseif item.id == "AbilityStand_Mobility" then
@@ -1053,7 +1072,9 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             baseCF * CFrame.new(-20, 14, -28),
             faction.mobilityAbility.name,
             "⚡ МОБИЛЬНОСТЬ [5] (Z)",
-            Color3.fromRGB(6, 182, 212)
+            Color3.fromRGB(6, 182, 212),
+            owner,
+            "mobility"
         )
 
     elseif item.id == "Lighting_Floor2" then
@@ -1251,7 +1272,9 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             baseCF * CFrame.new(20, 14, -28),
             faction.godmodeAbility.name,
             "🌟 ФИНИШЕР БОГА [6] (X)",
-            Color3.fromRGB(239, 68, 68)
+            Color3.fromRGB(239, 68, 68),
+            owner,
+            "godmode"
         )
 
     elseif item.id == "Upgrader_Annihilator" then
@@ -1647,7 +1670,7 @@ local BUTTON_CONFIGS: { [string]: Vector3 } = {
     Floor2_Walls = Vector3.new(10, 14.5, 4),
     Lighting_Floor2 = Vector3.new(-10, 14.5, 4),
     Windows_Floor2 = Vector3.new(0, 14.5, 32),
-    Floor2_Conveyor = Vector3.new(0, 14.5, 6),
+    Floor2_Conveyor = Vector3.new(10, 14.5, 10),
     Upgrader_Quantum = Vector3.new(-8, 14.5, -16),
     Dropper_Galactic = Vector3.new(8, 14.5, -16),
     Upgrader_Annihilator = Vector3.new(8, 14.5, -2),

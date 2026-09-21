@@ -58,10 +58,19 @@ local function tagHumanoid(targetHum: Humanoid, attacker: Player)
     Debris:AddItem(tag, 6)
 end
 
--- P1-NEW-06 FIX: Применение урона с учётом DamageReduction атрибута цели
-local function applyDamage(targetHum: Humanoid, rawDamage: number)
+local function applyDamage(targetHum: Humanoid, rawDamage: number, attacker: Player?)
     local targetPlayer = Players:GetPlayerFromCharacter(targetHum.Parent)
     if targetPlayer then
+        -- Sigma Parry: отражение 75% урона на атакующего
+        if targetPlayer:GetAttribute("SigmaParryActive") then
+            if attacker and attacker.Character then
+                local aHum = attacker.Character:FindFirstChild("Humanoid") :: Humanoid?
+                if aHum and aHum.Health > 0 then
+                    aHum:TakeDamage(rawDamage * 0.75)
+                end
+            end
+            return
+        end
         local reduction = targetPlayer:GetAttribute("DamageReduction")
         if type(reduction) == "number" and reduction > 0 and reduction < 1 then
             rawDamage = rawDamage * (1 - reduction)
@@ -152,6 +161,40 @@ function AbilityService.syncPlayerTools(player: Player)
     end
 end
 
+-- Очистка всех тулов способностей (смена базы / ребирт)
+function AbilityService.clearPlayerTools(player: Player)
+    for _, container in ipairs({
+        player:FindFirstChild("Backpack"),
+        player:FindFirstChild("StarterGear"),
+        player.Character,
+    }) do
+        if container then
+            for _, tool in container:GetChildren() do
+                if tool:IsA("Tool") and tool:GetAttribute("AbilitySlot") then
+                    tool:Destroy()
+                end
+            end
+        end
+    end
+end
+
+-- Выдать один тул по слоту (вызов со стенда через ProximityPrompt)
+function AbilityService.giveSpecificTool(player: Player, slot: AbilitySlot)
+    local plotIndex = PlotManager.getPlayerPlotIndex(player)
+    if not plotIndex then return end
+    local faction = TycoonConfig.getFaction(plotIndex)
+
+    local abilityInfo, color
+    if slot == "base" then abilityInfo = faction.baseAbility; color = faction.color
+    elseif slot == "tactical" then abilityInfo = faction.tacticalAbility; color = faction.secondaryColor
+    elseif slot == "ultimate" then abilityInfo = faction.ultimateAbility; color = faction.color
+    elseif slot == "special" then abilityInfo = faction.specialAbility; color = Color3.fromRGB(168, 85, 247)
+    elseif slot == "mobility" then abilityInfo = faction.mobilityAbility; color = Color3.fromRGB(6, 182, 212)
+    else abilityInfo = faction.godmodeAbility; color = Color3.fromRGB(239, 68, 68) end
+
+    createAbilityTool(player, slot, abilityInfo, color)
+end
+
 -- Вызов способности
 function AbilityService.castAbility(player: Player, slot: AbilitySlot)
     local char = player.Character
@@ -216,7 +259,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                         local diff = oRoot.Position - root.Position
                         if diff.Magnitude <= 24 then
                             tagHumanoid(oHum, player)
-                            applyDamage(oHum, 25)
+                            applyDamage(oHum, 25, player)
                             oRoot.AssemblyLinearVelocity = (diff.Unit + Vector3.new(0, 0.8, 0)) * 60
                         end
                     end
@@ -242,7 +285,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                         local diff = root.Position - oRoot.Position
                         if diff.Magnitude <= 35 then
                             tagHumanoid(oHum, player)
-                            applyDamage(oHum, 60)
+                            applyDamage(oHum, 60, player)
                             -- Притягивание к кастеру
                             oRoot.AssemblyLinearVelocity = (diff.Unit + Vector3.new(0, 0.5, 0)) * 50
                             -- P1-NEW-07: Оглушение на 3 секунды
@@ -262,7 +305,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 25 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 20)
+                        applyDamage(oHum, 20, player)
                         local prevSpeed = oHum.WalkSpeed
                         oHum.WalkSpeed = 0
                         task.delay(2.5, function() if oHum.Parent then oHum.WalkSpeed = prevSpeed end end)
@@ -279,7 +322,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 14 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 35)
+                        applyDamage(oHum, 35, player)
                         oRoot.AssemblyLinearVelocity = (look + Vector3.new(0, 0.5, 0)) * 55
                     end
                 end
@@ -294,7 +337,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 80)
+                        applyDamage(oHum, 80, player)
                         oRoot.AssemblyLinearVelocity = Vector3.new(0, 60, 0)
                     end
                 end
@@ -312,7 +355,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                         local toOther = (oRoot.Position - root.Position)
                         if toOther.Magnitude <= 22 and root.CFrame.LookVector:Dot(toOther.Unit) > 0.3 then
                             tagHumanoid(oHum, player)
-                            applyDamage(oHum, 20)
+                            applyDamage(oHum, 20, player)
                             local prevSpeed = oHum.WalkSpeed
                             oHum.WalkSpeed = 0
                             task.delay(3, function() if oHum.Parent then oHum.WalkSpeed = prevSpeed end end)
@@ -331,7 +374,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 65)
+                        applyDamage(oHum, 65, player)
                         oRoot.AssemblyLinearVelocity = Vector3.new(0, 45, 0)
                     end
                 end
@@ -344,7 +387,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 28 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 25)
+                        applyDamage(oHum, 25, player)
                         local _prevSpeedVictim = oHum.WalkSpeed
                         oHum.WalkSpeed = 4
                         task.delay(4, function() if oHum.Parent then oHum.WalkSpeed = _prevSpeedVictim end end)
@@ -361,7 +404,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 15 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 40)
+                        applyDamage(oHum, 40, player)
                         oRoot.AssemblyLinearVelocity = (look + Vector3.new(0, 0.4, 0)) * 60
                     end
                 end
@@ -377,7 +420,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 30 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 50)
+                        applyDamage(oHum, 50, player)
                         oRoot.AssemblyLinearVelocity = Vector3.new(0, -30, 0)
                     end
                 end
@@ -400,7 +443,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 28 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 55)
+                        applyDamage(oHum, 55, player)
                         local _psSigmaUlt = oHum.WalkSpeed
                         oHum.WalkSpeed = 6
                         task.delay(5, function() if oHum.Parent then oHum.WalkSpeed = _psSigmaUlt end end)
@@ -450,7 +493,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 if tRoot and tHum then
                     root.CFrame = tRoot.CFrame * CFrame.new(0, 0, 4)
                     tagHumanoid(tHum, player)
-                    tHum:TakeDamage(45)
+                    applyDamage(tHum, 45, player)
                 end
             else
                 root.CFrame = root.CFrame * CFrame.new(0, 0, -30)
@@ -465,7 +508,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 70)
+                        applyDamage(oHum, 70, player)
                         oRoot.AssemblyLinearVelocity = Vector3.new(0, 40, 0)
                     end
                 end
@@ -481,7 +524,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 20 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 20)
+                        applyDamage(oHum, 20, player)
                         local victimCash = TycoonService.getCash(other)
                         local tax = math.floor(victimCash * 0.15)
                         if tax > 0 then
@@ -504,6 +547,27 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             puddle.Color = Color3.fromRGB(230, 126, 34)
             puddle.Parent = Workspace
             Debris:AddItem(puddle, 8)
+
+            local puddleHits: { [number]: boolean } = {}
+            puddle.Touched:Connect(function(hit)
+                local touchChar = hit.Parent
+                if not touchChar then return end
+                local touchPlayer = Players:GetPlayerFromCharacter(touchChar)
+                if not touchPlayer or touchPlayer == player then return end
+                if puddleHits[touchPlayer.UserId] then return end
+                puddleHits[touchPlayer.UserId] = true
+                local touchHum = touchChar:FindFirstChild("Humanoid") :: Humanoid?
+                if touchHum and touchHum.Health > 0 then
+                    tagHumanoid(touchHum, player)
+                    applyDamage(touchHum, 15, player)
+                    local ps = touchHum.WalkSpeed
+                    touchHum.WalkSpeed = 6
+                    task.delay(3, function()
+                        if touchHum.Parent then touchHum.WalkSpeed = ps end
+                        puddleHits[touchPlayer.UserId] = nil
+                    end)
+                end
+            end)
         elseif slot == "ultimate" then
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
@@ -511,7 +575,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 40)
+                        applyDamage(oHum, 40, player)
                         local victimCash = TycoonService.getCash(other)
                         local tax = math.floor(victimCash * 0.30)
                         if tax > 0 then
@@ -536,7 +600,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                             local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                             if oRoot and oHum and (oRoot.Position - (root.Position + look * (i * 12))).Magnitude <= 14 then
                                 tagHumanoid(oHum, player)
-                                applyDamage(oHum, 18)
+                                applyDamage(oHum, 18, player)
                                 local _psFries = oHum.WalkSpeed
                                 oHum.WalkSpeed = 6
                                 task.delay(3, function() if oHum.Parent then oHum.WalkSpeed = _psFries end end)
@@ -556,7 +620,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 35 then
                         tagHumanoid(oHum, player)
-                        applyDamage(oHum, 75)
+                        applyDamage(oHum, 75, player)
                         oRoot.AssemblyLinearVelocity = (oRoot.Position - root.Position).Unit * 60
                     end
                 end
@@ -564,30 +628,330 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             hum.Health = hum.MaxHealth
         end
 
-    else
-        -- Grimace, CaseOh, Rizzler, TungTung
-        local baseDmg = if slot == "base" then 25
-            elseif slot == "tactical" then 35
-            elseif slot == "ultimate" then 65
-            elseif slot == "special" then 50
-            elseif slot == "mobility" then 35
-            else 85
-
-        if slot == "mobility" then
-            -- Универсальный рывок / прыжок вперед
-            root.AssemblyLinearVelocity = root.CFrame.LookVector * 80 + Vector3.new(0, 30, 0)
-        end
-
-        for _, other in ipairs(Players:GetPlayers()) do
-            if other ~= player and other.Character then
-                local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
-                local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
-                if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 26 then
-                    tagHumanoid(oHum, player)
-                    applyDamage(oHum, baseDmg)
-                    oRoot.AssemblyLinearVelocity = (oRoot.Position - root.Position).Unit * 45
+    elseif fId == "Grimace" then
+        if slot == "base" then
+            -- Shake Splash: конусная волна яда
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and oHum.Health > 0 then
+                        local toOther = oRoot.Position - root.Position
+                        if toOther.Magnitude <= 22 and root.CFrame.LookVector:Dot(toOther.Unit) > 0.4 then
+                            tagHumanoid(oHum, player)
+                            applyDamage(oHum, 22, player)
+                            local ps = oHum.WalkSpeed; oHum.WalkSpeed = 8
+                            task.delay(3, function() if oHum.Parent then oHum.WalkSpeed = ps end end)
+                        end
+                    end
                 end
             end
+        elseif slot == "tactical" then
+            -- Purple Shield: щит + реген
+            hum.MaxHealth = math.min(hum.MaxHealth + 40, 250)
+            hum.Health = math.min(hum.MaxHealth, hum.Health + 40)
+            player:SetAttribute("DamageReduction", 0.35)
+            task.delay(5, function() player:SetAttribute("DamageReduction", nil) end)
+        elseif slot == "ultimate" then
+            -- Purple Rain: AoE + подброс
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 30 then
+                        tagHumanoid(oHum, player); applyDamage(oHum, 60, player)
+                        oRoot.AssemblyLinearVelocity = Vector3.new(0, 35, 0)
+                    end
+                end
+            end
+        elseif slot == "special" then
+            -- Shake Vortex: притягивание + урон
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and oHum.Health > 0 then
+                        local diff = root.Position - oRoot.Position
+                        if diff.Magnitude <= 28 then
+                            tagHumanoid(oHum, player); applyDamage(oHum, 30, player)
+                            oRoot.AssemblyLinearVelocity = diff.Unit * 40 + Vector3.new(0, 10, 0)
+                        end
+                    end
+                end
+            end
+        elseif slot == "mobility" then
+            -- Grimace Slide
+            root.AssemblyLinearVelocity = root.CFrame.LookVector * 75 + Vector3.new(0, 10, 0)
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 14 then
+                        tagHumanoid(oHum, player); applyDamage(oHum, 30, player)
+                    end
+                end
+            end
+        else
+            -- Grimace Tsunami: массовый нокдаун + хил
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 35 then
+                        tagHumanoid(oHum, player); applyDamage(oHum, 85, player)
+                        oRoot.AssemblyLinearVelocity = (oRoot.Position - root.Position).Unit * 55 + Vector3.new(0, 30, 0)
+                    end
+                end
+            end
+            hum.Health = math.min(hum.MaxHealth, hum.Health + 60)
+        end
+
+    elseif fId == "CaseOh" then
+        if slot == "base" then
+            -- Black Hole Pull: стягивание к себе
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and oHum.Health > 0 then
+                        local diff = root.Position - oRoot.Position
+                        if diff.Magnitude <= 26 then
+                            tagHumanoid(oHum, player); applyDamage(oHum, 20, player)
+                            oRoot.AssemblyLinearVelocity = diff.Unit * 50
+                        end
+                    end
+                end
+            end
+        elseif slot == "tactical" then
+            -- Gravity Well: щит + ускорение
+            local ps = TycoonService.getBaseWalkSpeed(player)
+            hum.WalkSpeed = 26; player:SetAttribute("DamageReduction", 0.4)
+            task.delay(6, function()
+                if hum.Parent then hum.WalkSpeed = ps end
+                player:SetAttribute("DamageReduction", nil)
+            end)
+        elseif slot == "ultimate" then
+            -- Event Horizon: AoE + стан + высокий урон
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and oHum.Health > 0 then
+                        local diff = root.Position - oRoot.Position
+                        if diff.Magnitude <= 35 then
+                            tagHumanoid(oHum, player); applyDamage(oHum, 70, player)
+                            oRoot.AssemblyLinearVelocity = diff.Unit * 60 + Vector3.new(0, 20, 0)
+                            local ps2 = oHum.WalkSpeed; oHum.WalkSpeed = 0
+                            task.delay(2.5, function() if oHum.Parent then oHum.WalkSpeed = ps2 end end)
+                        end
+                    end
+                end
+            end
+        elseif slot == "special" then
+            -- Mukbang Heal: полный хил
+            hum.MaxHealth = math.min(hum.MaxHealth + 50, 250); hum.Health = hum.MaxHealth
+        elseif slot == "mobility" then
+            -- Belly Flop: прыжок + AoE при приземлении
+            root.AssemblyLinearVelocity = Vector3.new(0, 80, 0) + root.CFrame.LookVector * 30
+            task.delay(1.2, function()
+                if not char.Parent then return end
+                for _, other in ipairs(Players:GetPlayers()) do
+                    if other ~= player and other.Character then
+                        local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                        local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                        if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 18 then
+                            tagHumanoid(oHum, player); applyDamage(oHum, 45, player)
+                            oRoot.AssemblyLinearVelocity = (oRoot.Position - root.Position).Unit * 50 + Vector3.new(0, 25, 0)
+                        end
+                    end
+                end
+            end)
+        else
+            -- Singularity: телепорт врагов к себе + макс урон
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
+                        tagHumanoid(oHum, player); applyDamage(oHum, 90, player)
+                        oRoot.CFrame = root.CFrame * CFrame.new(0, 5, -5)
+                    end
+                end
+            end
+        end
+
+    elseif fId == "Rizzler" then
+        if slot == "base" then
+            -- Rizz Charm: ближайший враг оглушён
+            local nearest, minD = nil :: Player?, 20
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    if oRoot then
+                        local d = (oRoot.Position - root.Position).Magnitude
+                        if d < minD then minD = d; nearest = other end
+                    end
+                end
+            end
+            if nearest and nearest.Character then
+                local oHum = nearest.Character:FindFirstChild("Humanoid") :: Humanoid?
+                if oHum then
+                    tagHumanoid(oHum, player); applyDamage(oHum, 25, player)
+                    local ps = oHum.WalkSpeed; oHum.WalkSpeed = 0
+                    task.delay(3, function() if oHum.Parent then oHum.WalkSpeed = ps end end)
+                end
+            end
+        elseif slot == "tactical" then
+            -- Heart Barrier: хил + ускорение
+            hum.Health = math.min(hum.MaxHealth, hum.Health + 35)
+            local ps = TycoonService.getBaseWalkSpeed(player); hum.WalkSpeed = 28
+            task.delay(5, function() if hum.Parent then hum.WalkSpeed = ps end end)
+        elseif slot == "ultimate" then
+            -- Mega Rizz: AoE замедление + разворот врагов спиной
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 28 then
+                        tagHumanoid(oHum, player); applyDamage(oHum, 55, player)
+                        oRoot.CFrame = CFrame.new(oRoot.Position, oRoot.Position - root.CFrame.LookVector)
+                        local ps2 = oHum.WalkSpeed; oHum.WalkSpeed = 6
+                        task.delay(3, function() if oHum.Parent then oHum.WalkSpeed = ps2 end end)
+                    end
+                end
+            end
+        elseif slot == "special" then
+            -- Love Steal: кража 20% кеша + хил
+            local nearest2, minD2 = nil :: Player?, 22
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    if oRoot then
+                        local d = (oRoot.Position - root.Position).Magnitude
+                        if d < minD2 then minD2 = d; nearest2 = other end
+                    end
+                end
+            end
+            if nearest2 then
+                local stolen = TycoonService.deductCash(nearest2, math.floor(TycoonService.getCash(nearest2) * 0.20))
+                if stolen > 0 then TycoonService.addCashRaw(player, stolen) end
+                hum.Health = math.min(hum.MaxHealth, hum.Health + 40)
+            end
+        elseif slot == "mobility" then
+            -- Heartbreak Dash: рывок + оглушение
+            root.AssemblyLinearVelocity = root.CFrame.LookVector * 85 + Vector3.new(0, 15, 0)
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 14 then
+                        tagHumanoid(oHum, player); applyDamage(oHum, 30, player)
+                        local ps = oHum.WalkSpeed; oHum.WalkSpeed = 0
+                        task.delay(2, function() if oHum.Parent then oHum.WalkSpeed = ps end end)
+                    end
+                end
+            end
+        else
+            -- God of Rizz: полный хил + массовый стан + кража ауры
+            hum.Health = hum.MaxHealth
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 30 then
+                        tagHumanoid(oHum, player); applyDamage(oHum, 70, player)
+                        local ps = oHum.WalkSpeed; oHum.WalkSpeed = 0
+                        task.delay(4, function() if oHum.Parent then oHum.WalkSpeed = ps end end)
+                        local tax = TycoonService.deductCash(other, math.floor(TycoonService.getCash(other) * 0.15))
+                        if tax > 0 then TycoonService.addCashRaw(player, tax) end
+                    end
+                end
+            end
+        end
+
+    elseif fId == "TungTung" then
+        if slot == "base" then
+            -- Hammer Strike: направленный удар
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and oHum.Health > 0 then
+                        local toOther = oRoot.Position - root.Position
+                        if toOther.Magnitude <= 18 and root.CFrame.LookVector:Dot(toOther.Unit) > 0.5 then
+                            tagHumanoid(oHum, player); applyDamage(oHum, 30, player)
+                            oRoot.AssemblyLinearVelocity = (toOther.Unit + Vector3.new(0, 0.6, 0)) * 55
+                        end
+                    end
+                end
+            end
+        elseif slot == "tactical" then
+            -- Anvil Block: 80% DR + контратака при окончании
+            player:SetAttribute("DamageReduction", 0.8)
+            local ps = TycoonService.getBaseWalkSpeed(player); hum.WalkSpeed = 6
+            task.delay(3, function()
+                player:SetAttribute("DamageReduction", nil)
+                if hum.Parent then hum.WalkSpeed = ps end
+                if char.Parent then
+                    for _, other in ipairs(Players:GetPlayers()) do
+                        if other ~= player and other.Character then
+                            local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                            local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                            if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 16 then
+                                tagHumanoid(oHum, player); applyDamage(oHum, 35, player)
+                                oRoot.AssemblyLinearVelocity = (oRoot.Position - root.Position).Unit * 45
+                            end
+                        end
+                    end
+                end
+            end)
+        elseif slot == "ultimate" then
+            -- Earthquake: AoE подброс + высокий урон
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
+                        tagHumanoid(oHum, player); applyDamage(oHum, 65, player)
+                        oRoot.AssemblyLinearVelocity = Vector3.new(0, 55, 0)
+                    end
+                end
+            end
+        elseif slot == "special" then
+            -- Forge Flame: 3 волны огня перед собой
+            local look = root.CFrame.LookVector
+            for i = 1, 3 do
+                task.delay(i * 0.25, function()
+                    if not char.Parent then return end
+                    for _, other in ipairs(Players:GetPlayers()) do
+                        if other ~= player and other.Character then
+                            local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                            local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                            if oRoot and oHum and (oRoot.Position - (root.Position + look * (i * 10))).Magnitude <= 12 then
+                                tagHumanoid(oHum, player); applyDamage(oHum, 22, player)
+                            end
+                        end
+                    end
+                end)
+            end
+        elseif slot == "mobility" then
+            -- Hammer Launch: прыжок вверх
+            root.AssemblyLinearVelocity = root.CFrame.LookVector * 60 + Vector3.new(0, 70, 0)
+        else
+            -- God Hammer: массовый урон + ускорение
+            for _, other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character then
+                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+                    local oHum = other.Character:FindFirstChild("Humanoid") :: Humanoid?
+                    if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 30 then
+                        tagHumanoid(oHum, player); applyDamage(oHum, 85, player)
+                        oRoot.AssemblyLinearVelocity = (oRoot.Position - root.Position).Unit * 60 + Vector3.new(0, 40, 0)
+                    end
+                end
+            end
+            hum.WalkSpeed = 30
+            local psGod = TycoonService.getBaseWalkSpeed(player)
+            task.delay(8, function() if hum.Parent then hum.WalkSpeed = psGod end end)
         end
     end
 
@@ -607,19 +971,9 @@ abilityEvent.OnServerEvent:Connect(function(player: Player, slot: any)
     end
 end)
 
--- P1-03: Автоматическая выдача тулов + обработка уже подключённых игроков
-local function setupAbilityPlayer(player: Player)
-    player.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        AbilityService.syncPlayerTools(player)
-    end)
-    -- Если персонаж уже есть, синхронизируем
-    if player.Character then
-        task.spawn(function()
-            task.wait(0.5)
-            AbilityService.syncPlayerTools(player)
-        end)
-    end
+-- Тулы НЕ выдаются при респавне — игрок забирает со стенда на базе
+local function setupAbilityPlayer(_player: Player)
+    -- Пустой: тулы выдаются только при покупке (onItemPurchased) или со стенда (ProximityPrompt)
 end
 
 Players.PlayerAdded:Connect(setupAbilityPlayer)

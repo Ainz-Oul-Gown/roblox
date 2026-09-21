@@ -82,15 +82,19 @@ function WorldBuilder.buildWorld()
     plazaRing.Transparency = 0.5
     plazaRing.Parent = worldFolder
 
-    -- 3. Дороги от центра к каждой базе (8 дорожек)
+    -- 3. Дороги от центральной площади до входа каждой базы
     local total = TycoonConfig.TOTAL_PLOTS
+    local ROAD_START = 22  -- край центральной площади (R=20 площадь + 2 отступ)
+    local ROAD_END_DIST = BASE_RADIUS - 2  -- до входа базы
     for i = 1, total do
         local angle = (i - 1) * (2 * math.pi / total)
-        local roadLength = BASE_RADIUS - 20
+        local roadLength = ROAD_END_DIST - ROAD_START
+        local midDist = (ROAD_START + ROAD_END_DIST) / 2
 
-        local midX = (BASE_RADIUS / 2) * math.cos(angle)
-        local midZ = (BASE_RADIUS / 2) * math.sin(angle)
+        local midX = midDist * math.cos(angle)
+        local midZ = midDist * math.sin(angle)
 
+        -- CFrame дороги: ось Z вдоль радиуса
         local roadCF = CFrame.new(
             midX, GROUND_Y + 0.3, midZ,
             math.cos(angle), 0, -math.sin(angle),
@@ -98,6 +102,7 @@ function WorldBuilder.buildWorld()
             math.sin(angle), 0, math.cos(angle)
         )
 
+        -- Полотно дороги
         local road = makeAnchoredPart(
             worldFolder,
             string.format("Road_%d", i),
@@ -107,17 +112,31 @@ function WorldBuilder.buildWorld()
             Enum.Material.SmoothPlastic
         )
 
+        -- Бордюры по краям дороги (паттерн roblox-map-templates Road Kit)
+        for _, side in ipairs({ -1, 1 }) do
+            makeAnchoredPart(
+                worldFolder,
+                string.format("RoadCurb_%d_%d", i, side),
+                Vector3.new(1.2, 0.8, roadLength),
+                roadCF * CFrame.new(side * (ROAD_WIDTH / 2 + 0.6), 0.15, 0),
+                Color3.fromRGB(45, 45, 50),
+                Enum.Material.Concrete
+            )
+        end
+
+        -- Центральная разделительная линия
         local line = makeAnchoredPart(
             worldFolder,
             string.format("RoadLine_%d", i),
-            Vector3.new(1, 0.51, roadLength),
+            Vector3.new(0.8, 0.52, roadLength),
             roadCF,
-            Color3.fromRGB(255, 255, 255),
-            Enum.Material.SmoothPlastic
+            Color3.fromRGB(241, 196, 15),
+            Enum.Material.Neon
         )
         line.CanCollide = false
+        line.Transparency = 0.4
 
-        -- Billboard с названием базы над дорогой
+        -- Billboard с названием базы
         local billboard = Instance.new("BillboardGui")
         billboard.Size = UDim2.new(0, 80, 0, 60)
         billboard.StudsOffset = Vector3.new(0, 3, 0)
@@ -137,7 +156,7 @@ function WorldBuilder.buildWorld()
         roadLabel.Font = Enum.Font.FredokaOne
         roadLabel.Parent = billboard
 
-        -- Фонари вдоль дороги
+        -- Фонари (2 шт на средней точке дороги)
         for s = -1, 1, 2 do
             local lampX = midX + math.sin(angle) * (ROAD_WIDTH / 2 + 1) * s
             local lampZ = midZ - math.cos(angle) * (ROAD_WIDTH / 2 + 1) * s

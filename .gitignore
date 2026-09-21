@@ -14,6 +14,7 @@ yarn-error.log*
 *.rbxm
 *.rbxlx
 .rojo/
+sourcemap.json
 
 # OS and Editor
 .DS_Store

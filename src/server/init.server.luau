@@ -68,6 +68,13 @@ if not reqOk or not PlotBuilder then
     return
 end
 
+-- Подключаем callback для стендов (избегаем circular require)
+task.defer(function()
+    PlotBuilder.onStandPickup = function(player: Player, slotId: string)
+        AbilityService.giveSpecificTool(player, slotId)
+    end
+end)
+
 -- Перемещаем стандартный SpawnLocation в центр острова
 local defaultSpawn = Workspace:FindFirstChild("SpawnLocation") :: SpawnLocation?
 if defaultSpawn and defaultSpawn:IsA("SpawnLocation") then
@@ -80,10 +87,10 @@ end
 -- 2. Обработчик захвата/смены базы
 local function onClaimBase(player: Player, plotIndex: number)
     local currentPlotIndex = PlotManager.getPlayerPlotIndex(player)
+    if currentPlotIndex == plotIndex then return end
 
-    if currentPlotIndex == plotIndex then
-        return
-    end
+    -- Очистка тулов старой фракции
+    AbilityService.clearPlayerTools(player)
 
     if currentPlotIndex then
         local switched, oldIndex = PlotManager.switchPlot(player, plotIndex)

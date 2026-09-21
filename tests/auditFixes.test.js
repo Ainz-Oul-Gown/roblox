@@ -217,3 +217,47 @@ test('P1-25: DataStoreManager deeply validates ownedItems', () => {
     assert.ok(src.includes("type(k) == \"string\""), 'Must check key types');
     assert.ok(src.includes("type(v) == \"boolean\""), 'Must check value types');
 });
+
+// === AUDIT v3 FIXES (Steps 1-6) ===
+test('Audit v3 - Step 1: PlotBuilder right wall duplicate (rRight) removed to unblock windows', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../src/server/PlotBuilder.luau'), 'utf8');
+    assert.ok(!src.includes('local rRight = Instance.new("Part")'), 'rRight solid wall must be removed');
+});
+
+test('Audit v3 - Step 2: Floor2_Conveyor button not placed inside ore drop chute', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../src/server/PlotBuilder.luau'), 'utf8');
+    assert.ok(src.includes('Floor2_Conveyor = Vector3.new(10, 14.5, 10)'), 'Floor2_Conveyor button must be at (10, 14.5, 10)');
+    assert.ok(!src.includes('Floor2_Conveyor = Vector3.new(0, 14.5, 6)'), 'Must not collide with ore drop opening at (0, 14.5, 6)');
+});
+
+test('Audit v3 - Step 3: Roads connect seamlessly from plaza edge (R=22) to base entrance and include curbs', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../src/server/WorldBuilder.luau'), 'utf8');
+    assert.ok(src.includes('ROAD_START = 22'), 'ROAD_START must be 22 (plaza ring edge)');
+    assert.ok(src.includes('ROAD_END_DIST = BASE_RADIUS - 2'), 'ROAD_END_DIST must be BASE_RADIUS - 2');
+    assert.ok(src.includes('RoadCurb'), 'Must construct RoadCurb roadside curbs');
+});
+
+test('Audit v3 - Step 4: AbilityService exports clearPlayerTools and giveSpecificTool, stands have ProximityPrompt', () => {
+    const abilitySrc = fs.readFileSync(path.join(__dirname, '../src/server/AbilityService.luau'), 'utf8');
+    assert.ok(abilitySrc.includes('function AbilityService.clearPlayerTools(player: Player)'), 'Must export clearPlayerTools');
+    assert.ok(abilitySrc.includes('function AbilityService.giveSpecificTool(player: Player, slot: AbilitySlot)'), 'Must export giveSpecificTool');
+
+    const plotSrc = fs.readFileSync(path.join(__dirname, '../src/server/PlotBuilder.luau'), 'utf8');
+    assert.ok(plotSrc.includes('PlotBuilder.onStandPickup'), 'Must support stand pickup callback');
+    assert.ok(plotSrc.includes('local prompt = Instance.new("ProximityPrompt")'), 'Stands must create ProximityPrompt');
+
+    const initSrc = fs.readFileSync(path.join(__dirname, '../src/server/init.server.luau'), 'utf8');
+    assert.ok(initSrc.includes('AbilityService.clearPlayerTools(player)'), 'onClaimBase must clear old ability tools');
+});
+
+test('Audit v3 - Steps 5 & 6: applyDamage supports SigmaParryActive reflection with attacker passed', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../src/server/AbilityService.luau'), 'utf8');
+    assert.ok(src.includes('SigmaParryActive'), 'applyDamage must handle SigmaParryActive');
+    assert.ok(src.includes('rawDamage * 0.75'), 'Must reflect 75% damage');
+    assert.ok(src.includes('applyDamage(oHum, 25, player)'), 'Must pass attacker player to applyDamage');
+    assert.ok(src.includes('applyDamage(tHum, 45, player)'), 'Sigma Teleport must use applyDamage');
+    assert.ok(src.includes('fId == "Grimace"'), 'Must have unique Grimace abilities block');
+    assert.ok(src.includes('fId == "CaseOh"'), 'Must have unique CaseOh abilities block');
+    assert.ok(src.includes('fId == "Rizzler"'), 'Must have unique Rizzler abilities block');
+    assert.ok(src.includes('fId == "TungTung"'), 'Must have unique TungTung abilities block');
+});
