@@ -210,15 +210,25 @@ if not claimDailyEvent then
     claimDailyEvent.Parent = ReplicatedStorage
 end
 
+local retentionDebounce: { [number]: number } = {}
+
 claimPlaytimeEvent.OnServerEvent:Connect(function(player: Player, tier: any)
+    local now = os.clock()
+    if (retentionDebounce[player.UserId] or 0) > now then return end
+    retentionDebounce[player.UserId] = now + 1.0
+
     local t = tonumber(tier)
-    if t then
+    if t and t >= 1 and t <= 4 and t == math.floor(t) then
         local ok, msg = RetentionService.claimPlaytimeReward(player, t)
         print(string.format("[Retention] %s claimPlaytime tier %d: %s (%s)", player.Name, t, tostring(ok), msg))
     end
 end)
 
 claimDailyEvent.OnServerEvent:Connect(function(player: Player)
+    local now = os.clock()
+    if (retentionDebounce[player.UserId] or 0) > now then return end
+    retentionDebounce[player.UserId] = now + 1.0
+
     local ok, msg = RetentionService.claimDailyReward(player)
     print(string.format("[Retention] %s claimDaily: %s (%s)", player.Name, tostring(ok), msg))
 end)
@@ -270,9 +280,18 @@ TycoonService.hasAnyBase = function(player: Player): boolean
     return PlotManager.getPlayerPlotIndex(player) ~= nil
 end
 
--- 4. Удаленный вызов смены базы из GUI (для совместимости)
+local claimPlotDebounce: { [number]: number } = {}
+
+-- 4. Удаленный вызов смены базы из GUI (защищен от DoS/спама)
 local claimPlotEvent = ReplicatedStorage:WaitForChild("ClaimPlotEvent") :: RemoteEvent
 claimPlotEvent.OnServerEvent:Connect(function(player: Player, plotIndex: any)
+    local now = os.clock()
+    if (claimPlotDebounce[player.UserId] or 0) > now then
+        warn(string.format("[SECURITY] Base switch spam blocked from %s", player.Name))
+        return
+    end
+    claimPlotDebounce[player.UserId] = now + 3.0
+
     if type(plotIndex) == "number" and plotIndex >= 1 and plotIndex <= 8 then
         onClaimBase(player, plotIndex)
     end
@@ -365,6 +384,8 @@ Players.PlayerRemoving:Connect(function(player: Player)
     RetentionService.removePlayer(player)
     PetService.removePlayer(player)
     eggOpenDebounce[player.UserId] = nil
+    claimPlotDebounce[player.UserId] = nil
+    retentionDebounce[player.UserId] = nil
 end)
 
 -- 6. Автосохранение каждые 60 секунд

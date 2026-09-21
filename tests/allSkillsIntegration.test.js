@@ -111,3 +111,23 @@ test('Zero-Trust Adversarial Audit: P0 and P1 Security & Performance Fixes', () 
     assert.match(followerCode, /computeBaseOffset/, 'Must precalculate baseOffset on registration');
     assert.doesNotMatch(followerCode, /getTargetOffset/, 'Must not compute dynamic offset inside loop');
 });
+
+test('Zero-Trust Adversarial Audit Iteration 2: DoS & Input Validation', () => {
+    const serverInitPath = path.join(__dirname, '..', 'src', 'server', 'init.server.luau');
+    const serverCode = fs.readFileSync(serverInitPath, 'utf8');
+
+    // P0: ClaimPlotEvent debounce to prevent Workspace recreation DoS
+    assert.match(serverCode, /claimPlotDebounce\[player\.UserId\]/, 'Must enforce claim plot debounce');
+    assert.match(serverCode, /claimPlotDebounce\[player\.UserId\] = nil/, 'Must clean up claim plot debounce on PlayerRemoving');
+
+    // P1: Retention rewards debounce and strict tier range check
+    assert.match(serverCode, /retentionDebounce\[player\.UserId\]/, 'Must enforce retention debounce');
+    assert.match(serverCode, /t >= 1 and t <= 4 and t == math\.floor\(t\)/, 'Must strictly validate tier as integer between 1 and 4');
+    assert.match(serverCode, /retentionDebounce\[player\.UserId\] = nil/, 'Must clean up retention debounce on PlayerRemoving');
+
+    // P1: AbilityService strict rejection of invalid slots (no fallback to base)
+    const abilityPath = path.join(__dirname, '..', 'src', 'server', 'AbilityService.luau');
+    const abilityCode = fs.readFileSync(abilityPath, 'utf8');
+    assert.doesNotMatch(abilityCode, /AbilityService\.castAbility\(player, "base"\)/, 'Must not fallback to base ability on invalid slot');
+});
+

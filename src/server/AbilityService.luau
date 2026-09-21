@@ -560,7 +560,7 @@ abilityEvent.OnServerEvent:Connect(function(player: Player, slot: any)
     if slot == "base" or slot == "tactical" or slot == "ultimate" or slot == "special" or slot == "mobility" or slot == "godmode" then
         AbilityService.castAbility(player, slot)
     else
-        AbilityService.castAbility(player, "base")
+        return
     end
 end)
 
