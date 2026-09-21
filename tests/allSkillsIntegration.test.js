@@ -131,3 +131,18 @@ test('Zero-Trust Adversarial Audit Iteration 2: DoS & Input Validation', () => {
     assert.doesNotMatch(abilityCode, /AbilityService\.castAbility\(player, "base"\)/, 'Must not fallback to base ability on invalid slot');
 });
 
+test('Zero-Trust Adversarial Audit Iteration 3: Dead Player Objective & RNG Guard', () => {
+    // P1: AirDropService ensures player is alive (Humanoid.Health > 0)
+    const airdropPath = path.join(__dirname, '..', 'src', 'server', 'AirDropService.luau');
+    const airdropCode = fs.readFileSync(airdropPath, 'utf8');
+    assert.match(airdropCode, /hum\.Health <= 0/, 'AirDrop must cancel capture if player dies');
+    assert.match(airdropCode, /capturingPlayer = nil/, 'AirDrop must reset capturingPlayer on death');
+
+    // P1: PetService.rollEgg safely handles empty or zero-weight drops
+    const petServicePath = path.join(__dirname, '..', 'src', 'server', 'PetService.luau');
+    const petCode = fs.readFileSync(petServicePath, 'utf8');
+    assert.match(petCode, /#egg\.drops == 0/, 'rollEgg must handle empty drops list');
+    assert.match(petCode, /totalWeight <= 0/, 'rollEgg must return nil if totalWeight <= 0');
+});
+
+

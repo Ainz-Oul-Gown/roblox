@@ -22,12 +22,13 @@ end
 
 function PetService.rollEgg(eggId: string): string?
     local egg = PetConfig.EGGS[eggId]
-    if not egg then return nil end
+    if not egg or not egg.drops or #egg.drops == 0 then return nil end
 
     local totalWeight = 0
     for _, drop in egg.drops do
         totalWeight += drop.weight
     end
+    if totalWeight <= 0 then return nil end
 
     local rand = math.random() * totalWeight
     local current = 0

@@ -148,11 +148,17 @@ local function spawnAirDrop()
                         bLbl.Text = string.format("⏳ ЗАХВАТ: %s (%dс)...", p.Name, captureSecondsLeft)
                         task.wait(1.0)
                         -- Проверяем жив ли и рядом ли
-                        if not p.Character or not p.Character:FindFirstChild("HumanoidRootPart") then
+                        local char = p.Character
+                        if not char then
                             capturingPlayer = nil
                             break
                         end
-                        local hrp = p.Character:FindFirstChild("HumanoidRootPart") :: BasePart
+                        local hum = char:FindFirstChildOfClass("Humanoid")
+                        local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+                        if not hum or hum.Health <= 0 or not hrp then
+                            capturingPlayer = nil
+                            break
+                        end
                         if (hrp.Position - crate.Position).Magnitude > 14 then
                             capturingPlayer = nil
                             break
