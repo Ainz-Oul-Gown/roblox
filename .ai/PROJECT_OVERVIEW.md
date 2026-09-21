@@ -62,6 +62,7 @@
 - **Тестирование**: Node.js Test Runner (`npm test`, 115 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
+- **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` в корне проекта (комплексная оценка Шага 1 JuiceEffects AAA Overhaul: 8.7/10).
 
 - **Полный аудит надежности и безопасности (115/115 тестов пройдено)**:
   - `MonetizationService`: Изоляция кэша `processedReceipts` по каждому игроку (`[UserId][receiptKey]`) и очистка на `PlayerRemoving`, устраняющая утечку памяти и кросс-пользовательские коллизии.
