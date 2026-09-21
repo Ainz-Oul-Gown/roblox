@@ -145,4 +145,22 @@ test('Zero-Trust Adversarial Audit Iteration 3: Dead Player Objective & RNG Guar
     assert.match(petCode, /totalWeight <= 0/, 'rollEgg must return nil if totalWeight <= 0');
 });
 
+test('Zero-Trust Adversarial Audit Iteration 4: Ghost Vault Exploit & Rebirth Atomic Lock', () => {
+    // P0: TycoonService exports resetVault and resets on Rebirth
+    const tycoonServicePath = path.join(__dirname, '..', 'src', 'server', 'TycoonService.luau');
+    const tycoonCode = fs.readFileSync(tycoonServicePath, 'utf8');
+    assert.match(tycoonCode, /function TycoonService\.resetVault\(plotIndex/, 'TycoonService must export resetVault');
+    assert.match(tycoonCode, /TycoonService\.resetVault\(pIndex\)/, 'Rebirth must reset base vault cash to prevent cheese');
+
+    // P1: Atomic Rebirth transaction lock
+    assert.match(tycoonCode, /rebirthLock\[player\.UserId\]/, 'performRebirth must use atomic transaction lock');
+    assert.match(tycoonCode, /rebirthLock\[player\.UserId\] = nil/, 'Must release rebirth lock in all branches');
+
+    // P0: PlotBuilder resets vault cash on plot resetToUnclaimed
+    const plotBuilderPath = path.join(__dirname, '..', 'src', 'server', 'PlotBuilder.luau');
+    const plotCode = fs.readFileSync(plotBuilderPath, 'utf8');
+    assert.match(plotCode, /TycoonService\.resetVault\(plotIndex\)/, 'resetPlotToUnclaimed must reset vault cash');
+});
+
+
 

@@ -279,6 +279,7 @@ end)
 TycoonService.hasAnyBase = function(player: Player): boolean
     return PlotManager.getPlayerPlotIndex(player) ~= nil
 end
+TycoonService.getPlayerPlotIndex = PlotManager.getPlayerPlotIndex
 
 local claimPlotDebounce: { [number]: number } = {}
 

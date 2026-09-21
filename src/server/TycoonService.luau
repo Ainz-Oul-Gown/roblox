@@ -186,6 +186,7 @@ function TycoonService.onPlayerRemoving(player: Player)
         })
         playerDataMap[player.UserId] = nil
     end
+    rebirthLock[player.UserId] = nil
 end
 
 -- Ссылка на внешний расчет экстра-множителей (MonetizationService, PetService)
@@ -297,6 +298,14 @@ function TycoonService.getVaultCash(plotIndex: number): number
     return vaultCashMap[plotIndex] or 0
 end
 
+-- Полный сброс сейфа базы (при Rebirth или освобождении базы)
+function TycoonService.resetVault(plotIndex: number)
+    vaultCashMap[plotIndex] = 0
+end
+
+local rebirthLock: { [number]: boolean } = {}
+TycoonService.getPlayerPlotIndex = nil :: ((player: Player) -> number?)?
+
 -- Вывод накопленных денег из сейфа базы в кошелек игрока
 function TycoonService.withdrawVault(player: Player, plotIndex: number): number
     local stored = vaultCashMap[plotIndex] or 0
@@ -352,11 +361,20 @@ function TycoonService.purchaseItem(player: Player, itemId: string): boolean
 end
 
 function TycoonService.performRebirth(player: Player): (boolean, string?)
+    if rebirthLock[player.UserId] then
+        return false, "Rebirth already in progress"
+    end
+    rebirthLock[player.UserId] = true
+
     local data = playerDataMap[player.UserId]
-    if not data then return false, "No player data" end
+    if not data then
+        rebirthLock[player.UserId] = nil
+        return false, "No player data"
+    end
 
     local canRebirth, reason, cost = EconomyManager.canPerformRebirth(data.cash, data.rebirths, data.ownedItems)
     if not canRebirth or not cost then
+        rebirthLock[player.UserId] = nil
         warn(string.format("[TycoonService] Rebirth failed: %s", reason or "unknown"))
         return false, reason
     end
@@ -364,6 +382,12 @@ function TycoonService.performRebirth(player: Player): (boolean, string?)
     data.cash = 0
     data.rebirths += 1
     data.ownedItems = {}
+
+    -- Сбрасываем сейф базы, чтобы исключить чизинг перерождений
+    local pIndex = if TycoonService.getPlayerPlotIndex then TycoonService.getPlayerPlotIndex(player) else nil
+    if pIndex then
+        TycoonService.resetVault(pIndex)
+    end
 
     local leaderstats = player:FindFirstChild("leaderstats")
     if leaderstats then
@@ -378,6 +402,7 @@ function TycoonService.performRebirth(player: Player): (boolean, string?)
     
     local mult = EconomyManager.calculateMultiplier(data.rebirths)
     rebirthEvent:FireClient(player, data.rebirths, mult)
+    rebirthLock[player.UserId] = nil
 
     print(string.format("[TycoonService] %s performed REBIRTH %d! Multiplier x%.1f", player.Name, data.rebirths, mult))
     return true, nil

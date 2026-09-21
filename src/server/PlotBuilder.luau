@@ -1981,6 +1981,7 @@ function PlotBuilder.resetPlotToUnclaimed(plotIndex: number, onClaimCallback: (p
     if buttons then buttons:ClearAllChildren() end
 
     vaultLabels[plotIndex] = nil
+    TycoonService.resetVault(plotIndex)
 
     local sign = plotModel:FindFirstChild("OwnerSign") :: Part?
     if sign then
