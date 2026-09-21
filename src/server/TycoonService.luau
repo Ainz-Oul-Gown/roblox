@@ -102,7 +102,9 @@ function TycoonService.handlePlayerDeath(victim: Player)
     local victimData = playerDataMap[victim.UserId]
     if not victimData or victimData.cash <= 0 then return end
 
-    local stolenCash = victimData.cash
+    -- P0-NEW-03 FIX: sanitize stolenCash перед трансфером
+    local stolenCash = sanitizeNum(victimData.cash)
+    if stolenCash <= 0 then return end
     local killer: Player? = nil
 
     -- Ищем тег убийцы (creator tag)
@@ -123,16 +125,8 @@ function TycoonService.handlePlayerDeath(victim: Player)
     end
 
     if killer then
-        -- Убийца получает 100% кошелька жертвы (без множителя — прямой трансфер)
-        local killerData = playerDataMap[killer.UserId]
-        if killerData then
-            killerData.cash += stolenCash
-            local kLeaderstats = killer:FindFirstChild("leaderstats")
-            if kLeaderstats then
-                local kaVal = kLeaderstats:FindFirstChild("Aura") :: IntValue?
-                if kaVal then kaVal.Value = killerData.cash end
-            end
-        end
+        -- P0-NEW-03 FIX: используем addCashRaw вместо прямого += (защита от NaN)
+        TycoonService.addCashRaw(killer, stolenCash)
 
         if TycoonService.onPvPKill then
             TycoonService.onPvPKill(killer, victim, stolenCash)
@@ -147,12 +141,13 @@ function TycoonService.handlePlayerDeath(victim: Player)
     end
 end
 
-function TycoonService.onPlayerAdded(player: Player): PlayerData
+-- P0-NEW-01 FIX: Принимает предварительно загруженные данные, чтобы не делать двойной loadData
+function TycoonService.onPlayerAdded(player: Player, preloadedData: DataStoreManager.PlayerSaveData?): PlayerData
     local leaderstats = Instance.new("Folder")
     leaderstats.Name = "leaderstats"
     leaderstats.Parent = player
 
-    local savedData = DataStoreManager.loadData(player.UserId)
+    local savedData = preloadedData or DataStoreManager.loadData(player.UserId)
 
     local auraValue = Instance.new("IntValue")
     auraValue.Name = "Aura"
@@ -197,7 +192,7 @@ end
 -- Внешние системы (PetService, RetentionService, LeaderboardService) подключаются через callbacks
 TycoonService.getPetDataForSave = nil :: ((player: Player) -> { DataStoreManager.PetSaveEntry }?)?
 TycoonService.getRetentionDataForSave = nil :: ((player: Player) -> (number?, number?)?)?
-TycoonService.getProcessedReceipts = nil :: (() -> { string })?
+TycoonService.getProcessedReceipts = nil :: ((player: Player) -> { string })?
 TycoonService.getPvPStatsForSave = nil :: ((player: Player) -> (number, number))?
 
 function TycoonService.buildSavePayload(player: Player): DataStoreManager.PlayerSaveData
@@ -217,7 +212,7 @@ function TycoonService.buildSavePayload(player: Player): DataStoreManager.Player
 
     local receipts: { string }? = nil
     if TycoonService.getProcessedReceipts then
-        receipts = TycoonService.getProcessedReceipts()
+        receipts = TycoonService.getProcessedReceipts(player)
     end
 
     local pvpKills: number? = nil
@@ -508,7 +503,15 @@ function TycoonService.performRebirth(player: Player): (boolean, string?)
         if rebirthVal then rebirthVal.Value = data.rebirths end
     end
 
-    -- P1-18: Очистка Tool-предметов из Backpack и StarterGear
+    -- P1-18 + P1-NEW-05 FIX: Очистка Tool-предметов из Character, Backpack и StarterGear
+    local rebirthChar = player.Character
+    if rebirthChar then
+        for _, tool in rebirthChar:GetChildren() do
+            if tool:IsA("Tool") and tool:GetAttribute("AbilitySlot") then
+                tool:Destroy()
+            end
+        end
+    end
     local backpack = player:FindFirstChild("Backpack")
     if backpack then
         for _, tool in backpack:GetChildren() do

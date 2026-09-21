@@ -217,7 +217,12 @@ function LeaderboardService.init()
 end
 
 function LeaderboardService.removePlayer(player: Player)
-    -- P1-09: Не стираем — статы живут до конца сервера для лидерборда
+    -- P1-NEW-15 FIX: Очищаем запись если игрок ушёл И у него 0 kills
+    -- (Игроки с фрагами остаются для отображения на доске до рестарта)
+    local stat = pvpStatsMap[player.UserId]
+    if stat and stat.kills == 0 then
+        pvpStatsMap[player.UserId] = nil
+    end
 end
 
 -- P0-06: Восстановление PvP-статистики из DataStore

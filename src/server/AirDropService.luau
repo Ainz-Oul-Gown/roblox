@@ -136,31 +136,39 @@ local function spawnAirDrop()
         local capturingPlayer: Player? = nil
         local captureSecondsLeft = 4
         local isCaptured = false
+        local captureThreadActive = false -- P1-NEW-02 FIX: защита от множественных task.spawn
+        local touchConnection: RBXScriptConnection? = nil
 
-        crate.Touched:Connect(function(hit)
+        touchConnection = crate.Touched:Connect(function(hit)
             if isCaptured then return end
+            if captureThreadActive then return end -- P1-NEW-02 FIX: блокируем параллельные потоки
             local char = hit.Parent
             local p = Players:GetPlayerFromCharacter(char)
             if p and not capturingPlayer then
                 capturingPlayer = p
+                captureThreadActive = true
                 task.spawn(function()
                     while capturingPlayer == p and captureSecondsLeft > 0 and crate.Parent do
                         bLbl.Text = string.format("⏳ ЗАХВАТ: %s (%dс)...", p.Name, captureSecondsLeft)
                         task.wait(1.0)
                         -- Проверяем жив ли и рядом ли
+                        if isCaptured then return end -- P1-NEW-02: выход если кто-то уже захватил
                         local captureChar = p.Character
                         if not captureChar then
                             capturingPlayer = nil
+                            captureThreadActive = false
                             break
                         end
                         local hum = captureChar:FindFirstChildOfClass("Humanoid")
                         local hrp = captureChar:FindFirstChild("HumanoidRootPart") :: BasePart?
                         if not hum or hum.Health <= 0 or not hrp then
                             capturingPlayer = nil
+                            captureThreadActive = false
                             break
                         end
                         if (hrp.Position - crate.Position).Magnitude > 14 then
                             capturingPlayer = nil
+                            captureThreadActive = false
                             break
                         end
                         captureSecondsLeft -= 1
@@ -168,6 +176,11 @@ local function spawnAirDrop()
 
                     if captureSecondsLeft <= 0 and not isCaptured then
                         isCaptured = true
+                        -- P1-NEW-02 FIX: отключаем Touched после захвата
+                        if touchConnection then
+                            touchConnection:Disconnect()
+                            touchConnection = nil
+                        end
                         bLbl.Text = string.format("🎉 ЗАХВАЧЕНО: %s!", p.Name)
                         TycoonService.addCashRaw(p, AIRDROP_REWARD)
 
@@ -187,6 +200,7 @@ local function spawnAirDrop()
                         currentCrate = nil
                     else
                         captureSecondsLeft = 4
+                        captureThreadActive = false
                         bLbl.Text = "📦 ЗОЛОТОЙ АИРДРОП\n[Удерживай 4с для +$10,000!]"
                     end
                 end)

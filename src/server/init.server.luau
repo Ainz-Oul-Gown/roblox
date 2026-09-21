@@ -174,8 +174,8 @@ TycoonService.getRetentionDataForSave = function(player: Player)
     return RetentionService.getRetentionDataForSave(player)
 end
 
-TycoonService.getProcessedReceipts = function()
-    return MonetizationService.getProcessedReceiptsList()
+TycoonService.getProcessedReceipts = function(player: Player)
+    return MonetizationService.getProcessedReceiptsList(player.UserId)
 end
 
 TycoonService.getPvPStatsForSave = function(player: Player)
@@ -401,7 +401,7 @@ local function onPlayerAdded(player: Player)
     -- Загружаем saved данные один раз
     local savedData = DataStoreManager.loadData(player.UserId)
 
-    TycoonService.onPlayerAdded(player)
+    TycoonService.onPlayerAdded(player, savedData)
 
     -- P0-06: Передаем сохранённые данные retention и питомцев
     RetentionService.initPlayer(player, savedData.dailyStreakDay, savedData.lastDailyClaimTimestamp)
@@ -421,8 +421,8 @@ local function onPlayerAdded(player: Player)
     end
     PetService.initPlayer(player, savedPets)
 
-    -- P0-04: Загружаем обработанные receipts
-    MonetizationService.loadProcessedReceipts(savedData.processedReceipts)
+    -- P0-NEW-02 FIX: Загружаем обработанные receipts per-player
+    MonetizationService.loadProcessedReceipts(player.UserId, savedData.processedReceipts)
 
     -- Восстанавливаем PvP-статистику
     if savedData.pvpKills and savedData.pvpKills > 0 then

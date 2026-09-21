@@ -142,10 +142,12 @@ test('P1-07: PetFollower parents models to PetModels folder', () => {
     assert.ok(src.includes('PetModels'), 'Must use PetModels folder');
 });
 
-// === P1-09: LeaderboardService keeps stats ===
-test('P1-09: LeaderboardService does not clear stats on disconnect', () => {
+// === P1-09 + P1-NEW-15: LeaderboardService conditional cleanup ===
+test('P1-09/P1-NEW-15: LeaderboardService conditionally cleans zero-kill stats on disconnect', () => {
     const src = fs.readFileSync(path.join(__dirname, '../src/server/LeaderboardService.luau'), 'utf8');
-    assert.ok(!src.includes('pvpStatsMap[player.UserId] = nil'), 'Must NOT clear stats on disconnect');
+    // P1-NEW-15 FIX: теперь записи с 0 kills удаляются для экономии памяти
+    assert.ok(src.includes('stat.kills == 0'), 'Must clean up zero-kill entries on disconnect');
+    // Записи с фрагами сохраняются для лидерборда
     assert.ok(src.includes('restorePvPStats'), 'Must support restoring stats from DataStore');
 });
 

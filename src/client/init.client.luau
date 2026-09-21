@@ -450,18 +450,8 @@ if plotStateEvent then
     end)
 end
 
--- Синхронизация визуализатора питомцев (Pet Simulator standard)
-local equippedPetsEvent = ReplicatedStorage:WaitForChild("EquippedPetsEvent", 5) :: RemoteEvent?
-if equippedPetsEvent then
-    equippedPetsEvent.OnClientEvent:Connect(function(petDefs: any, newHatchedId: any)
-        if PetFollower and type(petDefs) == "table" then
-            PetFollower.syncEquippedPets(petDefs)
-            if newHatchedId and type(newHatchedId) == "string" then
-                showToast(string.format("🥚 ВЫЛУПЛЕН ПИТОМЕЦ: %s!", newHatchedId), Color3.fromRGB(241, 196, 15))
-            end
-        end
-    end)
-end
+-- P1-NEW-01 FIX: Удалён дубликат equippedPetsEvent (2-я декларация устранена —
+-- используется единственный обработчик на строках 711-725)
 
 -- Всплывающее уведомление (Toast)
 local toastFrame = Instance.new("Frame")
@@ -747,8 +737,10 @@ gbStroke.Parent = giftsBtn
 
 local function claimRetentionGifts()
     if claimPlaytimeEvent then
-        claimPlaytimeEvent:FireServer(1)
-        claimPlaytimeEvent:FireServer(2)
+        -- P1-NEW-14 FIX: Запрашиваем все 5 тиров (сервер проверит какие доступны)
+        for tier = 1, 5 do
+            claimPlaytimeEvent:FireServer(tier)
+        end
     end
     if claimDailyEvent then
         claimDailyEvent:FireServer()
@@ -953,7 +945,11 @@ localPlayer.ChildAdded:Connect(function(child)
 end)
 
 if localPlayer.Character then watchTools(localPlayer.Character) end
-localPlayer.CharacterAdded:Connect(watchTools)
+localPlayer.CharacterAdded:Connect(function(newChar: Model)
+    -- P1-NEW-16 FIX: Очищаем ссылки на старые уничтоженные Tool-объекты
+    boundTools = {}
+    watchTools(newChar)
+end)
 
 -- Обработка ответа сервера на способность
 if abilityEvent then

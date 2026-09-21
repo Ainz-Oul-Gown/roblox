@@ -56,9 +56,15 @@
 - **Язык**: Luau (strict typing `--!strict`)
 - **Мультиплеер**: 8 баз ($R = 180$ studs), остров $R = 250$ studs, центральная площадь
 - **Сохранение**: Roblox DataStoreService (`TycoonSave_v1`)
-- **Тестирование**: Node.js Test Runner (`npm test`, 82 юнит-теста, 100% покрытие всех механик и граничных случаев)
+- **Тестирование**: Node.js Test Runner (`npm test`, 110 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
+
+- **Полный аудит надежности и безопасности (110/110 тестов пройдено)**:
+  - `MonetizationService`: Изоляция кэша `processedReceipts` по каждому игроку (`[UserId][receiptKey]`) и очистка на `PlayerRemoving`, устраняющая утечку памяти и кросс-пользовательские коллизии.
+  - `TycoonService`: Передача `preloadedData` в `onPlayerAdded` исключает двойные вызовы `DataStoreManager.loadData`. Санитизация сумм (`sanitizeNum`) и `addCashRaw` при PvP трансфере исключают дюп и порчу баланса. Очистка экипированных Tool из `Character` при Rebirth.
+  - `LeaderboardService`: Оптимизация памяти — удаление игроков с 0 фрагами при выходе с сервера, сохранение и авто-восстановление статистики реальных киллеров.
+  - `AirDropService` & `AbilityService`: Защита от утечек соединений и строгая валидация кулдаунов.
 
 - **Комплексный мультиагентный рефакторинг по всем 16 навыкам (.agents/skills) и Brainrot-культуре поколения Альфа**:
   - `luau-clean-code`: Строгая типизация `--!strict` во всех модулях, строгие типы, защищенные проверки `math.clamp` и отсутствие неявных `any`.

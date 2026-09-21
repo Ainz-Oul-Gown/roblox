@@ -17,8 +17,8 @@ local MonetizationConfig = require(ReplicatedStorage.Shared.MonetizationConfig)
 
 local MonetizationService = {}
 
--- P0-04: Кэш обработанных чеков в RAM + DataStore для persistence
-local processedReceipts: { [string]: boolean } = {}
+-- P0-NEW-02 FIX: Кэш обработанных чеков PER-PLAYER в RAM + DataStore для persistence
+local processedReceipts: { [number]: { [string]: boolean } } = {}
 local receiptDataStore: any = nil
 
 -- Кэш купленных геймпасов игроков: [UserId]: { [GamepassId]: boolean }
@@ -50,24 +50,32 @@ local function saveReceiptToDataStore(receiptId: string)
 end
 
 function MonetizationService.isReceiptProcessed(receiptId: string): boolean
-    if processedReceipts[receiptId] then return true end
+    -- P0-NEW-02 FIX: Проверяем во ВСЕХ per-player кэшах
+    for _, receipts in pairs(processedReceipts) do
+        if receipts[receiptId] then return true end
+    end
     return isReceiptInDataStore(receiptId)
 end
 
--- P0-04: Получить все закэшированные receipt IDs для сохранения в player data
-function MonetizationService.getProcessedReceiptsList(): { string }
+-- P0-NEW-02 FIX: Получить receipt IDs конкретного игрока для сохранения
+function MonetizationService.getProcessedReceiptsList(userId: number): { string }
+    local playerReceipts = processedReceipts[userId]
+    if not playerReceipts then return {} end
     local list: { string } = {}
-    for key in pairs(processedReceipts) do
+    for key in pairs(playerReceipts) do
         table.insert(list, key)
     end
     return list
 end
 
--- Загрузить ранее обработанные receipts из player data
-function MonetizationService.loadProcessedReceipts(receiptIds: { string }?)
+-- Загрузить ранее обработанные receipts конкретного игрока
+function MonetizationService.loadProcessedReceipts(userId: number, receiptIds: { string }?)
     if not receiptIds then return end
+    if not processedReceipts[userId] then
+        processedReceipts[userId] = {}
+    end
     for _, id in ipairs(receiptIds) do
-        processedReceipts[id] = true
+        processedReceipts[userId][id] = true
     end
 end
 
@@ -77,10 +85,15 @@ function MonetizationService.processReceiptLogic(receiptInfo: {
     ProductId: number,
 }): Enum.ProductPurchaseDecision
     local receiptKey = receiptInfo.PurchaseId
+    local playerId = receiptInfo.PlayerId
 
-    -- P0-04: Проверка и в RAM, и в DataStore
-    if processedReceipts[receiptKey] or isReceiptInDataStore(receiptKey) then
-        processedReceipts[receiptKey] = true
+    -- P0-NEW-02 FIX: Проверка и в per-player RAM, и в DataStore
+    if MonetizationService.isReceiptProcessed(receiptKey) then
+        -- Убеждаемся что запись есть в кэше этого игрока
+        if not processedReceipts[playerId] then
+            processedReceipts[playerId] = {}
+        end
+        processedReceipts[playerId][receiptKey] = true
         return Enum.ProductPurchaseDecision.PurchaseGranted
     end
 
@@ -109,8 +122,11 @@ function MonetizationService.processReceiptLogic(receiptInfo: {
     end
 
     if success then
-        -- P0-04: Сначала сохраняем в DataStore, потом PurchaseGranted
-        processedReceipts[receiptKey] = true
+        -- P0-NEW-02 FIX: Сохраняем receipt в per-player кэш и DataStore
+        if not processedReceipts[playerId] then
+            processedReceipts[playerId] = {}
+        end
+        processedReceipts[playerId][receiptKey] = true
         saveReceiptToDataStore(receiptKey)
         print(`[MonetizationService] Товар {matchedProduct.name} успешно выдан игроку {player.Name}`)
         return Enum.ProductPurchaseDecision.PurchaseGranted
@@ -172,6 +188,7 @@ function MonetizationService.init()
 
     Players.PlayerRemoving:Connect(function(player)
         playerGamepasses[player.UserId] = nil
+        processedReceipts[player.UserId] = nil
     end)
 end
 
