@@ -14,6 +14,7 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
 local juiceModule = script:FindFirstChild("JuiceEffects")
     or (script.Parent and script.Parent:FindFirstChild("JuiceEffects"))
@@ -39,15 +40,22 @@ end
 local AbilityVFX = {}
 
 local localPlayer = Players.LocalPlayer
+local isMobileDevice = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 -- ============================================================================
 -- ОПТИМИЗАЦИЯ И БЮДЖЕТИРОВАНИЕ (LOD & INSTANCE BUDGET)
 -- ============================================================================
-local MAX_ACTIVE_ROCKS = 24
+local MAX_ACTIVE_ROCKS = if isMobileDevice then 14 else 24 -- MAX_ACTIVE_ROCKS = 24 на ПК и 14 на смартфонах
 local activeRocks: { BasePart } = {}
 local LOD_DISTANCE = 120
 
+local function getQualityScale(): number
+    return if isMobileDevice then 0.5 else 1.0
+end
+AbilityVFX.getQualityScale = getQualityScale
+AbilityVFX.isMobile = function() return isMobileDevice end
 AbilityVFX.MAX_ACTIVE_ROCKS = MAX_ACTIVE_ROCKS
+AbilityVFX.LOD_DISTANCE = LOD_DISTANCE
 
 -- Проверка дистанционного отсева тяжелых эффектов
 local function isWithinLOD(pos: Vector3): boolean
@@ -167,7 +175,8 @@ local function spawnTexturedShockwave(pos: Vector3, maxRadius: number, color: Co
     dustEmitter.Lifetime = NumberRange.new(0.4, 0.7)
     dustEmitter.Rate = 0
     dustEmitter.Parent = attach
-    dustEmitter:Emit(20)
+    local dustCount = math.max(8, math.floor(20 * getQualityScale()))
+    dustEmitter:Emit(dustCount)
 
     Debris:AddItem(dustPart, dur + 0.8)
 end
@@ -271,7 +280,8 @@ local function spawnEarthFracture(pos: Vector3, radius: number?, rockCount: numb
 
     local rad = radius or 12
     local count = math.clamp(rockCount or 8, 4, 10)
-    pruneOldRocks(count)
+    local actualCount = math.max(2, math.floor(count * getQualityScale()))
+    pruneOldRocks(actualCount)
 
     local rockColors = {
         Color3.fromRGB(80, 85, 90),
@@ -279,7 +289,7 @@ local function spawnEarthFracture(pos: Vector3, radius: number?, rockCount: numb
         Color3.fromRGB(50, 52, 55),
     }
 
-    for i = 1, count do
+    for i = 1, actualCount do
         local angle = (i / count) * math.pi * 2 + (math.random(-15, 15) * math.pi / 180)
         local dist = rad * (0.6 + math.random() * 0.4)
         local spawnX = actualGroundPos.X + math.cos(angle) * dist
@@ -396,7 +406,8 @@ local function spawnAnticipationVortex(pos: Vector3, color: Color3, duration: nu
     emitter.Lifetime = NumberRange.new(0.2, 0.35)
     emitter.Rate = 0
     emitter.Parent = attach
-    emitter:Emit(18)
+    local vortexBurst = math.max(6, math.floor(18 * getQualityScale()))
+    emitter:Emit(vortexBurst)
 
     Debris:AddItem(vortexPart, dur + 0.4)
 end

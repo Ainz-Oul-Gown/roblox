@@ -169,4 +169,28 @@ test('AbilityVFX: Step 3 Review Fixes - player character raycast filtering, prop
     assert.ok(content.includes('local look = if lookVector and lookVector.Magnitude > 0 then lookVector.Unit else Vector3.new(0, 0, -1)'), 'AbilityVFX.play must provide safe fallback for lookVector');
 });
 
+test('AbilityVFX & JuiceEffects: Step 4 - mobile LOD scaling, GPU shadow culling, particle budgeting, and memory cleanup', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const vfxContent = fs.readFileSync(vfxPath, 'utf8');
+
+    const juicePath = path.join(__dirname, '../src/client/JuiceEffects.luau');
+    const juiceContent = fs.readFileSync(juicePath, 'utf8');
+
+    // JuiceEffects mobile detection & shadow optimization
+    assert.ok(juiceContent.includes('function JuiceEffects.isMobile'), 'JuiceEffects must export isMobile');
+    assert.ok(juiceContent.includes('pointLight.Shadows = not isMobileDevice'), 'PointLight shadows must be disabled on mobile for 60 FPS');
+    assert.ok(juiceContent.includes('math.min(radius or 40, 24)'), 'PointLight range must be capped on mobile devices');
+    assert.ok(juiceContent.includes('countPerColor = if isMobileDevice then 12 else 25'), 'Confetti particles must be scaled on mobile devices');
+    assert.ok(juiceContent.includes('Debris:AddItem(flashFrame, dur + 0.05)'), 'screenFlash must include Debris fallback cleanup');
+
+    // AbilityVFX mobile LOD scaling & dynamic budgeting
+    assert.ok(vfxContent.includes('AbilityVFX.getQualityScale = getQualityScale'), 'AbilityVFX must export getQualityScale');
+    assert.ok(vfxContent.includes('AbilityVFX.isMobile ='), 'AbilityVFX must export isMobile');
+    assert.ok(vfxContent.includes('MAX_ACTIVE_ROCKS = if isMobileDevice then 14 else 24'), 'Rock budget must adapt to mobile devices');
+    assert.ok(vfxContent.includes('dustCount = math.max(8, math.floor(20 * getQualityScale()))'), 'Shockwave dust must scale with quality scale');
+    assert.ok(vfxContent.includes('actualCount = math.max(2, math.floor(count * getQualityScale()))'), 'Earth fracture rocks must scale with quality scale');
+    assert.ok(vfxContent.includes('vortexBurst = math.max(6, math.floor(18 * getQualityScale()))'), 'Anticipation vortex particles must scale with quality scale');
+});
+
+
 

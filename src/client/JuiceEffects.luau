@@ -12,11 +12,17 @@ local Debris = game:GetService("Debris")
 local SoundService = game:GetService("SoundService")
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui") :: PlayerGui
+local isMobileDevice = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 local JuiceEffects = {}
+
+function JuiceEffects.isMobile(): boolean
+    return isMobileDevice
+end
 
 -- Каталог надежных Roblox аудио-идентификаторов (встроенные rbxasset и официальные rbxassetid)
 local SOUND_IDS: { [string]: string } = {
@@ -224,7 +230,7 @@ end
 function JuiceEffects.spawnLightBurst(pos: Vector3, color: Color3, brightness: number?, radius: number?, duration: number?)
     local dur = duration or 0.22
     local b = brightness or 16
-    local r = radius or 40
+    local r = if isMobileDevice then math.min(radius or 40, 24) else (radius or 40)
 
     local lightPart = Instance.new("Part")
     lightPart.Name = "ImpactLightBurst"
@@ -239,7 +245,7 @@ function JuiceEffects.spawnLightBurst(pos: Vector3, color: Color3, brightness: n
     pointLight.Color = color
     pointLight.Brightness = b
     pointLight.Range = r
-    pointLight.Shadows = true
+    pointLight.Shadows = not isMobileDevice -- На мобильных GPU динамические тени отключаются для стабильных 60 FPS
     pointLight.Parent = lightPart
 
     local tween = TweenService:Create(pointLight, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -462,8 +468,11 @@ function JuiceEffects.screenFlash(color: Color3, duration: number?)
         BackgroundTransparency = 1,
     })
     tween:Play()
+    Debris:AddItem(flashFrame, dur + 0.05) -- Гарантированная очистка даже при прерывании твина
     tween.Completed:Connect(function()
-        flashFrame:Destroy()
+        if flashFrame and flashFrame.Parent then
+            flashFrame:Destroy()
+        end
     end)
 end
 
@@ -490,6 +499,7 @@ function JuiceEffects.spawnConfetti(position: Vector3)
         Color3.fromRGB(241, 196, 15),
     }
 
+    local countPerColor = if isMobileDevice then 12 else 25
     for _, color in ipairs(colors) do
         local particles = Instance.new("ParticleEmitter")
         particles.Color = ColorSequence.new(color)
@@ -502,7 +512,7 @@ function JuiceEffects.spawnConfetti(position: Vector3)
         particles.Lifetime = NumberRange.new(1.5, 2.5)
         particles.Rate = 0
         particles.Parent = attachment
-        particles:Emit(25)
+        particles:Emit(countPerColor)
     end
 
     Debris:AddItem(emitterPart, 3.5)
