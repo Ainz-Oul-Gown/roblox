@@ -27,6 +27,7 @@ end
 local Shared = ReplicatedStorage:WaitForChild("Shared", 10)
 local LightingThemes = require(Shared:WaitForChild("LightingThemes", 10))
 local PetConfig = require(Shared:WaitForChild("PetConfig", 10))
+local MonetizationConfig = require(Shared:WaitForChild("MonetizationConfig", 10))
 LightingThemes.applyTheme("SunsetGlow")
 
 statusVal.Value = "🏝️ Постройка острова (WorldBuilder)..."

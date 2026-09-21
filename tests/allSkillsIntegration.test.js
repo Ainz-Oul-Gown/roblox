@@ -181,6 +181,29 @@ test('Zero-Trust Adversarial Audit Iteration 5: Data Wipe Prevention & Backoff',
     assert.match(tycoonCode, /DataStoreManager\.clearPlayerSession/, 'TycoonService must clear session on disconnect');
 });
 
+test('Zero-Trust Adversarial Audit Iteration 6: Scoping, Imports & Memory Leaks', () => {
+    // P0: init.server.luau imports MonetizationConfig for purchase whitelisting
+    const serverInitPath = path.join(__dirname, '..', 'src', 'server', 'init.server.luau');
+    const serverCode = fs.readFileSync(serverInitPath, 'utf8');
+    assert.match(serverCode, /local MonetizationConfig = require\(Shared:WaitForChild\("MonetizationConfig", 10\)\)/, 'Must require MonetizationConfig');
 
+    // P1: TycoonService declares rebirthLock in module scope before onPlayerRemoving
+    const tycoonPath = path.join(__dirname, '..', 'src', 'server', 'TycoonService.luau');
+    const tycoonCode = fs.readFileSync(tycoonPath, 'utf8');
+    const lockDeclPos = tycoonCode.indexOf('local rebirthLock: { [number]: boolean } = {}');
+    const removingPos = tycoonCode.indexOf('function TycoonService.onPlayerRemoving');
+    assert.ok(lockDeclPos !== -1, 'rebirthLock must be declared');
+    assert.ok(removingPos !== -1, 'onPlayerRemoving must exist');
+    assert.ok(lockDeclPos < removingPos, 'rebirthLock must be declared BEFORE onPlayerRemoving to prevent runtime scoping crash');
 
+    // P1: JuiceEffects imports Workspace
+    const juicePath = path.join(__dirname, '..', 'src', 'client', 'JuiceEffects.luau');
+    const juiceCode = fs.readFileSync(juicePath, 'utf8');
+    assert.match(juiceCode, /local Workspace = game:GetService\("Workspace"\)/, 'JuiceEffects must import Workspace');
 
+    // P1: AbilityVFX Debris safety fallback on falling sky props
+    const vfxPath = path.join(__dirname, '..', 'src', 'client', 'AbilityVFX.luau');
+    const vfxCode = fs.readFileSync(vfxPath, 'utf8');
+    assert.match(vfxCode, /Debris:AddItem\(prop, fallTime \+ 1\.0\)/, 'spawnFallingSkyProp must register Debris cleanup fallback');
+    assert.match(vfxCode, /if prop and prop\.Parent then/, 'Must guard destruction against already destroyed props');
+});

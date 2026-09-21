@@ -6,6 +6,7 @@
     анимация кнопок (Squash & Stretch), тряска при ошибке и вспышки экрана.
 ]=]
 
+local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 local SoundService = game:GetService("SoundService")

@@ -25,6 +25,7 @@ export type PlayerData = {
 local playerDataMap: { [number]: PlayerData } = {}
 -- Хранилище накопленной руды в сборщиках баз (не уязвимо к PvP-смерти!)
 local vaultCashMap: { [number]: number } = {}
+local rebirthLock: { [number]: boolean } = {}
 
 local function getOrCreateRemote(name: string): RemoteEvent
     local existing = ReplicatedStorage:FindFirstChild(name) :: RemoteEvent?
@@ -304,7 +305,6 @@ function TycoonService.resetVault(plotIndex: number)
     vaultCashMap[plotIndex] = 0
 end
 
-local rebirthLock: { [number]: boolean } = {}
 TycoonService.getPlayerPlotIndex = nil :: ((player: Player) -> number?)?
 
 -- Вывод накопленных денег из сейфа базы в кошелек игрока

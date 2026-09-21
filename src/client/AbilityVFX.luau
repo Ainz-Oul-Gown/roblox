@@ -125,8 +125,11 @@ local function spawnFallingSkyProp(targetPos: Vector3, propBuilder: () -> BasePa
         CFrame = CFrame.new(targetPos),
     })
     tween:Play()
+    Debris:AddItem(prop, fallTime + 1.0)
     tween.Completed:Connect(function()
-        prop:Destroy()
+        if prop and prop.Parent then
+            prop:Destroy()
+        end
         onImpact()
     end)
 end
