@@ -117,6 +117,18 @@ function PetService.getTotalMultiplier(player: Player): number
     return mult
 end
 
+function PetService.getEquippedPetDefs(player: Player): { PetConfig.PetDefinition }
+    local equipped = PetService.getEquippedPets(player)
+    local result = {}
+    for _, p in ipairs(equipped) do
+        local def = PetConfig.PETS[p.petId]
+        if def then
+            table.insert(result, def)
+        end
+    end
+    return result
+end
+
 function PetService.removePlayer(player: Player)
     playerInventories[player.UserId] = nil
 end

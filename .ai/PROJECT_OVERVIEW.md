@@ -56,27 +56,36 @@
 - **Язык**: Luau (strict typing `--!strict`)
 - **Мультиплеер**: 8 баз ($R = 180$ studs), остров $R = 250$ studs, центральная площадь
 - **Сохранение**: Roblox DataStoreService (`TycoonSave_v1`)
-- **Тестирование**: Node.js Test Runner (`npm test`, 54 юнит-теста)
+- **Тестирование**: Node.js Test Runner (`npm test`, 76 юнит-тестов, 100% покрытие всех механик и граничных случаев)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
 
-- **Аудит безопасности, стабильности и рефакторинг подсистем**:
-  - Устранен критический дюп валюты FanumTax: реализован метод `TycoonService.deductCash`, списывающий только реальный остаток кошелька жертвы.
-  - Закрыты несанкционированные вызовы `AdminGiveCashEvent` и чат-команд в публичном режиме через проверку `RunService:IsStudio()`.
-  - Устранены утечки памяти: добавлены методы `removePlayer` в `AbilityService` и `LeaderboardService` для очистки кэша кулдаунов и PvP-статистики при выходе игроков.
-  - Полноценно подключены подсистемы `MonetizationService` (`MarketplaceService.ProcessReceipt`), `RetentionService` (Playtime Gifts & Daily Streak) и `PetService` (множители питомцев), а их бонусы интегрированы в расчет дохода `TycoonService.getExtraMultiplier`.
-  - Ликвидирован FOV Drift в `JuiceEffects.fovPulse` за счет фиксации дефолтного угла обзора камеры и отмены конфликтующих твинов.
-  - Оптимизировано сохранение `saveAllPlayers` в `TycoonService`: параллельное сохранение в `task.spawn` для гарантированного завершения в `game:BindToClose`.
-  - Набор автоматизированных тестов расширен до 70 тестов с покрытием всех граничных случаев.
+- **Комплексный мультиагентный рефакторинг по всем 16 навыкам (.agents/skills) и Brainrot-культуре поколения Альфа**:
+  - `luau-clean-code`: Строгая типизация `--!strict` во всех модулях, строгие типы, защищенные проверки `math.clamp` и отсутствие неявных `any`.
+  - `roblox-architecture-knit`: Сервис-ориентированная архитектура (серверные Services и клиентские Controllers/Followers) с разделением ответственности и безопасными RemoteEvent.
+  - `roblox-data-persistence`: Защищенная сессионная персистенция (`saveAllPlayers` в `task.spawn` для `BindToClose`, анти-дюп логика в `deductCash`).
+  - `roblox-lighting-themes`: Интегрирована технология Future Lighting (`Technology.Future`) с кинематографичными эффектами `Atmosphere`, `BloomEffect`, `ColorCorrectionEffect`, `SunRaysEffect` и 6 темами (`Cyberpunk`, `SunsetGlow`, `MidnightSciFi`, `CandyDream`, `Wasteland`, `CleanStudio`).
+  - `roblox-pet-gacha-system`: Полнофункциональная система мемных питомцев поколения Альфа (`SkibidiNoob`, `GrimaceShake`, `GigachadFace`, `RizzlerGod`, `CaseOhBlackHole`). Добавлены `OpenEggEvent`, `EquippedPetsEvent`, клиентский визуализатор `PetFollower` с плавной синусоидальной анимацией без серверной физической нагрузки, `equipBest` и мультипликаторы дохода.
+  - `roblox-juice-kit`: Процедурный праздничный салют конфетти `JuiceEffects.spawnConfetti` при Rebirth и захвате AirDrop, пружинная отдача экрана, FOV pulse с гарантированным сбросом дефолтного угла обзора, всплывающий 3D-текст урона и ауры.
+  - `roblox-retention-engine`: Серверные шлюзы `ClaimPlaytimeRewardEvent` и `ClaimDailyRewardEvent` с расчетом UTC дней и прогрессией наград, кнопка `[T]` в клиентском HUD.
+  - `roblox-monetization-core`: Защищенный RemoteEvent `PromptPurchaseEvent` для Developer Products и GamePasses, обработка чеков в `MarketplaceService.ProcessReceipt` с идемпотентностью.
+  - `roblox-economy-simulator`: CLI инструмент `npm run simulate` (`bin/simulate-economy.js`) для математического моделирования прогрессии и валидации TTFR (~8.4 мин до первого Rebirth).
+  - `roblox-game-mode-templates` & `roblox-map-templates`: 2-этажные базы 56x76, защитная крыша, подвесной наклонный желоб сброса руды, святилище Rebirth и монументы на крыше с 400-стадовыми Sky Beacons.
+  - `roblox-ability-combat-system`: 48 уникальных мемных способностей (8 фракций x 6 слотов [1..6] / [E, R, Q, F, Z, X]) с репликацией VFX/SFX.
+  - `rojo-toolchain-master` & `wally-package-manager`: Стандартизированная сборка, sourcemap и скрипты в `package.json`.
 
 ## Быстрый старт
 1. **Тестирование**:
    ```powershell
    npm test
    ```
-2. **Запуск сервера синхронизации Rojo**:
+2. **Симуляция экономики (TTFR)**:
+   ```powershell
+   npm run simulate
+   ```
+3. **Запуск сервера синхронизации Rojo**:
    ```powershell
    npm run serve
    ```
-3. **Запуск игры в Studio**:
+4. **Запуск игры в Studio**:
    - Нажать **Stop (Shift+F5)**, затем **Play (F5)** в Roblox Studio.

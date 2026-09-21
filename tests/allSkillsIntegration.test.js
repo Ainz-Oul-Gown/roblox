@@ -1,0 +1,88 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { execSync } = require('node:child_process');
+
+test('Multi-Agent All Skills Integration: LightingThemes Future Technology and Presets', () => {
+    const lightingPath = path.join(__dirname, '..', 'src', 'shared', 'LightingThemes.luau');
+    assert.ok(fs.existsSync(lightingPath), 'LightingThemes.luau must exist');
+
+    const content = fs.readFileSync(lightingPath, 'utf8');
+    assert.match(content, /Technology\.Future/, 'Must configure Future Lighting technology');
+    assert.match(content, /Atmosphere/, 'Must configure Atmosphere');
+    assert.match(content, /BloomEffect/, 'Must configure BloomEffect');
+    assert.match(content, /ColorCorrectionEffect/, 'Must configure ColorCorrectionEffect');
+    assert.match(content, /SunRaysEffect/, 'Must configure SunRaysEffect');
+    assert.match(content, /applyTheme/, 'Must export applyTheme');
+    assert.match(content, /Cyberpunk/, 'Must contain Cyberpunk preset');
+    assert.match(content, /SunsetGlow/, 'Must contain SunsetGlow preset');
+    assert.match(content, /MidnightSciFi/, 'Must contain MidnightSciFi preset');
+});
+
+test('Multi-Agent All Skills Integration: Pet System Server & Client Wiring', () => {
+    const petServicePath = path.join(__dirname, '..', 'src', 'server', 'PetService.luau');
+    const petFollowerPath = path.join(__dirname, '..', 'src', 'client', 'PetFollower.luau');
+    const serverInitPath = path.join(__dirname, '..', 'src', 'server', 'init.server.luau');
+
+    const petServiceCode = fs.readFileSync(petServicePath, 'utf8');
+    assert.match(petServiceCode, /PetService\.getEquippedPetDefs/, 'Must export getEquippedPetDefs');
+    assert.match(petServiceCode, /PetService\.equipBest/, 'Must export equipBest');
+    assert.match(petServiceCode, /PetService\.rollEgg/, 'Must export rollEgg');
+
+    const followerCode = fs.readFileSync(petFollowerPath, 'utf8');
+    assert.match(followerCode, /createPetVisual/, 'Must implement createPetVisual');
+    assert.match(followerCode, /syncEquippedPets/, 'Must implement syncEquippedPets');
+    assert.match(followerCode, /math\.sin/, 'Must compute client-side floating bobbing animation');
+
+    const serverCode = fs.readFileSync(serverInitPath, 'utf8');
+    assert.match(serverCode, /OpenEggEvent/, 'Must wire OpenEggEvent');
+    assert.match(serverCode, /EquippedPetsEvent/, 'Must wire EquippedPetsEvent');
+});
+
+test('Multi-Agent All Skills Integration: JuiceKit Confetti and Polish', () => {
+    const juicePath = path.join(__dirname, '..', 'src', 'client', 'JuiceEffects.luau');
+    const juiceCode = fs.readFileSync(juicePath, 'utf8');
+
+    assert.match(juiceCode, /JuiceEffects\.spawnConfetti/, 'Must export spawnConfetti');
+    assert.match(juiceCode, /ParticleEmitter/, 'Must generate particle emitters for confetti');
+    assert.match(juiceCode, /Debris:AddItem\(emitterPart/, 'Must clean up confetti emitters after lifetime');
+
+    const clientInitPath = path.join(__dirname, '..', 'src', 'client', 'init.client.luau');
+    const clientCode = fs.readFileSync(clientInitPath, 'utf8');
+    assert.match(clientCode, /spawnConfetti/, 'Must trigger spawnConfetti on Rebirth or Celebration');
+});
+
+test('Multi-Agent All Skills Integration: Retention Engine Reward Claims', () => {
+    const retentionPath = path.join(__dirname, '..', 'src', 'server', 'RetentionService.luau');
+    const serverInitPath = path.join(__dirname, '..', 'src', 'server', 'init.server.luau');
+
+    const retentionCode = fs.readFileSync(retentionPath, 'utf8');
+    assert.match(retentionCode, /RetentionService\.claimPlaytimeReward/, 'Must export claimPlaytimeReward');
+    assert.match(retentionCode, /RetentionService\.claimDailyReward/, 'Must export claimDailyReward');
+
+    const serverCode = fs.readFileSync(serverInitPath, 'utf8');
+    assert.match(serverCode, /ClaimPlaytimeRewardEvent/, 'Must wire ClaimPlaytimeRewardEvent');
+    assert.match(serverCode, /ClaimDailyRewardEvent/, 'Must wire ClaimDailyRewardEvent');
+});
+
+test('Multi-Agent All Skills Integration: Monetization PromptPurchase Event', () => {
+    const serverInitPath = path.join(__dirname, '..', 'src', 'server', 'init.server.luau');
+    const serverCode = fs.readFileSync(serverInitPath, 'utf8');
+
+    assert.match(serverCode, /PromptPurchaseEvent/, 'Must wire PromptPurchaseEvent');
+    assert.match(serverCode, /MarketplaceService:PromptProductPurchase/, 'Must prompt developer products');
+    assert.match(serverCode, /MarketplaceService:PromptGamePassPurchase/, 'Must prompt gamepass purchases');
+});
+
+test('Multi-Agent All Skills Integration: Economy Simulation CLI Execution', () => {
+    const packageJsonPath = path.join(__dirname, '..', 'package.json');
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    assert.ok(packageJson.scripts.simulate, 'simulate script must be present in package.json');
+
+    const output = execSync('node bin/simulate-economy.js', { encoding: 'utf8' });
+    assert.match(output, /ROBLOX TYCOON ECONOMY BALANCE SIMULATOR/, 'Must output simulation header');
+    assert.match(output, /Rebirth_Portal/, 'Must simulate and reach Rebirth Portal');
+    assert.match(output, /Время до первого Rebirth \(TTFR\)/, 'Must output TTFR metric');
+    assert.match(output, /БАЛАНС ИДЕАЛЕН/, 'Simulation must complete successfully');
+});

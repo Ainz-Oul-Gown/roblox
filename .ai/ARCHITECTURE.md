@@ -58,7 +58,9 @@
 - `TycoonService`: Экономика, Сейф (`vaultCashMap`), DataStore, PvP-лут (`creator` тег), безопасное списание `deductCash`, параллельное сохранение в `BindToClose`, подключение составных множителей `getExtraMultiplier`.
 - `MonetizationService`: Промышленная обработка чеков `MarketplaceService.ProcessReceipt` с идемпотентностью и кэшированием геймпасов (VIP x2, Double Cash x2).
 - `RetentionService`: Механика удержания игроков (сессионные подарки Playtime Gifts 5..60м и ежедневный стрик Daily Streak по UTC).
-- `PetService`: Индустриальный движок питомцев (взвешенный генератор шансов яиц, Equip Best, суммирование множителей).
+- `PetService`: Индустриальный движок питомцев (взвешенный генератор шансов яиц, `PetService.getEquippedPetDefs`, `equipBest`, суммирование множителей). Сетевой мост через `OpenEggEvent` и `EquippedPetsEvent`.
+- `PetFollower` (клиентский модуль): Высокопроизводительный рендеринг питомцев на клиенте без физических лагов сервера. Поддерживает позиционирование по кругу за спиной персонажа, плавную интерполяцию (Lerp) и синусоидальное парение (`math.sin(time)`).
+- `LightingThemes`: Архитектурный модуль атмосферы и освещения по стандарту Future Lighting (`Technology.Future`). Конфигурирует `Atmosphere`, `BloomEffect`, `ColorCorrectionEffect` и `SunRaysEffect`, предоставляя 6 художественных тем (`Cyberpunk`, `SunsetGlow`, `MidnightSciFi`, `CandyDream`, `Wasteland`, `CleanStudio`).
 - `PlotManager`: Распределение 8 баз, привязка владельцев.
 - `PlotBuilder`: Генерация баз, конвейеров, апгрейдеров, портала Rebirth и монументов:
   - **Панорамные прозрачные окна**: Реальные оконные проемы в стенах 1-го этажа (`BrainrotWalls`) и фасаде 2-го этажа (`Floor2_Walls`), заполненные высокопрозрачным тонированным стеклом (`Transparency = 0.55`) в неоновых рамах.
@@ -78,9 +80,15 @@
   - Световые неоновые столбы (`createPillarOfLight`), ударные волны расширения (`createShockwaveRing`), лазерные лучи (`createBeamLine`), небесные объекты (`spawnFallingSkyProp`: падающие метеориты КейсОха, банхаммеры, наковальни и пиццы).
   - Пространственный 3D-звук (`JuiceEffects.play3DSound`) с затуханием по дистанции.
   - Динамическая кинематографическая отдача: тряска экрана (`JuiceEffects.screenShake`) при взрывах и импульс FOV (`JuiceEffects.fovPulse`) с защитой от накопления дрейфа.
-- `JuiceEffects`: Каталог 3D/2D звуков (`laser`, `dash`, `explosion`, `electric`, `magic`, `teleport`, `meteor`, `hammer`, `splash`, `whoosh`, `chime`, `horn`, `parry`, `snatch`, `anvil`), парящие мемные надписи, вспышки экрана.
+- `JuiceEffects`: Каталог 3D/2D звуков (`laser`, `dash`, `explosion`, `electric`, `magic`, `teleport`, `meteor`, `hammer`, `splash`, `whoosh`, `chime`, `horn`, `parry`, `snatch`, `anvil`), парящие мемные надписи, вспышки экрана, процедурный праздничный салют конфетти (`spawnConfetti`).
 - `LeaderboardService`: Автоматический учет и визуализация топа богатства и фрагов с очисткой `pvpStatsMap` при `PlayerRemoving`.
 - `AirDropService`: Фоновый таймер и спавн ящиков с парашютами и захватом.
+- `Сетевые RemoteEvents`:
+  - `BuyItemEvent`, `WithdrawCashEvent`, `RebirthEvent`, `ToggleGateEvent`.
+  - `AbilityEvent`, `AbilityVFXEvent`, `AdminGiveCashEvent`.
+  - `OpenEggEvent`, `EquippedPetsEvent`.
+  - `ClaimPlaytimeRewardEvent`, `ClaimDailyRewardEvent`.
+  - `PromptPurchaseEvent`.
 
 ## Инструменты тестирования и администрирования
 - `AdminGiveCashEvent` (`RemoteEvent`): Позволяет мгновенно начислить ауру (по умолчанию $1,000,000$) для быстрого тестирования высокоуровневых апгрейдов, Rebirth и Монументов. Защищен проверкой `isAuthorizedAdmin` (`RunService:IsStudio()` / CreatorId), исключая читерство в боевом режиме.

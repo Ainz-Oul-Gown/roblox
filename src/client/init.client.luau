@@ -25,6 +25,10 @@ local airDropEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15) :: Remot
 local adminGiveCashEvent = ReplicatedStorage:WaitForChild("AdminGiveCashEvent", 15) :: RemoteEvent?
 local rebirthEvent = ReplicatedStorage:WaitForChild("RebirthEvent", 15) :: RemoteEvent?
 local abilityVFXEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15) :: RemoteEvent?
+local equippedPetsEvent = ReplicatedStorage:WaitForChild("EquippedPetsEvent", 15) :: RemoteEvent?
+local openEggEvent = ReplicatedStorage:WaitForChild("OpenEggEvent", 15) :: RemoteEvent?
+local claimPlaytimeEvent = ReplicatedStorage:WaitForChild("ClaimPlaytimeRewardEvent", 15) :: RemoteEvent?
+local claimDailyEvent = ReplicatedStorage:WaitForChild("ClaimDailyRewardEvent", 15) :: RemoteEvent?
 
 -- Безопасная загрузка JuiceEffects (поддержка как script, так и script.Parent)
 local juiceModule = script:FindFirstChild("JuiceEffects")
@@ -49,7 +53,22 @@ if not JuiceEffects then
         animateButtonSuccess = function(...) end,
         animateButtonFailure = function(...) end,
         screenFlash = function(...) end,
+        spawnConfetti = function(...) end,
     }
+end
+
+-- Безопасная загрузка PetFollower (Pet & Egg Gacha System)
+local petFollowerModule = script:FindFirstChild("PetFollower")
+    or (script.Parent and script.Parent:FindFirstChild("PetFollower"))
+    or script:WaitForChild("PetFollower", 3)
+    or (script.Parent and script.Parent:WaitForChild("PetFollower", 1))
+
+local PetFollower: any = nil
+if petFollowerModule and petFollowerModule:IsA("ModuleScript") then
+    local ok, res = pcall(require, petFollowerModule)
+    if ok and res then
+        PetFollower = res
+    end
 end
 
 -- Безопасная загрузка AbilityVFX
@@ -654,6 +673,9 @@ if airDropEvent then
             local winner = if data and data.winnerName then data.winnerName else "Игрок"
             local rew = if data and data.reward then data.reward else 10000
             showToast(string.format("🎉 %s ЗАХВАТИЛ АИРДРОП И ПОЛУЧИЛ +$%d AURA!", winner, rew), Color3.fromRGB(46, 204, 113))
+            if winner == localPlayer.Name and localPlayer.Character and localPlayer.Character.PrimaryPart then
+                JuiceEffects.spawnConfetti(localPlayer.Character.PrimaryPart.Position)
+            end
         end
     end)
 end
@@ -665,10 +687,71 @@ if rebirthEvent then
         showToast(string.format("👑 ПЕРЕРОЖДЕНИЕ #%d ВЫПОЛНЕНО! Множитель x%.1f 🔥", newRebirths, newMult), Color3.fromRGB(255, 215, 0))
         local char = localPlayer.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
-            JuiceEffects.showFloatingText((char:FindFirstChild("HumanoidRootPart") :: BasePart).Position + Vector3.new(0, 4, 0), string.format("👑 REBIRTH #%d! x%.1f MULTIPLIER", newRebirths, newMult), Color3.fromRGB(255, 215, 0), 2.5)
+            local pos = (char:FindFirstChild("HumanoidRootPart") :: BasePart).Position
+            JuiceEffects.spawnConfetti(pos)
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), string.format("👑 REBIRTH #%d! x%.1f MULTIPLIER", newRebirths, newMult), Color3.fromRGB(255, 215, 0), 2.5)
         end
     end)
 end
+
+-- Синхронизация надетых питомцев и вылупления (Pet Gacha & Anti-Lag Follower)
+if equippedPetsEvent then
+    equippedPetsEvent.OnClientEvent:Connect(function(petDefs: any, hatchedPetId: any)
+        if PetFollower and type(petDefs) == "table" then
+            PetFollower.syncEquippedPets(petDefs)
+        end
+        if hatchedPetId then
+            JuiceEffects.playSound("fanfare", 1.0)
+            local char = localPlayer.Character
+            if char and char.PrimaryPart then
+                JuiceEffects.spawnConfetti(char.PrimaryPart.Position)
+                JuiceEffects.showFloatingText(char.PrimaryPart.Position, string.format("🐣 ВЫЛУПИЛСЯ: %s!", tostring(hatchedPetId)), Color3.fromRGB(255, 215, 0), 2.5)
+            end
+        end
+    end)
+end
+
+-- 3.5 Виджет удержания и подарков (Retention Engine & Daily Streak)
+local giftsBtn = Instance.new("TextButton")
+giftsBtn.Name = "RetentionGiftsButton"
+giftsBtn.Size = UDim2.new(0, 160, 0, 48)
+giftsBtn.Position = UDim2.new(0, 20, 0.5, 30)
+giftsBtn.BackgroundColor3 = Color3.fromRGB(155, 89, 182)
+giftsBtn.Text = "🎁 ПОДАРКИ [T]\n[ЗАБРАТЬ ЛУТ]"
+giftsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+giftsBtn.TextScaled = true
+giftsBtn.Font = Enum.Font.FredokaOne
+giftsBtn.Parent = screenGui
+
+local gbCorner = Instance.new("UICorner")
+gbCorner.CornerRadius = UDim.new(0, 10)
+gbCorner.Parent = giftsBtn
+
+local gbStroke = Instance.new("UIStroke")
+gbStroke.Color = Color3.fromRGB(255, 215, 0)
+gbStroke.Thickness = 2
+gbStroke.Parent = giftsBtn
+
+local function claimRetentionGifts()
+    if claimPlaytimeEvent then
+        claimPlaytimeEvent:FireServer(1)
+        claimPlaytimeEvent:FireServer(2)
+    end
+    if claimDailyEvent then
+        claimDailyEvent:FireServer()
+    end
+    showToast("🎁 Запрос ежедневных наград и сессионного лута отправлен!", Color3.fromRGB(155, 89, 182))
+    JuiceEffects.playSound("cash", 0.9)
+end
+
+giftsBtn.MouseButton1Click:Connect(claimRetentionGifts)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.T then
+        claimRetentionGifts()
+    end
+end)
 
 -- 4. Способности фракций (Инвентарь, хоткей [E] для активного предмета)
 local abilityBtn = Instance.new("TextButton")

@@ -5,6 +5,7 @@
   "main": "src/server/init.server.luau",
   "scripts": {
     "test": "node --test tests/**/*.test.js",
+    "simulate": "node bin/simulate-economy.js",
     "serve": "bin\\rojo.exe serve",
     "build": "bin\\rojo.exe build -o place.rbxl"
   },

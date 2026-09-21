@@ -111,18 +111,50 @@ function LightingThemes.applyTheme(themeName: string): boolean
     Lighting.FogColor = theme.fogColor
     Lighting.FogEnd = theme.fogEnd
 
+    -- Стандарт Future Lighting для сочных теней и реалистичного освещения
+    pcall(function()
+        Lighting.Technology = Enum.Technology.Future
+    end)
+
     local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
-    if atmosphere then
-        atmosphere.Density = theme.atmosphereDensity
+    if not atmosphere then
+        atmosphere = Instance.new("Atmosphere")
+        atmosphere.Name = "BrainrotAtmosphere"
+        atmosphere.Parent = Lighting
     end
+    atmosphere.Density = theme.atmosphereDensity
+    atmosphere.Offset = 0.25
+    atmosphere.Haze = 0.5
 
     local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
-    if bloom then
-        bloom.Intensity = theme.bloomIntensity
-        bloom.Size = theme.bloomSize
+    if not bloom then
+        bloom = Instance.new("BloomEffect")
+        bloom.Name = "BrainrotBloom"
+        bloom.Parent = Lighting
     end
+    bloom.Intensity = theme.bloomIntensity
+    bloom.Size = theme.bloomSize
+    bloom.Threshold = 2.0 -- анти-ослепление экрана
 
-    print(`[LightingThemes] Применена тема: {theme.name}`)
+    local colorCorrection = Lighting:FindFirstChildOfClass("ColorCorrectionEffect")
+    if not colorCorrection then
+        colorCorrection = Instance.new("ColorCorrectionEffect")
+        colorCorrection.Name = "BrainrotColorCorrection"
+        colorCorrection.Parent = Lighting
+    end
+    colorCorrection.Saturation = 0.15
+    colorCorrection.Contrast = 0.12
+
+    local sunRays = Lighting:FindFirstChildOfClass("SunRaysEffect")
+    if not sunRays then
+        sunRays = Instance.new("SunRaysEffect")
+        sunRays.Name = "BrainrotSunRays"
+        sunRays.Parent = Lighting
+    end
+    sunRays.Intensity = 0.12
+    sunRays.Spread = 0.8
+
+    print(`[LightingThemes] Успешно применена кинематографическая тема Future Lighting: {theme.name}`)
     return true
 end
 

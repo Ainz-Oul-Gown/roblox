@@ -293,4 +293,45 @@ function JuiceEffects.screenFlash(color: Color3, duration: number?)
     end)
 end
 
+-- Процедурный праздничный салют конфетти (Rebirth & Win Celebration из roblox-juice-kit)
+function JuiceEffects.spawnConfetti(position: Vector3)
+    local emitterPart = Instance.new("Part")
+    emitterPart.Name = "ConfettiBurst"
+    emitterPart.Size = Vector3.new(1, 1, 1)
+    emitterPart.Position = position
+    emitterPart.Transparency = 1
+    emitterPart.Anchored = true
+    emitterPart.CanCollide = false
+    emitterPart.Parent = Workspace
+
+    local attachment = Instance.new("Attachment")
+    attachment.Parent = emitterPart
+
+    local colors = {
+        Color3.fromRGB(255, 80, 80),
+        Color3.fromRGB(80, 255, 80),
+        Color3.fromRGB(80, 150, 255),
+        Color3.fromRGB(255, 230, 80),
+        Color3.fromRGB(255, 80, 255),
+        Color3.fromRGB(241, 196, 15),
+    }
+
+    for _, color in ipairs(colors) do
+        local particles = Instance.new("ParticleEmitter")
+        particles.Color = ColorSequence.new(color)
+        particles.Size = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.4),
+            NumberSequenceKeypoint.new(1, 0.2),
+        })
+        particles.Speed = NumberRange.new(20, 38)
+        particles.SpreadAngle = Vector2.new(50, 50)
+        particles.Lifetime = NumberRange.new(1.5, 2.5)
+        particles.Rate = 0
+        particles.Parent = attachment
+        particles:Emit(25)
+    end
+
+    Debris:AddItem(emitterPart, 3.5)
+end
+
 return JuiceEffects

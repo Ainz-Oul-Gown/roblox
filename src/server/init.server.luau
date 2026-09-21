@@ -23,27 +23,11 @@ if existingBaseplate then
     print("[SERVER] Removed default Baseplate")
 end
 
--- Настройка сбалансированного освещения: мягкий приятный свет без пересвета, ослепления и белой пелены
-local Lighting = game:GetService("Lighting")
-Lighting.Ambient = Color3.fromRGB(50, 50, 58)
-Lighting.OutdoorAmbient = Color3.fromRGB(75, 75, 85)
-Lighting.Brightness = 1.2
-Lighting.ClockTime = 14
-Lighting.EnvironmentDiffuseScale = 0.25
-Lighting.EnvironmentSpecularScale = 0.25
-Lighting.GlobalShadows = true
-Lighting.ExposureCompensation = -0.1
-
--- Анти-ослепление: настраиваем BloomEffect с высоким порогом (Threshold 2.5), чтобы неон не слепил экран
-local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
-if not bloom then
-    bloom = Instance.new("BloomEffect")
-    bloom.Name = "AntiGlareBloom"
-    bloom.Parent = Lighting
-end
-bloom.Intensity = 0.18
-bloom.Size = 8
-bloom.Threshold = 2.5
+-- Настройка Future Lighting через модуль LightingThemes
+local Shared = ReplicatedStorage:WaitForChild("Shared", 10)
+local LightingThemes = require(Shared:WaitForChild("LightingThemes", 10))
+local PetConfig = require(Shared:WaitForChild("PetConfig", 10))
+LightingThemes.applyTheme("SunsetGlow")
 
 statusVal.Value = "🏝️ Постройка острова (WorldBuilder)..."
 local WorldBuilder = require(script:WaitForChild("WorldBuilder", 10))
@@ -167,6 +151,89 @@ TycoonService.getExtraMultiplier = function(player: Player): number
     return passMult * petMult
 end
 
+-- Сетевые события системы питомцев (Pet Gacha System)
+local openEggEvent = ReplicatedStorage:FindFirstChild("OpenEggEvent") :: RemoteEvent?
+if not openEggEvent then
+    openEggEvent = Instance.new("RemoteEvent")
+    openEggEvent.Name = "OpenEggEvent"
+    openEggEvent.Parent = ReplicatedStorage
+end
+
+local equippedPetsEvent = ReplicatedStorage:FindFirstChild("EquippedPetsEvent") :: RemoteEvent?
+if not equippedPetsEvent then
+    equippedPetsEvent = Instance.new("RemoteEvent")
+    equippedPetsEvent.Name = "EquippedPetsEvent"
+    equippedPetsEvent.Parent = ReplicatedStorage
+end
+
+openEggEvent.OnServerEvent:Connect(function(player: Player, eggId: any)
+    if type(eggId) ~= "string" then return end
+    local eggDef = PetConfig.EGGS[eggId]
+    if not eggDef then return end
+
+    local deducted = TycoonService.deductCash(player, eggDef.cost)
+    if deducted < eggDef.cost then
+        warn(string.format("[PetService] %s cannot afford egg %s", player.Name, eggId))
+        return
+    end
+
+    local rolledPetId = PetService.rollEgg(eggId)
+    if rolledPetId then
+        PetService.addPet(player, rolledPetId)
+        PetService.equipBest(player)
+        local petDefs = PetService.getEquippedPetDefs(player)
+        equippedPetsEvent:FireClient(player, petDefs, rolledPetId)
+        print(string.format("[PetService] %s hatched %s from %s!", player.Name, rolledPetId, eggDef.name))
+    end
+end)
+
+-- Сетевые события системы удержания (Retention Engine)
+local claimPlaytimeEvent = ReplicatedStorage:FindFirstChild("ClaimPlaytimeRewardEvent") :: RemoteEvent?
+if not claimPlaytimeEvent then
+    claimPlaytimeEvent = Instance.new("RemoteEvent")
+    claimPlaytimeEvent.Name = "ClaimPlaytimeRewardEvent"
+    claimPlaytimeEvent.Parent = ReplicatedStorage
+end
+
+local claimDailyEvent = ReplicatedStorage:FindFirstChild("ClaimDailyRewardEvent") :: RemoteEvent?
+if not claimDailyEvent then
+    claimDailyEvent = Instance.new("RemoteEvent")
+    claimDailyEvent.Name = "ClaimDailyRewardEvent"
+    claimDailyEvent.Parent = ReplicatedStorage
+end
+
+claimPlaytimeEvent.OnServerEvent:Connect(function(player: Player, tier: any)
+    local t = tonumber(tier)
+    if t then
+        local ok, msg = RetentionService.claimPlaytimeReward(player, t)
+        print(string.format("[Retention] %s claimPlaytime tier %d: %s (%s)", player.Name, t, tostring(ok), msg))
+    end
+end)
+
+claimDailyEvent.OnServerEvent:Connect(function(player: Player)
+    local ok, msg = RetentionService.claimDailyReward(player)
+    print(string.format("[Retention] %s claimDaily: %s (%s)", player.Name, tostring(ok), msg))
+end)
+
+-- Сетевое событие монетизации (PromptPurchase)
+local promptPurchaseEvent = ReplicatedStorage:FindFirstChild("PromptPurchaseEvent") :: RemoteEvent?
+if not promptPurchaseEvent then
+    promptPurchaseEvent = Instance.new("RemoteEvent")
+    promptPurchaseEvent.Name = "PromptPurchaseEvent"
+    promptPurchaseEvent.Parent = ReplicatedStorage
+end
+
+promptPurchaseEvent.OnServerEvent:Connect(function(player: Player, purchaseType: any, assetId: any)
+    local id = tonumber(assetId)
+    if not id then return end
+    local MarketplaceService = game:GetService("MarketplaceService")
+    if purchaseType == "Gamepass" then
+        MarketplaceService:PromptGamePassPurchase(player, id)
+    elseif purchaseType == "Product" then
+        MarketplaceService:PromptProductPurchase(player, id)
+    end
+end)
+
 -- Связываем PlotManager.hasAnyBase в TycoonService (нужно CentralArena)
 TycoonService.hasAnyBase = function(player: Player): boolean
     return PlotManager.getPlayerPlotIndex(player) ~= nil
@@ -245,6 +312,10 @@ local function onPlayerAdded(player: Player)
     local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent") :: RemoteEvent
     task.delay(1, function()
         plotStateEvent:FireClient(player, PlotManager.getPlotStatuses())
+        if player.Parent then
+            local petDefs = PetService.getEquippedPetDefs(player)
+            equippedPetsEvent:FireClient(player, petDefs)
+        end
     end)
 end
 
