@@ -793,12 +793,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
         castAbility("mobility")
     elseif input.KeyCode == Enum.KeyCode.X then
         castAbility("godmode")
-    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local char = localPlayer.Character
-        local tool = if char then char:FindFirstChildOfClass("Tool") else nil
-        if tool and tool:GetAttribute("AbilitySlot") then
-            castAbility(tool:GetAttribute("AbilitySlot") :: any)
-        end
     end
 end)
 

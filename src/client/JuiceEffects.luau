@@ -112,24 +112,56 @@ function JuiceEffects.screenShake(intensity: number?, duration: number?)
     end)
 end
 
--- Импульс угла обзора (FOV Kick) при рывках мобильности
+local activeFovTweenUp: Tween? = nil
+local activeFovTweenDown: Tween? = nil
+local defaultCameraFOV: number = 70
+
+-- Импульс угла обзора (FOV Kick) при рывках мобильности (защита от FOV Drift)
 function JuiceEffects.fovPulse(fovKick: number?, duration: number?)
     local camera = Workspace.CurrentCamera
     if not camera then return end
+
+    -- Если твин не активен, фиксируем текущий честный FOV игрока
+    if not activeFovTweenUp and not activeFovTweenDown then
+        defaultCameraFOV = camera.FieldOfView
+    end
+
+    if activeFovTweenUp then
+        activeFovTweenUp:Cancel()
+        activeFovTweenUp = nil
+    end
+    if activeFovTweenDown then
+        activeFovTweenDown:Cancel()
+        activeFovTweenDown = nil
+    end
+
     local kick = fovKick or 12
     local dur = duration or 0.4
-    local origFOV = camera.FieldOfView
+    local targetPeakFOV = math.min(105, defaultCameraFOV + kick)
 
     local tUp = TweenService:Create(camera, TweenInfo.new(dur * 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        FieldOfView = math.min(105, origFOV + kick)
+        FieldOfView = targetPeakFOV,
     })
     local tDown = TweenService:Create(camera, TweenInfo.new(dur * 0.65, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        FieldOfView = origFOV
+        FieldOfView = defaultCameraFOV,
     })
 
+    activeFovTweenUp = tUp
+    activeFovTweenDown = tDown
+
     tUp:Play()
-    tUp.Completed:Connect(function()
-        tDown:Play()
+    tUp.Completed:Connect(function(playbackState)
+        if playbackState == Enum.PlaybackState.Completed then
+            activeFovTweenUp = nil
+            tDown:Play()
+        end
+    end)
+
+    tDown.Completed:Connect(function(playbackState)
+        if playbackState == Enum.PlaybackState.Completed then
+            activeFovTweenDown = nil
+            camera.FieldOfView = defaultCameraFOV
+        end
     end)
 end
 

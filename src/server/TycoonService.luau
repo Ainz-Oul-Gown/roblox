@@ -188,17 +188,33 @@ function TycoonService.onPlayerRemoving(player: Player)
     end
 end
 
+-- Ссылка на внешний расчет экстра-множителей (MonetizationService, PetService)
+TycoonService.getExtraMultiplier = nil :: ((player: Player) -> number)?
+
+local function getPlayerTotalMultiplier(player: Player, rebirths: number): number
+    local mult = EconomyManager.calculateMultiplier(rebirths)
+    if TycoonService.getExtraMultiplier then
+        local ok, extra = pcall(TycoonService.getExtraMultiplier, player)
+        if ok and type(extra) == "number" and extra > 0 then
+            mult *= extra
+        end
+    end
+    return mult
+end
+
 function TycoonService.saveAllPlayers()
     for _, player in ipairs(Players:GetPlayers()) do
         local data = playerDataMap[player.UserId]
         if data then
-            DataStoreManager.saveData(player.UserId, {
-                version = 1,
-                cash = data.cash,
-                rebirths = data.rebirths,
-                ownedItems = data.ownedItems,
-                lastSaved = os.time(),
-            })
+            task.spawn(function()
+                DataStoreManager.saveData(player.UserId, {
+                    version = 1,
+                    cash = data.cash,
+                    rebirths = data.rebirths,
+                    ownedItems = data.ownedItems,
+                    lastSaved = os.time(),
+                })
+            end)
         end
     end
 end
@@ -226,7 +242,7 @@ function TycoonService.addCash(player: Player, amount: number)
     local data = playerDataMap[player.UserId]
     if not data then return end
 
-    local mult = EconomyManager.calculateMultiplier(data.rebirths)
+    local mult = getPlayerTotalMultiplier(player, data.rebirths)
     data.cash = EconomyManager.addCash(data.cash, amount, mult)
 
     local leaderstats = player:FindFirstChild("leaderstats")
@@ -238,6 +254,24 @@ function TycoonService.addCash(player: Player, amount: number)
     end
 end
 
+-- Безопасное списание наличных из кошелька (не опускается ниже 0, обновляет leaderstats)
+function TycoonService.deductCash(player: Player, amount: number): number
+    local data = playerDataMap[player.UserId]
+    if not data or amount <= 0 then return 0 end
+
+    local actualDeducted = math.min(data.cash, math.floor(amount))
+    data.cash -= actualDeducted
+
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if leaderstats then
+        local auraVal = leaderstats:FindFirstChild("Aura") :: IntValue?
+        if auraVal then
+            auraVal.Value = data.cash
+        end
+    end
+    return actualDeducted
+end
+
 -- Добавление дохода от упавшей руды в СЕЙФ базы (Collector Vault)
 function TycoonService.addToVault(plotIndex: number, amount: number, owner: Player?)
     local current = vaultCashMap[plotIndex] or 0
@@ -245,7 +279,7 @@ function TycoonService.addToVault(plotIndex: number, amount: number, owner: Play
     if owner then
         local data = playerDataMap[owner.UserId]
         if data then
-            mult = EconomyManager.calculateMultiplier(data.rebirths)
+            mult = getPlayerTotalMultiplier(owner, data.rebirths)
         end
     end
 

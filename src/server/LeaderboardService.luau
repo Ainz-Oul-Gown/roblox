@@ -210,7 +210,16 @@ function LeaderboardService.init()
         end
     end)
 
+    -- Очистка статистики вышедших игроков для предотвращения утечек памяти
+    Players.PlayerRemoving:Connect(function(player: Player)
+        LeaderboardService.removePlayer(player)
+    end)
+
     print("[LeaderboardService] Central plaza cyber leaderboards created and active!")
+end
+
+function LeaderboardService.removePlayer(player: Player)
+    pvpStatsMap[player.UserId] = nil
 end
 
 return LeaderboardService

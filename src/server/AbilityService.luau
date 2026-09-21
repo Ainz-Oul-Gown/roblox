@@ -449,8 +449,10 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                         local victimCash = TycoonService.getCash(other)
                         local tax = math.floor(victimCash * 0.15)
                         if tax > 0 then
-                            TycoonService.addCash(other, -tax)
-                            TycoonService.addCash(player, tax)
+                            local stolen = TycoonService.deductCash(other, tax)
+                            if stolen > 0 then
+                                TycoonService.addCash(player, stolen)
+                            end
                         end
                         break
                     end
@@ -476,8 +478,10 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                         local victimCash = TycoonService.getCash(other)
                         local tax = math.floor(victimCash * 0.30)
                         if tax > 0 then
-                            TycoonService.addCash(other, -tax)
-                            TycoonService.addCash(player, tax)
+                            local stolen = TycoonService.deductCash(other, tax)
+                            if stolen > 0 then
+                                TycoonService.addCash(player, stolen)
+                            end
                         end
                     end
                 end
@@ -574,5 +578,19 @@ TycoonService.onItemPurchased = function(player: Player, itemId: string)
         AbilityService.syncPlayerTools(player)
     end
 end
+
+-- Очистка кэша кулдаунов при выходе игрока
+function AbilityService.removePlayer(player: Player)
+    local prefix = string.format("%d_", player.UserId)
+    for key in pairs(cooldowns) do
+        if string.sub(key, 1, #prefix) == prefix then
+            cooldowns[key] = nil
+        end
+    end
+end
+
+Players.PlayerRemoving:Connect(function(player: Player)
+    AbilityService.removePlayer(player)
+end)
 
 return AbilityService

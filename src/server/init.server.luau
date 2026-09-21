@@ -5,6 +5,7 @@ print("[SERVER] ========================================")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 -- Индикатор инициализации сервера для передачи на клиент
 local statusVal = ReplicatedStorage:FindFirstChild("ServerInitStatus") :: StringValue?
@@ -138,6 +139,34 @@ end
 local AirDropService = require(script:WaitForChild("AirDropService", 10))
 AirDropService.init()
 
+-- 3.2 Монетизация, удержание и питомцы
+local MonetizationService = require(script:WaitForChild("MonetizationService", 10))
+MonetizationService.init()
+MonetizationService.setRewardHandler(function(player: Player, rewardType: string, amount: number)
+    if rewardType == "Aura" or rewardType == "Cash" then
+        TycoonService.addCash(player, amount)
+        return true
+    end
+    return false
+end)
+
+local RetentionService = require(script:WaitForChild("RetentionService", 10))
+RetentionService.setRewardHandler(function(player: Player, rewardType: string, amount: number, specialItem: string?)
+    if rewardType == "Aura" or rewardType == "Cash" then
+        TycoonService.addCash(player, amount)
+    end
+    return true
+end)
+
+local PetService = require(script:WaitForChild("PetService", 10))
+
+-- Связываем множители геймпасов и питомцев с TycoonService
+TycoonService.getExtraMultiplier = function(player: Player): number
+    local passMult = MonetizationService.getPlayerMultiplier(player)
+    local petMult = PetService.getTotalMultiplier(player)
+    return passMult * petMult
+end
+
 -- Связываем PlotManager.hasAnyBase в TycoonService (нужно CentralArena)
 TycoonService.hasAnyBase = function(player: Player): boolean
     return PlotManager.getPlayerPlotIndex(player) ~= nil
@@ -151,7 +180,13 @@ claimPlotEvent.OnServerEvent:Connect(function(player: Player, plotIndex: any)
     end
 end)
 
--- 4.1 Временная админ-фишка для моментального лута ауры
+-- 4.1 Админ-фишка для моментального лута ауры (защищена от публичных эксплойтов)
+local function isAuthorizedAdmin(player: Player): boolean
+    if RunService:IsStudio() then return true end
+    if game.CreatorType == Enum.CreatorType.User and player.UserId == game.CreatorId then return true end
+    return false
+end
+
 local adminCashEvent = ReplicatedStorage:FindFirstChild("AdminGiveCashEvent") :: RemoteEvent?
 if not adminCashEvent then
     adminCashEvent = Instance.new("RemoteEvent")
@@ -160,6 +195,10 @@ if not adminCashEvent then
 end
 
 adminCashEvent.OnServerEvent:Connect(function(player: Player, amount: any)
+    if not isAuthorizedAdmin(player) then
+        warn(string.format("[SECURITY] Unauthorized AdminGiveCashEvent attempt from %s (UserId: %d)", player.Name, player.UserId))
+        return
+    end
     local n = tonumber(amount) or 1000000
     n = math.clamp(n, 1000, 100000000)
     TycoonService.addCash(player, n)
@@ -170,11 +209,17 @@ end)
 local function onPlayerAdded(player: Player)
     print(string.format("[SERVER] Player connected: %s (UserId: %d)", player.Name, player.UserId))
     TycoonService.onPlayerAdded(player)
+    RetentionService.initPlayer(player)
+    PetService.initPlayer(player)
 
     -- Чат-команда админа: /aura или /rich
     player.Chatted:Connect(function(msg: string)
         local lower = string.lower(msg)
         if string.sub(lower, 1, 5) == "/aura" or string.sub(lower, 1, 5) == "/rich" then
+            if not isAuthorizedAdmin(player) then
+                warn(string.format("[SECURITY] Unauthorized chat command from %s: %s", player.Name, msg))
+                return
+            end
             local parts = string.split(msg, " ")
             local amt = (parts[2] and tonumber(parts[2])) or 1000000
             amt = math.clamp(amt, 1000, 100000000)
@@ -215,6 +260,8 @@ Players.PlayerRemoving:Connect(function(player: Player)
         PlotBuilder.resetPlotToUnclaimed(releasedIndex, onClaimBase)
     end
     TycoonService.onPlayerRemoving(player)
+    RetentionService.removePlayer(player)
+    PetService.removePlayer(player)
 end)
 
 -- 6. Автосохранение каждые 60 секунд
