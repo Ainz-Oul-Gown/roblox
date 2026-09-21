@@ -62,8 +62,15 @@ local function isWithinLOD(pos: Vector3): boolean
 end
 AbilityVFX.isWithinLOD = isWithinLOD
 
--- Вытеснение старейших камней при превышении лимита (FIFO)
+-- Вытеснение старейших камней при превышении лимита (FIFO) с очисткой недействительных ссылок
 local function pruneOldRocks(countToFree: number)
+    for i = #activeRocks, 1, -1 do
+        local r = activeRocks[i]
+        if not r or not r.Parent then
+            table.remove(activeRocks, i)
+        end
+    end
+
     while #activeRocks + countToFree > MAX_ACTIVE_ROCKS and #activeRocks > 0 do
         local oldRock = table.remove(activeRocks, 1)
         if oldRock and oldRock.Parent then
@@ -72,6 +79,24 @@ local function pruneOldRocks(countToFree: number)
     end
 end
 
+-- Определение фактической точки пола под объектом (защита от парения эффектов в воздухе при прыжках)
+local function getGroundPosition(pos: Vector3, maxDrop: number?): Vector3
+    local drop = maxDrop or 30
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    local ignoreList = {}
+    if localPlayer.Character then
+        table.insert(ignoreList, localPlayer.Character)
+    end
+    rayParams.FilterDescendantsInstances = ignoreList
+    local result = Workspace:Raycast(pos + Vector3.new(0, 1.5, 0), Vector3.new(0, -drop, 0), rayParams)
+    if result then
+        return result.Position
+    end
+    return pos
+end
+AbilityVFX.getGroundPosition = getGroundPosition
+
 -- ============================================================================
 -- БАЗОВЫЕ ГЕНЕРАТОРЫ И УДАРНЫЕ ВОЛНЫ
 -- ============================================================================
@@ -79,11 +104,12 @@ end
 -- Создание расширяющегося неонового ударного кольца на земле
 local function createShockwaveRing(pos: Vector3, maxRadius: number, color: Color3, duration: number?)
     local dur = duration or 0.5
+    local groundPos = getGroundPosition(pos)
     local ring = Instance.new("Part")
     ring.Name = "ShockwaveRing"
     ring.Shape = Enum.PartType.Cylinder
     ring.Size = Vector3.new(0.3, 1, 1)
-    ring.CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90))
+    ring.CFrame = CFrame.new(groundPos + Vector3.new(0, 0.05, 0)) * CFrame.Angles(0, 0, math.rad(90))
     ring.Anchored = true
     ring.CanCollide = false
     ring.Material = Enum.Material.Neon
@@ -103,14 +129,15 @@ AbilityVFX.createShockwaveRing = createShockwaveRing
 -- Двухконтурная текстурированная ударная волна (горячее ядро + приземная пыль)
 local function spawnTexturedShockwave(pos: Vector3, maxRadius: number, color: Color3, duration: number?)
     local dur = duration or 0.5
-    createShockwaveRing(pos, maxRadius, color, dur)
+    local groundPos = getGroundPosition(pos)
+    createShockwaveRing(groundPos, maxRadius, color, dur)
 
-    if not isWithinLOD(pos) then return end
+    if not isWithinLOD(groundPos) then return end
 
     local dustPart = Instance.new("Part")
     dustPart.Name = "ShockwaveDustEmitter"
     dustPart.Size = Vector3.new(1, 0.2, 1)
-    dustPart.CFrame = CFrame.new(pos)
+    dustPart.CFrame = CFrame.new(groundPos + Vector3.new(0, 0.1, 0))
     dustPart.Transparency = 1
     dustPart.Anchored = true
     dustPart.CanCollide = false
@@ -144,11 +171,12 @@ AbilityVFX.spawnTexturedShockwave = spawnTexturedShockwave
 -- Вспышка вертикального энергетического столба
 local function createPillarOfLight(pos: Vector3, height: number, radius: number, color: Color3, duration: number?)
     local dur = duration or 0.6
+    local groundPos = getGroundPosition(pos)
     local pillar = Instance.new("Part")
     pillar.Name = "EnergyPillar"
     pillar.Shape = Enum.PartType.Cylinder
     pillar.Size = Vector3.new(height, radius * 2, radius * 2)
-    pillar.CFrame = CFrame.new(pos + Vector3.new(0, height / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
+    pillar.CFrame = CFrame.new(groundPos + Vector3.new(0, height / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
     pillar.Anchored = true
     pillar.CanCollide = false
     pillar.Material = Enum.Material.Neon
@@ -233,6 +261,9 @@ AbilityVFX.spawnVolumetricLaser = spawnVolumetricLaser
 local function spawnEarthFracture(pos: Vector3, radius: number?, rockCount: number?)
     if not isWithinLOD(pos) then return end
 
+    local actualGroundPos = getGroundPosition(pos)
+    local groundY = actualGroundPos.Y
+
     local rad = radius or 12
     local count = math.clamp(rockCount or 8, 4, 10)
     pruneOldRocks(count)
@@ -246,9 +277,8 @@ local function spawnEarthFracture(pos: Vector3, radius: number?, rockCount: numb
     for i = 1, count do
         local angle = (i / count) * math.pi * 2 + (math.random(-15, 15) * math.pi / 180)
         local dist = rad * (0.6 + math.random() * 0.4)
-        local spawnX = pos.X + math.cos(angle) * dist
-        local spawnZ = pos.Z + math.sin(angle) * dist
-        local groundY = pos.Y
+        local spawnX = actualGroundPos.X + math.cos(angle) * dist
+        local spawnZ = actualGroundPos.Z + math.sin(angle) * dist
 
         local sx = 1.2 + math.random() * 1.8
         local sy = 1.8 + math.random() * 2.4
@@ -277,7 +307,7 @@ local function spawnEarthFracture(pos: Vector3, radius: number?, rockCount: numb
         })
         tUp:Play()
 
-        -- 2. Зависание и плавное погружение обратно под землю
+        -- 2. Зависание и плавное погружение обратно под землю с очисткой из очереди
         task.delay(0.14 + 0.22, function()
             if rock and rock.Parent then
                 local sinkCF = CFrame.new(spawnX, groundY - sy * 1.2, spawnZ) * CFrame.Angles(math.rad(tiltAngleX), angle, math.rad(tiltAngleZ))
@@ -286,6 +316,15 @@ local function spawnEarthFracture(pos: Vector3, radius: number?, rockCount: numb
                     Transparency = 1,
                 })
                 tDown:Play()
+                tDown.Completed:Connect(function()
+                    local idx = table.find(activeRocks, rock)
+                    if idx then
+                        table.remove(activeRocks, idx)
+                    end
+                    if rock and rock.Parent then
+                        rock:Destroy()
+                    end
+                end)
             end
         end)
 
@@ -298,6 +337,7 @@ AbilityVFX.spawnEarthFracture = spawnEarthFracture
 local function spawnGroundCracks(pos: Vector3, radius: number?, color: Color3?, duration: number?)
     if not isWithinLOD(pos) then return end
 
+    local actualPos = getGroundPosition(pos)
     local rad = radius or 12
     local dur = duration or 3.0
     local crackColor = color or Color3.fromRGB(35, 35, 40)
@@ -306,7 +346,7 @@ local function spawnGroundCracks(pos: Vector3, radius: number?, color: Color3?, 
     crackPlate.Name = "GroundCracksPlate"
     crackPlate.Shape = Enum.PartType.Cylinder
     crackPlate.Size = Vector3.new(0.04, rad * 2, rad * 2)
-    crackPlate.CFrame = CFrame.new(pos - Vector3.new(0, 0.45, 0)) * CFrame.Angles(0, 0, math.rad(90))
+    crackPlate.CFrame = CFrame.new(actualPos + Vector3.new(0, 0.05, 0)) * CFrame.Angles(0, 0, math.rad(90))
     crackPlate.Anchored = true
     crackPlate.CanCollide = false
     crackPlate.Material = Enum.Material.Basalt

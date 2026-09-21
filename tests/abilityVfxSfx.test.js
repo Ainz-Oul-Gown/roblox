@@ -80,6 +80,11 @@ test('AbilityVFX: implements Step 2 physical world fracture generators, LOD cull
     assert.ok(content.includes('LOD_DISTANCE = 120'), 'Must set LOD distance to 120 studs');
     assert.ok(content.includes('pruneOldRocks'), 'Must implement FIFO queue pruning for active rocks');
     assert.ok(content.includes('Slate'), 'Fracture rocks must use Slate material');
+
+    // Review Step 2 minor fixes: raycast ground detection & nil links pruning
+    assert.ok(content.includes('AbilityVFX.getGroundPosition = getGroundPosition'), 'Must export getGroundPosition');
+    assert.ok(content.includes('Workspace:Raycast'), 'getGroundPosition must cast a ray towards ground');
+    assert.ok(content.includes('if not r or not r.Parent then'), 'pruneOldRocks must clean nil references');
 });
 
 test('Replication: Server fires AbilityVFXEvent to all clients and Client connects to it', () => {
