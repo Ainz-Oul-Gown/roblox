@@ -62,7 +62,7 @@
 - **Тестирование**: Node.js Test Runner (`npm test`, 119 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
-- **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` (JuiceEffects: 8.7/10), `REVIEW_REPORT_STEP2.md` (AbilityVFX Физика мира: 9.4/10), `REVIEW_REPORT_STEP3.md` (Оверхол 48 способностей: 9.1/10) и Шаг 4 (Оптимизация под мобильные устройства и 60 FPS: динамическое масштабирование партиклов, отключение теней PointLight на мобильных GPU, адаптивный лимит камней 14/24 и аудит очистки Debris).
+- **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` (JuiceEffects: 8.7/10), `REVIEW_REPORT_STEP2.md` (AbilityVFX Физика мира: 9.4/10), `REVIEW_REPORT_STEP3.md` (Оверхол 48 способностей: 9.1/10) и `REVIEW_REPORT_STEP4.md` (Оптимизация под мобильные 60 FPS: 9.8/10).
 
 - **Полный аудит надежности и безопасности (119/119 тестов пройдено)**:
   - `Mobile Performance & Memory (Step 4)`: Детектирование мобильных устройств (`UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled`), отключение динамических теней `PointLight.Shadows` на мобильных устройствах для устранения просадок FPS, ограничение радиуса света до 24 studs, адаптивный лимит камней `MAX_ACTIVE_ROCKS` (14 на смартфонах / 24 на ПК), масштабирование залпов частиц `getQualityScale()`, гарантированная очистка `screenFlash` через `Debris`.
