@@ -1,135 +1,227 @@
 ---
 name: roblox-map-templates
 description: >-
-  Готовые архитектурные и процедурные 3D-шаблоны карт для Roblox (Blockouts):
-  Circular Tycoon Hub (круговой остров со слотами баз и дорогами),
-  Simulator Linear Zones (линейные зоны с воротами требований),
-  Arena PvP Island (многоуровневая арена с рампами, укрытиями и джамп-падами),
-  Obby Sectioned Course (модульная полоса препятствий из 5 этапов).
+  Большая библиотека готовых архитектурных и процедурных 3D-шаблонов карт и построек для Roblox:
+  базы разной этажности (1-этажный компакт, 2-этажный стандарт, 3-этажный пентхаус, подземный бункер),
+  разнообразные арены (Римский Колизей, Киберпанк-город, Летающие острова, Гора Царя Горы),
+  модульные конструкторы дорог, перекрестков, мостов, монументальных ворот и природных скал.
 ---
 
-# Roblox Ready-Made 3D Map Templates
+# Большая библиотека 3D-шаблонов карт и построек Roblox
 
-Так как генеративные нейросети часто ошибаются в пространственной геометрии (создают щели, перекосы и летающие в воздухе детали), данный навык содержит **строгие математические шаблоны карт (Blockouts)** с точными координатами, симметрией и автоматической привязкой к сетке.
+Нейросети часто ошибаются в пространственной геометрии Roblox (создают щели, перекошенные ступени, кривые рампы и летающие детали). 
+Данный навык содержит **строгие, математически выверенные шаблоны геометрии (Blockouts)** с точной сеткой (Grid Alignment), привязкой осей и готовыми генераторами на Luau.
 
 ---
 
-## 1. Шаблон 1: `CircularTycoonHub` (Круговой хаб на 4–8 баз)
+# РАЗДЕЛ 1: ГОТОВЫЕ БАЗЫ РАЗНОЙ ЭТАЖНОСТИ И РАЗМЕРА
 
-### Геометрия:
-* Центральный диск острова: радиус $R = 250$, толщина 4, материал `SmoothPlastic` или `Grass`.
-* Центральная площадь: $R = 60$, золотой постамент в центре $(0, 3.6, 0)$.
-* Радиальные дороги: 8 дорог шириной 14 стадов от центра к каждой базе.
-* Слоты баз: равномерно по формуле $X_i = R_{base} \cdot \cos(i \cdot \frac{2\pi}{N})$, $Z_i = R_{base} \cdot \sin(i \cdot \frac{2\pi}{N})$.
+## 1.1. `StarterBase_Compact` (1 этаж, 36 × 48 стадов)
+* **Назначение**: Быстрый старт, минималистичные тайкуны на 12–16 игроков, компактные плоты.
+* **Геометрия**:
+  * Площадь: $36 \times 48$ стадов, высота стен $Y = 12$.
+  * Конвейер: длина 22, ширина 4, расположен строго по центру ($X = 0, Z = -2..20$).
+  * Стены: 3 глухие стены (задняя $Z = -24$, левая $X = -18$, правая $X = +18$). Открытый фасад спереди.
+  * Ворота: световой барьер $10 \times 12$ по центру фасада ($Z = 24$).
+  * 4 слота под дропперы слева и справа от конвейера.
 
-### Генератор кода:
 ```lua
 --!strict
-local function BuildCircularHub(numPlots: number, arenaRadius: number): Folder
-    local mapFolder = Instance.new("Folder")
-    mapFolder.Name = "Map_CircularHub"
-    mapFolder.Parent = workspace
+local function BuildCompactBase(originCFrame: CFrame): Model
+    local base = Instance.new("Model")
+    base.Name = "StarterBase_Compact"
 
-    -- 1. Основание острова
-    local base = Instance.new("Part")
-    base.Name = "IslandBase"
-    base.Shape = Enum.PartType.Cylinder
-    base.Size = Vector3.new(6, arenaRadius * 2 + 100, arenaRadius * 2 + 100)
-    base.CFrame = CFrame.new(0, 0, 0) * CFrame.Angles(0, 0, math.rad(90))
-    base.Anchored = true
-    base.Material = Enum.Material.Concrete
-    base.Color = Color3.fromRGB(45, 45, 50)
-    base.Parent = mapFolder
+    local W, L, H = 36, 48, 12
 
-    -- 2. Центральная арена
-    local center = Instance.new("Part")
-    center.Name = "CenterPlaza"
-    center.Shape = Enum.PartType.Cylinder
-    center.Size = Vector3.new(0.5, 70, 70)
-    center.CFrame = CFrame.new(0, 3.2, 0) * CFrame.Angles(0, 0, math.rad(90))
-    center.Anchored = true
-    center.Material = Enum.Material.Neon
-    center.Color = Color3.fromRGB(80, 160, 255)
-    center.Parent = mapFolder
+    -- Пол
+    local floor = Instance.new("Part")
+    floor.Size = Vector3.new(W, 2, L)
+    floor.CFrame = originCFrame * CFrame.new(0, 1, 0)
+    floor.Anchored = true
+    floor.Material = Enum.Material.Concrete
+    floor.Color = Color3.fromRGB(40, 40, 45)
+    floor.Parent = base
 
-    -- 3. Слоты под базы игроков
-    for i = 1, numPlots do
-        local angle = (i - 1) * (2 * math.pi / numPlots)
-        local posX = math.cos(angle) * arenaRadius
-        local posZ = math.sin(angle) * arenaRadius
+    -- Конвейер
+    local conveyor = Instance.new("Part")
+    conveyor.Name = "MainConveyor"
+    conveyor.Size = Vector3.new(4, 1.2, 26)
+    conveyor.CFrame = originCFrame * CFrame.new(0, 2.6, 6)
+    conveyor.Anchored = true
+    conveyor.Material = Enum.Material.SmoothPlastic
+    conveyor.Color = Color3.fromRGB(20, 20, 25)
+    conveyor.AssemblyLinearVelocity = originCFrame.LookVector * 16
+    conveyor.Parent = base
 
-        local plotPad = Instance.new("Part")
-        plotPad.Name = `PlotPad_{i}`
-        plotPad.Size = Vector3.new(58, 2, 78)
-        plotPad.CFrame = CFrame.new(posX, 2, posZ) * CFrame.Angles(0, -angle + math.pi/2, 0)
-        plotPad.Anchored = true
-        plotPad.Material = Enum.Material.SmoothPlastic
-        plotPad.Color = Color3.fromRGB(30, 30, 35)
-        plotPad.Parent = mapFolder
+    -- Стены (П-образный контур)
+    local function addWall(size: Vector3, offset: Vector3)
+        local wall = Instance.new("Part")
+        wall.Size = size
+        wall.CFrame = originCFrame * CFrame.new(offset)
+        wall.Anchored = true
+        wall.Material = Enum.Material.SmoothPlastic
+        wall.Color = Color3.fromRGB(50, 50, 60)
+        wall.Parent = base
     end
 
-    return mapFolder
+    addWall(Vector3.new(W, H, 2), Vector3.new(0, H/2 + 2, -L/2 + 1)) -- Задняя
+    addWall(Vector3.new(2, H, L), Vector3.new(-W/2 + 1, H/2 + 2, 0)) -- Левая
+    addWall(Vector3.new(2, H, L), Vector3.new(W/2 - 1, H/2 + 2, 0))  -- Правая
+
+    base.Parent = workspace
+    return base
 end
 ```
 
 ---
 
-## 2. Шаблон 2: `SimulatorLinearZones` (Линейная прогрессия зон)
+## 1.2. `StandardTycoon_2Floors` (2 этажа, 56 × 76 стадов)
+* **Назначение**: Полноценные боевые тайкуны со средним и глубоким циклом прокачки.
+* **Геометрия**:
+  * 1-й этаж ($Y = 2..14$): Конвейер $L=34, W=5$, Сейф-коллектор, LaserGate с пультом переключения охраны/гостей, широкая лестница $W = 8$, подъем на высоту $Y = 14$ за 20 ступеней.
+  * 2-й этаж ($Y = 14..24$): Сплошное перекрытие $56 \times 76$ с вырезом под лестничный марш и наклонным желобом сброса руды `OreDropChute` прямо в нижний коллектор.
+  * Защитная крыша ($Y = 24..25$): Сплошное перекрытие $58 \times 78$, полностью блокирующее нападение с воздуха, с подвесными LED-панелями.
+  * Алтарь Rebirth: Правое крыло 2-го этажа ($X = 18, Z = 20$).
 
-### Геометрия:
-* Каждая зона представляет собой огороженную площадку $80 \times 100$ стадов.
-* Зоны соединяются монументальными воротами требований (**Requirement Gates**), на которых отображается цена перехода (`$10,000 Cash` ➡️ `$100,000 Cash`).
-* Вдоль зоны: боковые стены высотой 24 стада (игрок не может сбежать за карту), пьедесталы яиц слева, зона продажи по центру.
+---
+
+## 1.3. `PenthouseMegaBase_3Floors` (3 этажа, 72 × 96 стадов)
+* **Назначение**: Эндгейм-базы, VIP-постройки, мега-тайкуны.
+* **Геометрия**:
+  * 1-й этаж ($Y = 2..14$): Промышленная зона (первичные дропперы, переработчики, защитные лазеры).
+  * 2-й этаж ($Y = 14..26$): Арсенал и казарма (стойки оружия, боевые способности, квантовые апгрейдеры).
+  * 3-й этаж ($Y = 26..38$): Пентхаус Олигарха (панорамный фасад из тонированного стекла, алтарь Rebirth, джакузи/трон владельца).
+  * Крыша ($Y = 38..40$): Вертолетная площадка (**Helipad**) с разметкой "H", световыми маяками и противовоздушными турелями.
+  * Лифт/Шахта: Вертикальный прозрачный шахтный ствол $10 \times 10$ стадов по центру базы с телепортационными падами между 3 этажами.
+
+---
+
+## 1.4. `UndergroundBunker` (Подземный укрепленный бункер)
+* **Назначение**: Военные базы, зомби-выживание, постапокалипсис.
+* **Геометрия**:
+  * Наземная часть: Бетонный ДОТ $24 \times 24$ с бронированной гермодверью.
+  * Шахта лифта: Вертикальный спуск в породу на глубину 45 стадов ($Y = 0 \to Y = -45$).
+  * Подземный бункер: Массивный бункер $80 \times 80$, вырубленный в скале ($Y = -45..-25$).
+  * Опоры: 4 железобетонные колонны $6 \times 6$ со стальными фермами.
+  * Лавовые геотермальные генераторы по периметру с неоновым оранжевым светом.
+
+---
+
+# РАЗДЕЛ 2: РАЗНООБРАЗНЫЕ ШАБЛОНЫ АРЕН
+
+## 2.1. `ColosseumGladiatorArena` (Римский Колизей)
+* **Форма**: Круг диаметром 180 стадов.
+* **Периметр**: 16 массивных арочных пилонов высотой 30 стадов, образующих классический римский амфитеатр.
+* **Покрытие**: Песок (`Material = Sand`, `Color = DesertYellow`).
+* **Входы**: 4 симметричных ворот гладиаторов (Север, Юг, Восток, Запад) с решетками, поднимающимися при старте раунда.
+* **Центр**: 3 концентрические каменные ступени, ведущие к золотому пьедесталу Чемпиона.
 
 ```lua
-local function BuildSimulatorZone(zoneIndex: number, length: number): Model
-    local zoneModel = Instance.new("Model")
-    zoneModel.Name = `Zone_{zoneIndex}`
-    local startZ = (zoneIndex - 1) * length
+--!strict
+local function BuildColosseum(radius: number): Folder
+    local arena = Instance.new("Folder")
+    arena.Name = "ColosseumArena"
 
-    -- Пол зоны
-    local floor = Instance.new("Part")
-    floor.Size = Vector3.new(80, 2, length)
-    floor.Position = Vector3.new(0, 0, startZ + length / 2)
-    floor.Anchored = true
-    floor.Material = Enum.Material.Grass
-    floor.Parent = zoneModel
+    -- Песчаная арена
+    local sandFloor = Instance.new("Part")
+    sandFloor.Shape = Enum.PartType.Cylinder
+    sandFloor.Size = Vector3.new(4, radius * 2, radius * 2)
+    sandFloor.CFrame = CFrame.new(0, 0, 0) * CFrame.Angles(0, 0, math.rad(90))
+    sandFloor.Anchored = true
+    sandFloor.Material = Enum.Material.Sand
+    sandFloor.Color = Color3.fromRGB(215, 185, 130)
+    sandFloor.Parent = arena
 
-    -- Ворота перехода
-    local gate = Instance.new("Part")
-    gate.Name = "ProgressionGate"
-    gate.Size = Vector3.new(80, 26, 4)
-    gate.Position = Vector3.new(0, 13, startZ + length)
-    gate.Anchored = true
-    gate.Transparency = 0.5
-    gate.CanCollide = true
-    gate.Material = Enum.Material.ForceField
-    gate.Color = Color3.fromRGB(255, 60, 60)
-    gate.Parent = zoneModel
+    -- 16 арочных колонн по кругу
+    local numColumns = 16
+    for i = 1, numColumns do
+        local angle = (i - 1) * (2 * math.pi / numColumns)
+        local posX = math.cos(angle) * (radius - 4)
+        local posZ = math.sin(angle) * (radius - 4)
 
-    zoneModel.Parent = workspace
-    return zoneModel
+        local col = Instance.new("Part")
+        col.Size = Vector3.new(8, 32, 8)
+        col.CFrame = CFrame.new(posX, 16, posZ) * CFrame.Angles(0, -angle, 0)
+        col.Anchored = true
+        col.Material = Enum.Material.Limestone
+        col.Color = Color3.fromRGB(220, 215, 200)
+        col.Parent = arena
+    end
+
+    arena.Parent = workspace
+    return arena
 end
 ```
 
 ---
 
-## 3. Шаблон 3: `ArenaPvPIsland` (Многоуровневая тактическая арена)
-
-### Геометрия:
-* **Нижний ярус**: квадрат $140 \times 140$ стадов с 4 угловыми спавнами игроков.
-* **4 укрытия-пилона**: колонны $10 \times 16 \times 10$ для тактической стрельбы и укрытия от способностей.
-* **Центральный возвышенный пьедестал**: высота $Y = 12$, размеры $40 \times 40$ стадов.
-* **4 наклонные рампы**: ширина 12 стадов, подъем с $Y = 1$ на $Y = 12$ под комфортным углом $22^\circ$.
-* **2 Джамп-пада (Launch Pads)**: зеленые платформы с неоном, подбрасывающие наступившего игрока импульсом `root:ApplyImpulse(Vector3.new(0, 1500, 0))`.
+## 2.2. `CyberpunkUrbanArena` (Городской переулок с перепадами высот)
+* **Концепция**: Вертикальный тактический геймплей со стрельбой из укрытий.
+* **Структура**:
+  * 6 зданий-небоскребов ($H = 25..50$ стадов) из темного бетона и тонированного стекла.
+  * Неоновые рекламные вывески (Magenta, Cyan, Lime) с PointLight на фасадах.
+  * Узкие переулки шириной 16 стадов с контейнерами для укрытия.
+  * **Skybridges**: 2 навесных застекленных мостика между крышами на высоте $Y = 28$.
+  * Вентиляционные трубы и джамп-пады для быстрого взлета на крыши.
 
 ---
 
-## 4. Шаблон 4: `ObbySectionedCourse` (Модульный паркур из 5 секций)
+## 2.3. `FloatingIslandsCluster` (Летающие острова)
+* **Концепция**: Бои над бездной, риск сбросить врага в пустоту (Ring-out PvP).
+* **Структура**:
+  * 1 Большой центральный остров: радиус $R = 50$, высота $Y = 60$. Конусообразное скалистое дно, плоская травянистая верхушка.
+  * 4 Малых острова спавна ($R = 22$): парят вокруг центра на расстоянии 85 стадов.
+  * **Соединения**:
+    * 2 деревянных подвесных канатных моста.
+    * 2 светящихся лазерных энерго-моста (`Transparency = 0.4`, неоновый синий).
+  * 4 угловых джамп-пада с импульсом `ApplyImpulse(Vector3.new(..., 1800, ...))` для перелета между островами.
 
-### 5 готовых модулей:
-1. **Секция 1: Столбики (Pillars)** — 6 круглых платформ диаметром 6 стадов с расстоянием 14 стадов (комфортный одиночный прыжок).
-2. **Секция 2: Неоновые исчезающие ступени (Disappearing Tiles)** — ступени с циклом прозрачности: `Transparency = 0` (CanCollide = true) ➡️ мигание 1 сек ➡️ `Transparency = 1` (CanCollide = false на 2.5 сек).
-3. **Секция 3: Лазерный коридор (Laser Beams)** — пол с периодическими красными лазерами толщиной 0.8 стада на высоте прыжка.
-4. **Секция 4: Узкая балка (Tightrope)** — балка шириной ровно 1.4 стада над бездной длиной 60 стадов.
-5. **Секция 5: Финишный подиум (Victory Podium)** — золотая площадка $24 \times 24$ со спавном салюта конфетти и авто-выдачей значка победы.
+---
+
+## 2.4. `KingOfTheHill_Mountain` (Спиральная гора Царя Горы)
+* **Концепция**: Все игроки стремятся на вершину конуса, вершина дает постоянный приток очков/валюты.
+* **Структура**:
+  * 4-ярусная скала: нижний диаметр $D = 160$, вершина $D = 36$, высота $H = 45$.
+  * Спиральная рампа: плавный подъем шириной 10 стадов, огибающий гору от подножия к пику.
+  * Каменные зубцы-укрытия вдоль края рампы, защищающие поднимающихся от снайперов сверху.
+  * На вершине: светящийся диск King Pad ($R = 14$) с вертикальным маяком в небо.
+
+---
+
+# РАЗДЕЛ 3: МОДУЛЬНЫЙ КОНСТРУКТОР ЭЛЕМЕНТОВ КАРТЫ (MODULAR BLOCKS)
+
+Любую карту можно быстро собрать из этих типовых блоков:
+
+## 3.1. Модули дорожной сети (Road Kit)
+* **Ширина полотна**: ровно 16 стадов (2 полосы по 8 стадов).
+* **Материал**: `Asphalt` (темно-серый) + разделительная полоса шириной 0.8 стада `Neon` (желтый).
+* **Бордюры**: по краям дороги каменные бортики $1.5 \times 1.2 \times L$.
+* **Типовые модули**:
+  1. `Straight_Road_60` (прямой участок 60 стадов).
+  2. `Turn_90_Deg` (поворот на $90^\circ$ с радиусом скругления 24).
+  3. `Intersection_T` (T-образный перекресток со светофорами).
+  4. `Roundabout_Hub` (круговая развязка диаметром 64 стада с монументом в центре).
+
+---
+
+## 3.2. Модули мостов (Bridge Kit)
+1. **Подвесной канатный мост (Suspension Rope Bridge)**:
+   * Деревянные поперечные доски $12 \times 0.6 \times 3$ с шагом 3.5 стада.
+   * Провисание полотна по параболе: $Y(z) = Y_0 + a \cdot z^2$.
+   * Веревочные перила из цилиндров диаметром 0.4 стада.
+2. **Sci-Fi Энерго-мост (Hard-Light Bridge)**:
+   * Сплошная плита из прозрачного голубого силового поля `ForceField`.
+   * По бокам 2 генератора поля с вращающимися неоновыми кольцами.
+
+---
+
+## 3.3. Монументальные портальные арки (Gateway Kit)
+* **Torii Gate (Японские врата)**: 2 массивные красные деревянные колонны $4 \times 28 \times 4$, изогнутая верхняя балка с золотыми наконечниками. Идеально для аниме-симуляторов и ниндзя-режимов.
+* **Hexagon Sci-Fi Portal**: Восьмиугольная металлическая рама с крутящимся вортексом портала (`ParticleEmitter` / `SurfaceGui` со спиралью).
+* **Medieval Castle Gate**: Каменные башни с бойницами и поднимающейся деревянной решеткой (Portcullis).
+
+---
+
+## 3.4. Природные скальные гряды (Natural Rock Blockouts)
+* Создаются из 3 перекрещивающихся `WedgePart` и `CornerWedgePart` под углами $15^\circ..35^\circ$.
+* Создают естественные границы карты без невидимых стен (`InvisibleWalls`), скрывая горизонт и направляя поток игроков в боевые коридоры.
