@@ -62,7 +62,7 @@
 - **Тестирование**: Node.js Test Runner (`npm test`, 117 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
-- **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` (JuiceEffects: 8.7/10), `REVIEW_REPORT_STEP2.md` (AbilityVFX Физика мира и бюджетирование: 9.4/10) и Шаг 3 (Оверхол всех 48 способностей с 4-фазным AAA VFX и уникальным фракционным стилем).
+- **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` (JuiceEffects: 8.7/10), `REVIEW_REPORT_STEP2.md` (AbilityVFX Физика мира: 9.4/10) и `REVIEW_REPORT_STEP3.md` (Оверхол 48 способностей: 9.1/10).
 
 - **Полный аудит надежности и безопасности (117/117 тестов пройдено)**:
   - `MonetizationService`: Изоляция кэша `processedReceipts` по каждому игроку (`[UserId][receiptKey]`) и очистка на `PlayerRemoving`, устраняющая утечку памяти и кросс-пользовательские коллизии.
