@@ -84,3 +84,15 @@
 - **Клиентский доступ**: Кнопка `👑 +1M AURA [P]` в HUD и горячая клавиша `[P]` (с защитой от случайного ввода в чате).
 - **Чат-команды**: `/aura [amount]` и `/rich [amount]` (серверный парсинг чата с клампом от 1,000 до 100,000,000).
 - **Game Feel**: Звук кассы, золотая вспышка экрана, floating 3D text `+1,000,000 AURA 👑`, toast уведомление.
+
+## Локальные навыки разработки (.agents/skills)
+В проекте настроена библиотека специализированных AI-навыков Antigravity:
+1. `rojo-toolchain-master`: Конфигурация Rojo, sourcemap, сборка и live sync.
+2. `luau-clean-code`: Строгая типизация Luau, экспорт типов, правила Selene и StyLua.
+3. `roblox-data-persistence`: Архитектурные паттерны ProfileService (session locking, anti-dupe, auto-save).
+4. `roblox-architecture-knit`: Сервисно-контроллерная архитектура (Knit/Sleitnick), защита сети.
+5. `wally-package-manager`: Управление зависимостями Wally и интеграция типов.
+6. `roblox-modern-ui`: Декларативный UI на Fusion/React-Lua, реактивность, анимации (Springs).
+7. `roblox-ci-cd-opencloud`: Настройка GitHub Actions, сборка .rbxl и деплой через Open Cloud API.
+8. `roblox-game-mode-templates`: Готовые шаблоны режимов (Tycoon, Simulator, Minigames/Arena, Obby).
+9. `roblox-ability-combat-system`: Боевой цикл способностей (хитбоксы, воздействие, VFX, 3D/2D SFX, camera shake).
