@@ -87,4 +87,21 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         const tungTungMatch = content.match(/fId == "TungTung"[\s\S]*?slot == "ultimate"[\s\S]*?CharacterAnimator\.playHammerSwing[\s\S]*?CinematicCamera\.focusCutIn/);
         assert.ok(tungTungMatch, 'TungTung ultimate must trigger CharacterAnimator.playHammerSwing and CinematicCamera.focusCutIn');
     });
+
+    test('CharacterAnimator uses weak tables for cache to prevent memory leaks on death/respawn', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('setmetatable({}, { __mode = "k" })'), 'CharacterAnimator must use weak table mode "k" for instance caches');
+    });
+
+    test('CharacterAnimator supports R6 torso animations via rootJoint fallback', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('joints.waist or joints.rootJoint'), 'Must fallback to rootJoint when waist is nil for R6 torso animation');
+    });
+
+    test('CinematicCamera guards against FOV drift and hooks CharacterAdded for reset', () => {
+        const content = fs.readFileSync(cameraPath, 'utf8');
+        assert.ok(content.includes('if not isCinematicActive then'), 'Must guard originalFOV caching against FOV drift');
+        assert.ok(content.includes('localPlayer.CharacterAdded'), 'Must listen to CharacterAdded to reset camera on respawn');
+    });
 });
+

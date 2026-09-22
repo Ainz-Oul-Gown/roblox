@@ -30,9 +30,9 @@ export type JointMap = {
 
 local CharacterAnimator = {}
 
--- Кэш исходных C0 суставов для каждого персонажа
-local originalC0Cache: { [Motor6D]: CFrame } = {}
-local activeAnimTokens: { [Model]: number } = {}
+-- Кэш исходных C0 суставов для каждого персонажа (слабые ключи предотвращают утечки памяти при респавне)
+local originalC0Cache: { [Motor6D]: CFrame } = setmetatable({}, { __mode = "k" })
+local activeAnimTokens: { [Model]: number } = setmetatable({}, { __mode = "k" })
 
 -- Поиск и классификация суставов персонажа (R15 и R6)
 local function getJoints(character: Model): JointMap
@@ -186,11 +186,13 @@ function CharacterAnimator.playGigachadFlex(character: Model, duration: number?)
         }):Play()
     end
 
-    -- Торс прогибается назад
-    if joints.waist then
-        local orig = originalC0Cache[joints.waist] or joints.waist.C0
-        TweenService:Create(joints.waist, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(-15), 0, 0),
+    -- Торс прогибается назад (поддержка R15 Waist и R6 RootJoint)
+    local torsoJoint = joints.waist or joints.rootJoint
+    if torsoJoint then
+        local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
+        local archAngle = if joints.isR15 then math.rad(-15) else math.rad(15)
+        TweenService:Create(torsoJoint, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            C0 = orig * CFrame.Angles(archAngle, 0, 0),
         }):Play()
     end
 
@@ -260,10 +262,12 @@ function CharacterAnimator.playGroundPound(character: Model, duration: number?)
             C0 = orig * CFrame.Angles(math.rad(160), 0, math.rad(15)),
         }):Play()
     end
-    if joints.waist then
-        local orig = originalC0Cache[joints.waist] or joints.waist.C0
-        TweenService:Create(joints.waist, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(-20), 0, 0),
+    local torsoJoint = joints.waist or joints.rootJoint
+    if torsoJoint then
+        local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
+        local windupAngle = if joints.isR15 then math.rad(-20) else math.rad(20)
+        TweenService:Create(torsoJoint, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            C0 = orig * CFrame.Angles(windupAngle, 0, 0),
         }):Play()
     end
 
@@ -283,10 +287,12 @@ function CharacterAnimator.playGroundPound(character: Model, duration: number?)
                 C0 = orig * CFrame.Angles(math.rad(-30), 0, math.rad(15)),
             }):Play()
         end
-        if joints.waist then
-            local orig = originalC0Cache[joints.waist] or joints.waist.C0
-            TweenService:Create(joints.waist, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                C0 = orig * CFrame.Angles(math.rad(35), 0, 0),
+        local slamTorso = joints.waist or joints.rootJoint
+        if slamTorso then
+            local orig = originalC0Cache[slamTorso] or slamTorso.C0
+            local slamAngle = if joints.isR15 then math.rad(35) else math.rad(-35)
+            TweenService:Create(slamTorso, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                C0 = orig * CFrame.Angles(slamAngle, 0, 0),
             }):Play()
         end
     end)
@@ -313,9 +319,10 @@ function CharacterAnimator.playHammerSwing(character: Model, duration: number?)
             C0 = orig * CFrame.Angles(math.rad(120), math.rad(-60), math.rad(30)),
         }):Play()
     end
-    if joints.waist then
-        local orig = originalC0Cache[joints.waist] or joints.waist.C0
-        TweenService:Create(joints.waist, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    local torsoJoint = joints.waist or joints.rootJoint
+    if torsoJoint then
+        local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
+        TweenService:Create(torsoJoint, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             C0 = orig * CFrame.Angles(0, math.rad(-35), 0),
         }):Play()
     end
@@ -330,9 +337,10 @@ function CharacterAnimator.playHammerSwing(character: Model, duration: number?)
                 C0 = orig * CFrame.Angles(math.rad(-20), math.rad(70), math.rad(-20)),
             }):Play()
         end
-        if joints.waist then
-            local orig = originalC0Cache[joints.waist] or joints.waist.C0
-            TweenService:Create(joints.waist, TweenInfo.new(0.15, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+        local swingTorso = joints.waist or joints.rootJoint
+        if swingTorso then
+            local orig = originalC0Cache[swingTorso] or swingTorso.C0
+            TweenService:Create(swingTorso, TweenInfo.new(0.15, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
                 C0 = orig * CFrame.Angles(0, math.rad(45), 0),
             }):Play()
         end
@@ -407,17 +415,18 @@ function CharacterAnimator.playSpinSalute(character: Model, duration: number?)
         }):Play()
     end
 
-    -- Вихревое вращение торса (waist/root)
-    if joints.waist then
-        local orig = originalC0Cache[joints.waist] or joints.waist.C0
+    -- Вихревое вращение торса (waist для R15 / rootJoint для R6)
+    local spinJoint = joints.waist or joints.rootJoint
+    if spinJoint then
+        local orig = originalC0Cache[spinJoint] or spinJoint.C0
         task.spawn(function()
-            local tw1 = TweenService:Create(joints.waist, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {
+            local tw1 = TweenService:Create(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {
                 C0 = orig * CFrame.Angles(0, math.rad(180), 0),
             })
             tw1:Play()
             tw1.Completed:Wait()
-            if activeAnimTokens[character] == token and joints.waist then
-                local tw2 = TweenService:Create(joints.waist, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {
+            if activeAnimTokens[character] == token and spinJoint and spinJoint.Parent then
+                local tw2 = TweenService:Create(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {
                     C0 = orig * CFrame.Angles(0, math.rad(360), 0),
                 })
                 tw2:Play()

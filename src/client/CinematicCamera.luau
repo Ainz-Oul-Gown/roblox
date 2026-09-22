@@ -58,9 +58,11 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
     local head = targetCharacter:FindFirstChild("Head") :: BasePart?
     if not root then return end
 
+    if not isCinematicActive then
+        originalFOV = cam.FieldOfView
+    end
     CinematicCamera.resetCamera()
     isCinematicActive = true
-    originalFOV = cam.FieldOfView
 
     local dur = duration or 0.55
     local dist = zoomDistance or 5.5
@@ -111,9 +113,11 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
     local root = targetCharacter:FindFirstChild("HumanoidRootPart") :: BasePart?
     if not root then return end
 
+    if not isCinematicActive then
+        originalFOV = cam.FieldOfView
+    end
     CinematicCamera.resetCamera()
     isCinematicActive = true
-    originalFOV = cam.FieldOfView
 
     local dur = duration or 0.6
     local focusPoint = root.Position + Vector3.new(0, 4, 0)
@@ -137,5 +141,12 @@ function CinematicCamera.isActive(): boolean
 end
 
 CinematicCamera.safeReset = CinematicCamera.resetCamera
+
+-- Автоматический сброс камеры при респавне локального персонажа
+if localPlayer then
+    localPlayer.CharacterAdded:Connect(function()
+        CinematicCamera.resetCamera()
+    end)
+end
 
 return CinematicCamera
