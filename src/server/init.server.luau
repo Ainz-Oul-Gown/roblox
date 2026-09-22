@@ -9,7 +9,7 @@ local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService")
 
 -- Индикатор инициализации сервера для передачи на клиент
-local statusVal = ReplicatedStorage:FindFirstChild("ServerInitStatus") :: any :: StringValue?
+local statusVal = ReplicatedStorage:FindFirstChild("ServerInitStatus")
 if not statusVal then
     statusVal = Instance.new("StringValue")
     statusVal.Name = "ServerInitStatus"
@@ -191,14 +191,14 @@ TycoonService.getPvPStatsForSave = function(player: Player)
 end
 
 -- Сетевые события системы питомцев (Pet Gacha System)
-local openEggEvent = ReplicatedStorage:FindFirstChild("OpenEggEvent") :: any :: RemoteEvent?
+local openEggEvent = ReplicatedStorage:FindFirstChild("OpenEggEvent")
 if not openEggEvent then
     openEggEvent = Instance.new("RemoteEvent")
     openEggEvent.Name = "OpenEggEvent"
     openEggEvent.Parent = ReplicatedStorage
 end
 
-local equippedPetsEvent = ReplicatedStorage:FindFirstChild("EquippedPetsEvent") :: any :: RemoteEvent?
+local equippedPetsEvent = ReplicatedStorage:FindFirstChild("EquippedPetsEvent")
 if not equippedPetsEvent then
     equippedPetsEvent = Instance.new("RemoteEvent")
     equippedPetsEvent.Name = "EquippedPetsEvent"
@@ -235,14 +235,14 @@ openEggEvent.OnServerEvent:Connect(function(player: Player, eggId: any)
 end)
 
 -- Сетевые события системы удержания (Retention Engine)
-local claimPlaytimeEvent = ReplicatedStorage:FindFirstChild("ClaimPlaytimeRewardEvent") :: any :: RemoteEvent?
+local claimPlaytimeEvent = ReplicatedStorage:FindFirstChild("ClaimPlaytimeRewardEvent")
 if not claimPlaytimeEvent then
     claimPlaytimeEvent = Instance.new("RemoteEvent")
     claimPlaytimeEvent.Name = "ClaimPlaytimeRewardEvent"
     claimPlaytimeEvent.Parent = ReplicatedStorage
 end
 
-local claimDailyEvent = ReplicatedStorage:FindFirstChild("ClaimDailyRewardEvent") :: any :: RemoteEvent?
+local claimDailyEvent = ReplicatedStorage:FindFirstChild("ClaimDailyRewardEvent")
 if not claimDailyEvent then
     claimDailyEvent = Instance.new("RemoteEvent")
     claimDailyEvent.Name = "ClaimDailyRewardEvent"
@@ -275,7 +275,7 @@ claimDailyEvent.OnServerEvent:Connect(function(player: Player)
 end)
 
 -- Сетевое событие монетизации (PromptPurchase)
-local promptPurchaseEvent = ReplicatedStorage:FindFirstChild("PromptPurchaseEvent") :: any :: RemoteEvent?
+local promptPurchaseEvent = ReplicatedStorage:FindFirstChild("PromptPurchaseEvent")
 if not promptPurchaseEvent then
     promptPurchaseEvent = Instance.new("RemoteEvent")
     promptPurchaseEvent.Name = "PromptPurchaseEvent"
@@ -346,7 +346,7 @@ local function isAuthorizedAdmin(player: Player): boolean
     return false
 end
 
-local adminCashEvent = ReplicatedStorage:FindFirstChild("AdminGiveCashEvent") :: any :: RemoteEvent?
+local adminCashEvent = ReplicatedStorage:FindFirstChild("AdminGiveCashEvent")
 if not adminCashEvent then
     adminCashEvent = Instance.new("RemoteEvent")
     adminCashEvent.Name = "AdminGiveCashEvent"
@@ -453,7 +453,7 @@ local function onPlayerAdded(player: Player)
     end)
 
     local function setupChar(char: Model)
-        local root = char:WaitForChild("HumanoidRootPart", 5) :: any :: BasePart?
+        local root = char:WaitForChild("HumanoidRootPart", 5)
         if root then
             task.wait(0.1)
             root.CFrame = CFrame.new(0, 11, 0) -- Центр острова, над площадью

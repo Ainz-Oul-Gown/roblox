@@ -79,12 +79,13 @@
   - **Храм Rebirth (`Rebirth_Portal`)**: Расположен в просторном правом крыле 2-го этажа ($X=18, Z=20$) в виде величественного святилища с золотыми инкрустациями, четким контрастным билбордом и свободной зоной подхода ($Z=12$).
   - **Комплексная многоуровневая система освещения баз и интерьеров**:
     - Глобальный Ambient (`155, 155, 170`) и OutdoorAmbient (`170, 170, 185`) в `Lighting` сервисе — гарантируют, что закрытые помещения и этажи под крышей никогда не проваливаются в черную тень.
-    - Встроенные угловые световые пилоны 1-го этажа (`BaseLightPillar`, `Range = 44`, `Brightness = 2.6`) — дают комфортный свет сразу при создании базы до покупки люстр.
+    - Встроенные угловые световые пилоны 1-го этажа (`BaseLightPillar`, `Range = 22`, `Brightness = 0.55`, `Transparency = 0.55`) — приглушённый акцентный свет сразу при создании базы.
     - Встроенные потолочные LED панели (`CeilingLightPanel`) на нижней стороне перекрытия 2-го этажа, светящие вниз на 1-й этаж (`SurfaceLight`, `Brightness = 3.2`, `Range = 45`).
     - Встроенные светящиеся колонны 2-го этажа (`Floor2AmbientPillar`, `Brightness = 2.8`, `Range = 46`) — освещают 2-й этаж сразу при постройке фундамента.
-    - Мощные люстры 1-го этажа (`Lighting_Floor1`: 5 люстр с `PointLight` `3.6` и `SurfaceLight` `3.2`).
+    - Люстры 1-го этажа (`Lighting_Floor1`: 5 люстр с `PointLight Brightness = 0.65, Range = 24` и `SurfaceLight Brightness = 0.5, Range = 18`, trim `Transparency = 0.5`).
     - Пентхаус-освещение 2-го этажа (`Lighting_Floor2`: 6 пилонов + центральная гранд-люстра `Brightness = 4.2`, `Range = 65`).
-    - Потолочные световые балки под крышей (`TycoonRoof`, `Brightness = 3.2`, `SurfaceLight = 3.0`).
+    - Потолочные световые балки под крышей (`TycoonRoof`, `PL Brightness = 0.55, Range = 20`, `SL Brightness = 0.45, Range = 18`, `beam Transparency = 0.45`).
+    - Неоновые полосы стен (`BrainrotWalls`, `Transparency = 0.15`) — приглушены для предотвращения пересвечивания.
 - `AbilityService`: Инвентарные тулы способностей, серверный rate-limit (0.3с debounce на `OnServerEvent`), `os.clock()` для субсекундных кулдаунов, PvP-урон с `addCashRaw` (без множителя), `MaxHealth` cap 250, восстановление `WalkSpeed` из `getBaseWalkSpeed`, сохранение transparency при invisibility, обработка уже подключённых игроков, серверная репликация через `AbilityVFXEvent:FireAllClients`. Victim-side VFX: `fireVictimVFX` (VICTIM_IMPACT), `fireBlind` (BLIND) для клиентских эффектов на жертве. Атрибуты: `Invulnerable`, `ReflectDamage`, `DamageVulnerability`, `DoubleDamage`, `TripleDamage`, `SigmaCritActive`, `StunImmune`, `KnockbackImmune`, `AbilityDisabled`. Ongoing godmode VFX: серия ударов через `task.delay` для Skibidi/Sigma/TungTung. Mobility landing AoE: `mobility_land` события для FanumTax/TungTung/CaseOh/Grimace.
 - `AbilityVFX` (клиентский движок эффектов):
   - 48 уникальных наборов визуальных и звуковых эффектов (8 фракций x 6 слотов способностей), реализованных по 4-фазной модели (Anticipation -> Release -> World Fracture -> Dissipation).
@@ -98,6 +99,13 @@
   - Victim-side: `VICTIM_IMPACT` (impactFlash + traumaShake на жертве), `BLIND` (белый screenBloomFlash для ослепления), `TELEPORT` (PivotTo на клиенте).
   - Mobility landing: `mobility_land` VFX для FanumTax/TungTung/CaseOh/Grimace (кратер + ударная волна при приземлении).
   - Persistent VFX: нефтяная лужа для FanumTax tactical (`OilPuddleVFX`), слизистая лужа для Grimace mobility (`SlimePuddleVFX`).
+
+## Стандарты типизации (`--!strict` Luau 2026)
+- **Безопасные type casts**: Прямые касты `Instance → BasePart`, `Instance → Humanoid` и другие подтипы **запрещены** в `--!strict`. Вместо них используются:
+  - `FindFirstChildOfClass("Humanoid")` — нативно возвращает `Humanoid?`.
+  - `:: any :: BasePart?` — двойной каст через `any` для именных поисков (`FindFirstChild("HumanoidRootPart")`).
+  - `:: any :: IntValue?`, `:: any :: RemoteEvent?` и т.д. — аналогично для всех подтипов Instance.
+- **Callback-свойства**: Все внешне назначаемые callbacks (`onPvPKill`, `onItemPurchased`, `hasAnyBase`, `getExtraMultiplier`, `getPlayerPlotIndex`, `getPetDataForSave`, `getRetentionDataForSave`, `getProcessedReceipts`, `getPvPStatsForSave`) объявлены в TycoonService.luau как `nil :: ((args) -> ret)?` для предотвращения `Cannot add property` ошибок.
 - `JuiceEffects`: Каталог 3D/2D звуков (`laser`, `dash`, `explosion`, `electric`, `magic`, `teleport`, `meteor`, `hammer`, `splash`, `whoosh`, `chime`, `horn`, `parry`, `snatch`, `anvil`), парящие мемные надписи, вспышки экрана, процедурный праздничный салют конфетти (`spawnConfetti`).
 - `LeaderboardService`: Автоматический учет и визуализация топа богатства и фрагов. Статистика сохраняется до рестарта сервера (не стирается при выходе игрока). Поддерживает `restorePvPStats` для восстановления из DataStore.
 - `AirDropService`: Фоновый таймер и спавн ящиков с парашютами и захватом.
