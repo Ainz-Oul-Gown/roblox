@@ -70,17 +70,45 @@ local function isCharacterAlive(character: Model): boolean
 end
 CharacterAnimator.isCharacterAlive = isCharacterAlive
 
+-- Вспомогательный поиск Motor6D с поддержкой разных родителей и вариантов имен
+local function findMotor6D(parent: Instance?, ...: string): Motor6D?
+    if not parent then return nil end
+    for _, name in ipairs({ ... }) do
+        local child = parent:FindFirstChild(name)
+        if child and child:IsA("Motor6D") then
+            return child :: Motor6D
+        end
+    end
+    for _, child in ipairs(parent:GetChildren()) do
+        if child:IsA("Motor6D") then
+            for _, name in ipairs({ ... }) do
+                if child.Name == name or (child.Part1 and child.Part1.Name == name) then
+                    return child :: Motor6D
+                end
+            end
+        end
+    end
+    return nil
+end
+
 -- Поиск и классификация суставов персонажа (R15 и R6)
 local function getJoints(character: Model): JointMap
     local isR15 = character:FindFirstChild("UpperTorso") ~= nil
     local joints: JointMap = { isR15 = isR15 }
 
     if isR15 then
-        local rightUpperArm = character:FindFirstChild("RightUpperArm")
-        if rightUpperArm then joints.rightShoulder = rightUpperArm:FindFirstChild("RightShoulder") :: Motor6D? end
+        local rightUpperArm = character:FindFirstChild("RightUpperArm") or character:FindFirstChild("RightArm")
+        local leftUpperArm = character:FindFirstChild("LeftUpperArm") or character:FindFirstChild("LeftArm")
+        local upperTorso = character:FindFirstChild("UpperTorso")
+        local lowerTorso = character:FindFirstChild("LowerTorso")
 
-        local leftUpperArm = character:FindFirstChild("LeftUpperArm")
-        if leftUpperArm then joints.leftShoulder = leftUpperArm:FindFirstChild("LeftShoulder") :: Motor6D? end
+        joints.rightShoulder = (rightUpperArm and rightUpperArm:FindFirstChild("RightShoulder") :: Motor6D?)
+            or findMotor6D(rightUpperArm, "RightShoulder", "Right Shoulder")
+            or findMotor6D(upperTorso, "RightShoulder", "Right Shoulder")
+
+        joints.leftShoulder = (leftUpperArm and leftUpperArm:FindFirstChild("LeftShoulder") :: Motor6D?)
+            or findMotor6D(leftUpperArm, "LeftShoulder", "Left Shoulder")
+            or findMotor6D(upperTorso, "LeftShoulder", "Left Shoulder")
 
         local rightLowerArm = character:FindFirstChild("RightLowerArm")
         if rightLowerArm then joints.rightElbow = rightLowerArm:FindFirstChild("RightElbow") :: Motor6D? end
@@ -90,25 +118,36 @@ local function getJoints(character: Model): JointMap
 
         local head = character:FindFirstChild("Head")
         if head then joints.neck = head:FindFirstChild("Neck") :: Motor6D? end
+        if not joints.neck and upperTorso then
+            joints.neck = upperTorso:FindFirstChild("Neck") :: Motor6D?
+        end
 
-        local upperTorso = character:FindFirstChild("UpperTorso")
         if upperTorso then joints.waist = upperTorso:FindFirstChild("Waist") :: Motor6D? end
+        if not joints.waist and lowerTorso then
+            joints.waist = lowerTorso:FindFirstChild("Waist") :: Motor6D?
+        end
 
         local hrp = character:FindFirstChild("HumanoidRootPart")
         if hrp then
             joints.rootJoint = (hrp:FindFirstChild("Root") or hrp:FindFirstChild("RootJoint")) :: Motor6D?
         end
-        if not joints.rootJoint then
-            local lowerTorso = character:FindFirstChild("LowerTorso")
-            if lowerTorso then joints.rootJoint = lowerTorso:FindFirstChild("Root") :: Motor6D? end
+        if not joints.rootJoint and lowerTorso then
+            joints.rootJoint = lowerTorso:FindFirstChild("Root") :: Motor6D?
         end
     else
         -- R6 аватар
         local torso = character:FindFirstChild("Torso")
+        local rightArm = character:FindFirstChild("Right Arm") or character:FindFirstChild("RightArm")
+        local leftArm = character:FindFirstChild("Left Arm") or character:FindFirstChild("LeftArm")
         if torso then
-            joints.rightShoulder = torso:FindFirstChild("Right Shoulder") :: Motor6D?
-            joints.leftShoulder = torso:FindFirstChild("Left Shoulder") :: Motor6D?
-            joints.neck = torso:FindFirstChild("Neck") :: Motor6D?
+            joints.rightShoulder = (torso:FindFirstChild("Right Shoulder") :: Motor6D?)
+                or findMotor6D(torso, "Right Shoulder", "RightShoulder")
+                or findMotor6D(rightArm, "Right Shoulder", "RightShoulder")
+            joints.leftShoulder = (torso:FindFirstChild("Left Shoulder") :: Motor6D?)
+                or findMotor6D(torso, "Left Shoulder", "LeftShoulder")
+                or findMotor6D(leftArm, "Left Shoulder", "LeftShoulder")
+            joints.neck = (torso:FindFirstChild("Neck") :: Motor6D?)
+                or findMotor6D(torso, "Neck")
         end
         local hrp = character:FindFirstChild("HumanoidRootPart")
         if hrp then
@@ -171,7 +210,17 @@ function CharacterAnimator.playShhhPose(character: Model, duration: number?)
     local token = (activeAnimTokens[character] or 0) + 1
     activeAnimTokens[character] = token
 
-    -- Правая рука поднимается к лицу/губам
+    -- Разворот торса на 22 градуса в 3/4 профиль: жест становится отчетливо виден со спины при виде от 3-го лица!
+    local torsoJoint = joints.waist or joints.rootJoint
+    if torsoJoint then
+        local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
+        local turnRot = if joints.isR15
+            then CFrame.Angles(math.rad(4), math.rad(22), math.rad(-4))
+            else CFrame.Angles(0, 0, math.rad(22))
+        tweenJoint(torsoJoint, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * turnRot)
+    end
+
+    -- Правая рука поднимается к лицу/губам с выносом локтя в сторону
     if joints.rightShoulder then
         local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
         local targetC0 = if joints.isR15
@@ -190,7 +239,7 @@ function CharacterAnimator.playShhhPose(character: Model, duration: number?)
     -- Голова наклоняется слегка вперед и вбок (Mewing looksmaxing)
     if joints.neck then
         local orig = originalC0Cache[joints.neck] or joints.neck.C0
-        tweenJoint(joints.neck, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-12), math.rad(8), math.rad(-8)))
+        tweenJoint(joints.neck, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-12), math.rad(15), math.rad(-8)))
     end
 
     -- Удержание позы и плавный возврат
@@ -491,6 +540,63 @@ function CharacterAnimator.playMoneySnatch(character: Model, duration: number?)
     task.delay(dur, function()
         if activeAnimTokens[character] == token and isCharacterAlive(character) then
             restoreJoints(character, joints, 0.25)
+        end
+    end)
+end
+
+-- 9. Динамический рывок / Таран плечом (Leaning Dash & Shoulder Charge)
+function CharacterAnimator.playDashPose(character: Model, duration: number?, isShoulderCharge: boolean?)
+    if not character or not character:IsA("Model") then return end
+    local joints = getJoints(character)
+    local dur = duration or 0.35
+    restoreJoints(character, joints, 0.06)
+    local token = (activeAnimTokens[character] or 0) + 1
+    activeAnimTokens[character] = token
+
+    -- Торс наклоняется вперед на 30 градусов
+    local torsoJoint = joints.waist or joints.rootJoint
+    if torsoJoint then
+        local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
+        local rot = if joints.isR15
+            then CFrame.Angles(math.rad(30), isShoulderCharge and math.rad(18) or 0, 0)
+            else CFrame.Angles(0, math.rad(30), 0)
+        tweenJoint(torsoJoint, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * rot)
+    end
+
+    -- Шея приподнимает голову вверх, чтобы смотреть прямо по курсу рывка
+    if joints.neck then
+        local orig = originalC0Cache[joints.neck] or joints.neck.C0
+        tweenJoint(joints.neck, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-18), 0, 0))
+    end
+
+    if isShoulderCharge then
+        -- Правое плечо и локоть выставляются вперед как таран
+        if joints.rightShoulder then
+            local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
+            local chargeRot = if joints.isR15
+                then orig * CFrame.Angles(math.rad(75), math.rad(-20), math.rad(35))
+                else orig * CFrame.Angles(math.rad(80), math.rad(-25), math.rad(30))
+            tweenJoint(joints.rightShoulder, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), chargeRot)
+        end
+        if joints.leftShoulder then
+            local orig = originalC0Cache[joints.leftShoulder] or joints.leftShoulder.C0
+            tweenJoint(joints.leftShoulder, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-30), 0, math.rad(-15)))
+        end
+    else
+        -- Аэродинамический спринт: обе руки отводятся назад
+        if joints.rightShoulder then
+            local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
+            tweenJoint(joints.rightShoulder, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-55), 0, math.rad(20)))
+        end
+        if joints.leftShoulder then
+            local orig = originalC0Cache[joints.leftShoulder] or joints.leftShoulder.C0
+            tweenJoint(joints.leftShoulder, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-55), 0, math.rad(-20)))
+        end
+    end
+
+    task.delay(dur, function()
+        if activeAnimTokens[character] == token and isCharacterAlive(character) then
+            restoreJoints(character, joints, 0.2)
         end
     end)
 end

@@ -65,6 +65,7 @@ if not CharacterAnimator then
         playRizzlerFlourish = function() end,
         playSpinSalute = function() end,
         playMoneySnatch = function() end,
+        playDashPose = function() end,
     }
 end
 
@@ -539,6 +540,53 @@ local function spawnFallingSkyProp(targetPos: Vector3, propBuilder: () -> BasePa
 end
 AbilityVFX.spawnFallingSkyProp = spawnFallingSkyProp
 
+-- Импульс физического рывка для локального игрока (продвижение вперед через LinearVelocity)
+local function performDashImpulse(casterChar: Model?, lookDir: Vector3, speed: number?, duration: number?, liftY: number?)
+    if not casterChar then return end
+    local lp = Players.LocalPlayer
+    if not lp or casterChar ~= lp.Character then return end
+
+    local root = casterChar:FindFirstChild("HumanoidRootPart") :: BasePart?
+    if not root then return end
+
+    local spd = speed or 95
+    local dur = duration or 0.28
+    local lift = liftY or 12
+
+    local dashDir = Vector3.new(lookDir.X, 0, lookDir.Z)
+    if dashDir.Magnitude > 0.01 then
+        dashDir = dashDir.Unit
+    else
+        dashDir = root.CFrame.LookVector
+    end
+
+    -- Мгновенный импульс AssemblyLinearVelocity для нулевой задержки отклика
+    root.AssemblyLinearVelocity = dashDir * spd + Vector3.new(0, lift, 0)
+
+    -- LinearVelocity с Attachment для преодоления трения пола и сохранения динамики на протяжении dur
+    local att = Instance.new("Attachment")
+    att.Name = "DashImpulseAttachment"
+    att.Parent = root
+
+    local lv = Instance.new("LinearVelocity")
+    lv.Name = "DashLinearVelocity"
+    lv.Attachment0 = att
+    lv.MaxForce = 1e6
+    lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+    lv.VectorVelocity = dashDir * spd + Vector3.new(0, lift * 0.4, 0)
+    lv.Parent = root
+
+    task.delay(dur, function()
+        if lv and lv.Parent then
+            lv:Destroy()
+        end
+        if att and att.Parent then
+            att:Destroy()
+        end
+    end)
+end
+AbilityVFX.performDashImpulse = performDashImpulse
+
 -- Главная функция проигрывания VFX/SFX способности
 function AbilityVFX.play(caster: Player, factionId: string, slot: string, originPos: Vector3, lookDir: Vector3)
     local isSelf = (caster == localPlayer)
@@ -607,8 +655,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.traumaShake(0.55) end
 
         elseif slot == "mobility" then
-            -- Скибиди Ракета
-            spawnVolumetricLaser(pos, pos + lookVector * 34, Color3.fromRGB(255, 140, 0), 1.4, 0.35)
+            -- Скибиди Ракета: реактивный рывок вперед
+            if casterChar then CharacterAnimator.playDashPose(casterChar, 0.35, false) end
+            performDashImpulse(casterChar, lookVector, 95, 0.28, 14)
             spawnTexturedShockwave(pos, 14, Color3.fromRGB(255, 120, 0), 0.35)
             JuiceEffects.play3DSound("dash", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🚀 РАКЕТНЫЙ СМЫВ!", Color3.fromRGB(255, 120, 0))
@@ -710,13 +759,14 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end
 
         elseif slot == "mobility" then
-            -- Гигачад Рывок (Таран плечом)
-            spawnVolumetricLaser(pos, pos + lookVector * 30, Color3.fromRGB(0, 220, 255), 1.2, 0.3)
+            -- Гигачад Рывок (Таран плечом вперед)
+            if casterChar then CharacterAnimator.playDashPose(casterChar, 0.4, true) end
+            performDashImpulse(casterChar, lookVector, 100, 0.3, 10)
             spawnTexturedShockwave(pos, 14, Color3.fromRGB(189, 195, 199), 0.35)
-            JuiceEffects.play3DSound("dash", pos, 1.0)
+            JuiceEffects.play3DSound("dash", pos, 1.1)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🗿 ТАРАН ГИГАЧАДА!", Color3.fromRGB(0, 220, 255))
             if isSelf then
-                JuiceEffects.fovPulse(15, 0.35)
+                JuiceEffects.fovPulse(16, 0.35)
                 JuiceEffects.cameraKick(lookVector, 0.5)
             end
 
@@ -790,8 +840,10 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🐺 LONE WOLF GRINDSET!", Color3.fromRGB(180, 180, 180))
 
         elseif slot == "mobility" then
-            -- Теневой Шаг (Телепорт за спину)
-            spawnVolumetricLaser(pos, pos + lookVector * 28, Color3.fromRGB(142, 68, 173), 1.0, 0.35)
+            -- Теневой Шаг (Быстрый теневой рывок)
+            if casterChar then CharacterAnimator.playDashPose(casterChar, 0.3, false) end
+            performDashImpulse(casterChar, lookVector, 95, 0.25, 8)
+            spawnTexturedShockwave(pos, 12, Color3.fromRGB(142, 68, 173), 0.3)
             JuiceEffects.play3DSound("teleport", pos, 0.9)
             JuiceEffects.play3DSound("whoosh", pos, 0.8)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🔪 ТЕНЕВОЙ ШАГ!", Color3.fromRGB(142, 68, 173))
@@ -905,7 +957,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "🍟 КОВРОВАЯ БОМБАРДИРОВКА!", Color3.fromRGB(230, 126, 34))
 
         elseif slot == "mobility" then
-            -- Cola Rocket Jump (Струя шипучей колы)
+            -- Cola Rocket Jump (Струя шипучей колы вверх и вперед)
+            if casterChar then CharacterAnimator.playDashPose(casterChar, 0.35, false) end
+            performDashImpulse(casterChar, lookVector, 80, 0.32, 45)
             createPillarOfLight(pos, 18, 5, Color3.fromRGB(100, 40, 20), 0.45)
             spawnTexturedShockwave(pos, 12, Color3.fromRGB(230, 126, 34), 0.35)
             JuiceEffects.play3DSound("dash", pos, 1.0)
@@ -988,8 +1042,10 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.screenBloomFlash(Color3.fromRGB(142, 68, 173), 0.35) end
 
         elseif slot == "mobility" then
-            -- Слизистый Прыжок
-            spawnVolumetricLaser(pos, pos + lookVector * 26, Color3.fromRGB(155, 89, 182), 1.1, 0.3)
+            -- Слизистый Прыжок вперед
+            if casterChar then CharacterAnimator.playDashPose(casterChar, 0.35, false) end
+            performDashImpulse(casterChar, lookVector, 85, 0.3, 30)
+            spawnTexturedShockwave(pos, 12, Color3.fromRGB(155, 89, 182), 0.3)
             spawnGroundCracks(pos, 10, Color3.fromRGB(74, 35, 90), 2.0)
             JuiceEffects.play3DSound("dash", pos, 0.9)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🟣 СЛИЗИСТЫЙ ПРЫЖОК!", Color3.fromRGB(155, 89, 182))
@@ -1118,8 +1174,10 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end, 55)
 
         elseif slot == "mobility" or slot == "mobility_start" then
-            -- Вафельный Каток
-            spawnVolumetricLaser(pos, pos + lookVector * 32, Color3.fromRGB(230, 126, 34), 1.4, 0.35)
+            -- Вафельный Каток: таран плечом вперед
+            if casterChar then CharacterAnimator.playDashPose(casterChar, 0.4, true) end
+            performDashImpulse(casterChar, lookVector, 90, 0.35, 12)
+            spawnTexturedShockwave(pos, 14, Color3.fromRGB(230, 126, 34), 0.35)
             spawnEarthFracture(pos, 10, 5)
             JuiceEffects.play3DSound("dash", pos, 1.0)
             JuiceEffects.play3DSound("slam", pos, 0.9)
@@ -1205,8 +1263,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "💘 СТРЕЛА КУПИДОНА!", Color3.fromRGB(255, 105, 180))
 
         elseif slot == "mobility" then
-            -- Лепестковый Блинк (Вихрь роз)
-            spawnVolumetricLaser(pos, pos + lookVector * 28, Color3.fromRGB(255, 105, 180), 1.0, 0.25)
+            -- Лепестковый Блинк (Элегантный рывок в вихре роз)
+            if casterChar then CharacterAnimator.playDashPose(casterChar, 0.35, false) end
+            performDashImpulse(casterChar, lookVector, 95, 0.28, 10)
             spawnTexturedShockwave(pos, 12, Color3.fromRGB(255, 20, 147), 0.3)
             JuiceEffects.play3DSound("dash", pos, 0.9)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🌹 ЛЕПЕСТКОВЫЙ БЛИНК!", Color3.fromRGB(255, 105, 180))
@@ -1301,8 +1360,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end
 
         elseif slot == "mobility" then
-            -- Молот-Джамп
-            spawnVolumetricLaser(pos, pos + lookVector * 26, Color3.fromRGB(46, 204, 113), 1.2, 0.3)
+            -- Молот-Джамп: прыжок с молотом вперед
+            if casterChar then CharacterAnimator.playDashPose(casterChar, 0.35, true) end
+            performDashImpulse(casterChar, lookVector, 85, 0.32, 35)
             spawnTexturedShockwave(pos, 14, Color3.fromRGB(46, 204, 113), 0.35)
             JuiceEffects.play3DSound("dash", pos, 0.9)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "⚡ МОЛОТ-ДЖАМП!", Color3.fromRGB(46, 204, 113))

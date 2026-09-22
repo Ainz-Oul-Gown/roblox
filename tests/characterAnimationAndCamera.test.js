@@ -26,6 +26,7 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
             'CharacterAnimator.playRizzlerFlourish',
             'CharacterAnimator.playSpinSalute',
             'CharacterAnimator.playMoneySnatch',
+            'CharacterAnimator.playDashPose',
             'CharacterAnimator.restoreJoints',
             'CharacterAnimator.stopAnimation',
         ];
@@ -197,6 +198,57 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(!content.includes('WaitForChild("CharacterAnimator", 2)'), 'AbilityVFX must not stall with WaitForChild timeout on animator');
         assert.ok(!content.includes('WaitForChild("CinematicCamera", 2)'), 'AbilityVFX must not stall with WaitForChild timeout on camera');
         assert.ok(content.includes('shouldAnimate = rawCasterChar ~= nil and (isSelf or isWithinLOD(pos))'), 'AbilityVFX must implement LOD culling for procedural character animations');
+    });
+
+    test('CharacterAnimator implements findMotor6D helper for robust joint detection', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('local function findMotor6D'), 'CharacterAnimator must define findMotor6D helper');
+        assert.ok(content.includes('RightUpperArm') && content.includes('RightArm'), 'findMotor6D must search multiple limb names for robust bundle support');
+    });
+
+    test('CharacterAnimator playShhhPose pivots torso into 3/4 angle for 3rd-person camera visibility', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('math.rad(22)'), 'playShhhPose must pivot torso 22 degrees into 3/4 profile for 3rd person visibility');
+        assert.ok(content.includes('joints.waist or joints.rootJoint'), 'playShhhPose must rotate torso joint');
+    });
+
+    test('CharacterAnimator playDashPose supports forward lean and shoulder charge variations', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('CharacterAnimator.playDashPose = playDashPose') || content.includes('function CharacterAnimator.playDashPose'), 'Must implement playDashPose');
+        assert.ok(content.includes('math.rad(30)'), 'playDashPose must lean torso forward 30 degrees');
+        assert.ok(content.includes('isShoulderCharge'), 'playDashPose must accept isShoulderCharge parameter');
+    });
+
+    test('AbilityVFX implements performDashImpulse with LinearVelocity constraint for client-side physics', () => {
+        const content = fs.readFileSync(vfxPath, 'utf8');
+        assert.ok(content.includes('AbilityVFX.performDashImpulse = performDashImpulse'), 'AbilityVFX must export performDashImpulse');
+        assert.ok(content.includes('Instance.new("LinearVelocity")'), 'performDashImpulse must create LinearVelocity constraint');
+        assert.ok(content.includes('AssemblyLinearVelocity'), 'performDashImpulse must apply initial AssemblyLinearVelocity burst');
+        assert.ok(content.includes('lv.MaxForce = 1e6'), 'performDashImpulse must configure MaxForce to overcome floor friction');
+    });
+
+    test('All 8 mobility ability slots invoke performDashImpulse and CharacterAnimator.playDashPose, and NO mobility slot uses spawnVolumetricLaser', () => {
+        const content = fs.readFileSync(vfxPath, 'utf8');
+        const factions = ['Skibidi', 'Mewing', 'Sigma', 'FanumTax', 'Grimace', 'CaseOh', 'Rizzler', 'TungTung'];
+
+        for (const faction of factions) {
+            const factionRegex = new RegExp(`fId == "${faction}"[\\s\\S]*?slot == "mobility"`);
+            assert.ok(factionRegex.test(content), `Faction ${faction} must have a mobility slot handler`);
+        }
+
+        // Mobility slots must trigger playDashPose and performDashImpulse
+        const dashPoseOccurrences = (content.match(/CharacterAnimator\.playDashPose/g) || []).length;
+        assert.ok(dashPoseOccurrences >= 8, `Must call CharacterAnimator.playDashPose for all 8 mobility slots (found ${dashPoseOccurrences})`);
+
+        const dashImpulseOccurrences = (content.match(/performDashImpulse\(casterChar/g) || []).length;
+        assert.ok(dashImpulseOccurrences >= 8, `Must call performDashImpulse for all 8 mobility slots (found ${dashImpulseOccurrences})`);
+
+        // Check that NO mobility slot contains spawnVolumetricLaser
+        const mobilityBlocks = content.split(/elseif slot == "mobility"/);
+        for (let i = 1; i < mobilityBlocks.length; i++) {
+            const block = mobilityBlocks[i].split(/elseif slot == /)[0];
+            assert.ok(!block.includes('spawnVolumetricLaser'), `Mobility slot ${i} must NOT contain static spawnVolumetricLaser`);
+        }
     });
 });
 
