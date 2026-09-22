@@ -319,6 +319,17 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(content.includes('CharacterAnimator.playGentlemanBow'), 'Must export playGentlemanBow');
         assert.ok(!content.includes('math.rad(130), math.rad(-20), math.rad(40)'), 'Must not raise arm straight diagonally');
     });
+
+    test('CinematicCamera, JuiceEffects, and AbilityService safely handle thread cancellation without throwing "cannot cancel thread"', () => {
+        const camContent = fs.readFileSync(cameraPath, 'utf8');
+        const juiceContent = fs.readFileSync(path.join(__dirname, '../src/client/JuiceEffects.luau'), 'utf8');
+        const abilityContent = fs.readFileSync(path.join(__dirname, '../src/server/AbilityService.luau'), 'utf8');
+
+        assert.ok(camContent.includes('threadToCancel ~= coroutine.running()'), 'CinematicCamera must guard against self-cancelling running thread');
+        assert.ok(camContent.includes('pcall(function()'), 'CinematicCamera must wrap task.cancel in pcall');
+        assert.ok(juiceContent.includes('activeShakeThread ~= coroutine.running()'), 'JuiceEffects must guard against self-cancelling running thread');
+        assert.ok(abilityContent.includes('t ~= coroutine.running()'), 'AbilityService must guard against self-cancelling running thread');
+    });
 });
 
 

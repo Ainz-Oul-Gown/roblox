@@ -57,8 +57,13 @@ function CinematicCamera.resetCamera()
     end
 
     if activeCameraThread then
-        task.cancel(activeCameraThread)
+        local threadToCancel = activeCameraThread
         activeCameraThread = nil
+        if threadToCancel ~= coroutine.running() then
+            pcall(function()
+                task.cancel(threadToCancel)
+            end)
+        end
     end
 
     if activeCameraTween then
@@ -164,6 +169,7 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
     end)
 
     activeCameraThread = task.delay(dur + 0.05, function()
+        activeCameraThread = nil
         CinematicCamera.resetCamera()
     end)
 end
@@ -259,6 +265,7 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
     end)
 
     activeCameraThread = task.delay(dur, function()
+        activeCameraThread = nil
         CinematicCamera.resetCamera()
     end)
 end

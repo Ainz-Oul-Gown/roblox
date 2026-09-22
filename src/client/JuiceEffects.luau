@@ -162,7 +162,11 @@ function JuiceEffects.traumaShake(trauma: number, maxRot: number?, maxPos: numbe
     JuiceEffects.addTrauma(trauma)
 
     if activeShakeThread then
-        task.cancel(activeShakeThread)
+        if activeShakeThread ~= coroutine.running() then
+            pcall(function()
+                task.cancel(activeShakeThread)
+            end)
+        end
         activeShakeThread = nil
     end
 
@@ -197,7 +201,11 @@ end
 -- Обратно совместимая динамическая тряска камеры
 function JuiceEffects.screenShake(intensity: number?, duration: number?)
     if activeShakeThread then
-        task.cancel(activeShakeThread)
+        if activeShakeThread ~= coroutine.running() then
+            pcall(function()
+                task.cancel(activeShakeThread)
+            end)
+        end
         activeShakeThread = nil
     end
     local str = intensity or 0.7

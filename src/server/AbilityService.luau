@@ -109,7 +109,11 @@ local function applyStun(targetHum: Humanoid, duration: number)
     if tp and tp:GetAttribute("StunImmune") then return end
     local uid = tp and tp.UserId or 0
     if uid > 0 and activeStunThreads[uid] then
-        task.cancel(activeStunThreads[uid]); activeStunThreads[uid] = nil
+        local t = activeStunThreads[uid]
+        activeStunThreads[uid] = nil
+        if t ~= coroutine.running() then
+            pcall(function() task.cancel(t) end)
+        end
     end
     local base = if tp then TycoonService.getBaseWalkSpeed(tp) else 16
     local prev = math.max(targetHum.WalkSpeed, base)
@@ -126,7 +130,13 @@ local activeJumpThreads: { [number]: thread } = {}
 local function applyJumpBlock(targetHum: Humanoid, duration: number)
     local tp = Players:GetPlayerFromCharacter(targetHum.Parent)
     local uid = tp and tp.UserId or 0
-    if uid > 0 and activeJumpThreads[uid] then task.cancel(activeJumpThreads[uid]) end
+    if uid > 0 and activeJumpThreads[uid] then
+        local t = activeJumpThreads[uid]
+        activeJumpThreads[uid] = nil
+        if t ~= coroutine.running() then
+            pcall(function() task.cancel(t) end)
+        end
+    end
     local pj = targetHum.JumpPower
     targetHum.JumpPower = 0
     activeJumpThreads[uid] = task.delay(duration, function()
