@@ -107,6 +107,7 @@ function CharacterAnimator.playShhhPose(character: Model, duration: number?)
     if not character or not character:IsA("Model") then return end
     local joints = getJoints(character)
     local dur = duration or 1.2
+    restoreJoints(character, joints, 0.08)
     local token = (activeAnimTokens[character] or 0) + 1
     activeAnimTokens[character] = token
 
@@ -154,6 +155,7 @@ function CharacterAnimator.playGigachadFlex(character: Model, duration: number?)
     if not character or not character:IsA("Model") then return end
     local joints = getJoints(character)
     local dur = duration or 1.4
+    restoreJoints(character, joints, 0.08)
     local token = (activeAnimTokens[character] or 0) + 1
     activeAnimTokens[character] = token
 
@@ -208,6 +210,7 @@ function CharacterAnimator.playSigmaTilt(character: Model, duration: number?)
     if not character or not character:IsA("Model") then return end
     local joints = getJoints(character)
     local dur = duration or 1.6
+    restoreJoints(character, joints, 0.08)
     local token = (activeAnimTokens[character] or 0) + 1
     activeAnimTokens[character] = token
 
@@ -246,6 +249,7 @@ function CharacterAnimator.playGroundPound(character: Model, duration: number?)
     if not character or not character:IsA("Model") then return end
     local joints = getJoints(character)
     local dur = duration or 0.9
+    restoreJoints(character, joints, 0.08)
     local token = (activeAnimTokens[character] or 0) + 1
     activeAnimTokens[character] = token
 
@@ -309,6 +313,7 @@ function CharacterAnimator.playHammerSwing(character: Model, duration: number?)
     if not character or not character:IsA("Model") then return end
     local joints = getJoints(character)
     local dur = duration or 1.0
+    restoreJoints(character, joints, 0.08)
     local token = (activeAnimTokens[character] or 0) + 1
     activeAnimTokens[character] = token
 
@@ -322,8 +327,9 @@ function CharacterAnimator.playHammerSwing(character: Model, duration: number?)
     local torsoJoint = joints.waist or joints.rootJoint
     if torsoJoint then
         local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
+        local windupRot = if joints.isR15 then CFrame.Angles(0, math.rad(-35), 0) else CFrame.Angles(0, 0, math.rad(-35))
         TweenService:Create(torsoJoint, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(0, math.rad(-35), 0),
+            C0 = orig * windupRot,
         }):Play()
     end
 
@@ -340,8 +346,9 @@ function CharacterAnimator.playHammerSwing(character: Model, duration: number?)
         local swingTorso = joints.waist or joints.rootJoint
         if swingTorso then
             local orig = originalC0Cache[swingTorso] or swingTorso.C0
+            local swingRot = if joints.isR15 then CFrame.Angles(0, math.rad(45), 0) else CFrame.Angles(0, 0, math.rad(45))
             TweenService:Create(swingTorso, TweenInfo.new(0.15, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-                C0 = orig * CFrame.Angles(0, math.rad(45), 0),
+                C0 = orig * swingRot,
             }):Play()
         end
     end)
@@ -358,6 +365,7 @@ function CharacterAnimator.playRizzlerFlourish(character: Model, duration: numbe
     if not character or not character:IsA("Model") then return end
     local joints = getJoints(character)
     local dur = duration or 1.2
+    restoreJoints(character, joints, 0.08)
     local token = (activeAnimTokens[character] or 0) + 1
     activeAnimTokens[character] = token
 
@@ -398,6 +406,7 @@ function CharacterAnimator.playSpinSalute(character: Model, duration: number?)
     if not character or not character:IsA("Model") then return end
     local joints = getJoints(character)
     local dur = duration or 1.0
+    restoreJoints(character, joints, 0.08)
     local token = (activeAnimTokens[character] or 0) + 1
     activeAnimTokens[character] = token
 
@@ -415,19 +424,22 @@ function CharacterAnimator.playSpinSalute(character: Model, duration: number?)
         }):Play()
     end
 
-    -- Вихревое вращение торса (waist для R15 / rootJoint для R6)
+    -- Вихревое вращение торса (waist для R15 / rootJoint для R6 вокруг вертикальной оси)
     local spinJoint = joints.waist or joints.rootJoint
     if spinJoint then
         local orig = originalC0Cache[spinJoint] or spinJoint.C0
+        local rot180 = if joints.isR15 then CFrame.Angles(0, math.rad(180), 0) else CFrame.Angles(0, 0, math.rad(180))
+        local rotN179 = if joints.isR15 then CFrame.Angles(0, math.rad(-179), 0) else CFrame.Angles(0, 0, math.rad(-179))
         task.spawn(function()
             local tw1 = TweenService:Create(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {
-                C0 = orig * CFrame.Angles(0, math.rad(180), 0),
+                C0 = orig * rot180,
             })
             tw1:Play()
             tw1.Completed:Wait()
             if activeAnimTokens[character] == token and spinJoint and spinJoint.Parent then
+                spinJoint.C0 = orig * rotN179
                 local tw2 = TweenService:Create(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {
-                    C0 = orig * CFrame.Angles(0, math.rad(360), 0),
+                    C0 = orig,
                 })
                 tw2:Play()
             end
@@ -446,6 +458,7 @@ function CharacterAnimator.playMoneySnatch(character: Model, duration: number?)
     if not character or not character:IsA("Model") then return end
     local joints = getJoints(character)
     local dur = duration or 0.9
+    restoreJoints(character, joints, 0.08)
     local token = (activeAnimTokens[character] or 0) + 1
     activeAnimTokens[character] = token
 

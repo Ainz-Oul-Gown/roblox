@@ -103,5 +103,36 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(content.includes('if not isCinematicActive then'), 'Must guard originalFOV caching against FOV drift');
         assert.ok(content.includes('localPlayer.CharacterAdded'), 'Must listen to CharacterAdded to reset camera on respawn');
     });
+
+    test('CinematicCamera cancels activeCameraTween in resetCamera to avoid fighting other FOV animations', () => {
+        const content = fs.readFileSync(cameraPath, 'utf8');
+        assert.ok(content.includes('activeCameraTween'), 'CinematicCamera must define activeCameraTween reference');
+        assert.ok(content.includes('activeCameraTween:Cancel()'), 'CinematicCamera.resetCamera must cancel activeCameraTween');
+    });
+
+    test('CinematicCamera performs raycast occlusion checks for walls and floors', () => {
+        const content = fs.readFileSync(cameraPath, 'utf8');
+        assert.ok(content.includes('Workspace:Raycast(targetFocusPoint'), 'focusCutIn must raycast to avoid clipping through base walls');
+        assert.ok(content.includes('Workspace:Raycast(root.Position'), 'groundSlamPerspective must raycast to avoid placing camera under floor');
+    });
+
+    test('CinematicCamera hooks Humanoid.Died for immediate camera restoration upon player death', () => {
+        const content = fs.readFileSync(cameraPath, 'utf8');
+        assert.ok(content.includes('hum.Died:Connect'), 'CinematicCamera must listen to Humanoid.Died to immediately reset camera');
+    });
+
+    test('CharacterAnimator correctly rotates R6 RootJoint around local Z axis for torso yaw', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('CFrame.Angles(0, 0, math.rad(-35))'), 'R6 torso windup in hammer swing must rotate around local Z axis');
+        assert.ok(content.includes('CFrame.Angles(0, 0, math.rad(45))'), 'R6 torso swing in hammer swing must rotate around local Z axis');
+        assert.ok(content.includes('CFrame.Angles(0, 0, math.rad(180))'), 'R6 spin salute must rotate around local Z axis');
+    });
+
+    test('CharacterAnimator resets joints at the start of every pose to prevent stuck poses upon ability switch', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        const poseStarts = content.match(/restoreJoints\(character, joints, 0\.08\)/g);
+        assert.ok(poseStarts && poseStarts.length >= 8, 'All 8 signature poses must call restoreJoints at start');
+    });
 });
+
 

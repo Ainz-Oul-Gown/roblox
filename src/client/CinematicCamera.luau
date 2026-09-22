@@ -19,6 +19,7 @@ local localPlayer = Players.LocalPlayer
 local CinematicCamera = {}
 
 local activeCameraThread: thread? = nil
+local activeCameraTween: Tween? = nil
 local originalFOV: number = 70
 local isCinematicActive = false
 
@@ -32,6 +33,11 @@ function CinematicCamera.resetCamera()
     if activeCameraThread then
         task.cancel(activeCameraThread)
         activeCameraThread = nil
+    end
+
+    if activeCameraTween then
+        activeCameraTween:Cancel()
+        activeCameraTween = nil
     end
 
     local cam = getCamera()
@@ -69,10 +75,20 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
     local roll = math.rad(dutchAngleDeg or -12)
     local targetFocusPoint = if head then head.Position else root.Position + Vector3.new(0, 1.5, 0)
 
-    -- Располагаем камеру прямо перед лицом/грудью персонажа
+    -- Рейкаст для предотвращения клиппинга камеры в стены базы
     local faceDir = root.CFrame.LookVector
-    local startCamPos = targetFocusPoint + faceDir * (dist * 1.5) + Vector3.new(0, 0.4, 0)
-    local targetCamPos = targetFocusPoint + faceDir * dist + Vector3.new(0, 0.2, 0)
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    rayParams.FilterDescendantsInstances = { targetCharacter }
+
+    local maxDist = dist
+    local hit = Workspace:Raycast(targetFocusPoint, faceDir * (dist * 1.5), rayParams)
+    if hit then
+        maxDist = math.clamp(hit.Distance - 0.6, 2.0, dist)
+    end
+
+    local startCamPos = targetFocusPoint + faceDir * (maxDist * 1.2) + Vector3.new(0, 0.4, 0)
+    local targetCamPos = targetFocusPoint + faceDir * maxDist + Vector3.new(0, 0.2, 0)
 
     cam.CameraType = Enum.CameraType.Scriptable
     cam.CFrame = CFrame.lookAt(startCamPos, targetFocusPoint) * CFrame.Angles(0, 0, roll)
@@ -83,6 +99,7 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
         CFrame = CFrame.lookAt(targetCamPos, targetFocusPoint) * CFrame.Angles(0, 0, roll),
         FieldOfView = math.clamp(originalFOV - 18, 42, 65),
     })
+    activeCameraTween = twPos
     twPos:Play()
 
     activeCameraThread = task.delay(dur + 0.05, function()
@@ -121,7 +138,22 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
 
     local dur = duration or 0.6
     local focusPoint = root.Position + Vector3.new(0, 4, 0)
-    local lowCamPos = root.Position - root.CFrame.LookVector * 12 - Vector3.new(0, 2.5, 0)
+
+    -- Рейкаст для проверки уровня пола под камерой (предотвращает проваливание под землю/перекрытие)
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    rayParams.FilterDescendantsInstances = { targetCharacter }
+
+    local groundOffset = -2.5
+    local floorHit = Workspace:Raycast(root.Position, Vector3.new(0, -6, 0), rayParams)
+    if floorHit then
+        local floorY = floorHit.Position.Y
+        if (root.Position.Y + groundOffset) < (floorY + 0.8) then
+            groundOffset = (floorY + 0.8) - root.Position.Y
+        end
+    end
+
+    local lowCamPos = root.Position - root.CFrame.LookVector * 12 + Vector3.new(0, groundOffset, 0)
 
     cam.CameraType = Enum.CameraType.Scriptable
     cam.CFrame = CFrame.lookAt(lowCamPos, focusPoint) * CFrame.Angles(0, 0, math.rad(6))
@@ -129,6 +161,7 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
     local tw = TweenService:Create(cam, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         FieldOfView = math.clamp(originalFOV - 12, 45, 65),
     })
+    activeCameraTween = tw
     tw:Play()
 
     activeCameraThread = task.delay(dur, function()
@@ -142,11 +175,22 @@ end
 
 CinematicCamera.safeReset = CinematicCamera.resetCamera
 
--- Автоматический сброс камеры при респавне локального персонажа
+-- Автоматический сброс камеры при гибели или респавне локального персонажа
+local function bindCharacter(char: Model)
+    CinematicCamera.resetCamera()
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.Died:Connect(function()
+            CinematicCamera.resetCamera()
+        end)
+    end
+end
+
 if localPlayer then
-    localPlayer.CharacterAdded:Connect(function()
-        CinematicCamera.resetCamera()
-    end)
+    if localPlayer.Character then
+        bindCharacter(localPlayer.Character)
+    end
+    localPlayer.CharacterAdded:Connect(bindCharacter)
 end
 
 return CinematicCamera
