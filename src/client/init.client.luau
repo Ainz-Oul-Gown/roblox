@@ -29,6 +29,15 @@ local equippedPetsEvent = ReplicatedStorage:WaitForChild("EquippedPetsEvent", 15
 local openEggEvent = ReplicatedStorage:WaitForChild("OpenEggEvent", 15)
 local claimPlaytimeEvent = ReplicatedStorage:WaitForChild("ClaimPlaytimeRewardEvent", 15)
 local claimDailyEvent = ReplicatedStorage:WaitForChild("ClaimDailyRewardEvent", 15)
+local promptPurchaseEvent = ReplicatedStorage:WaitForChild("PromptPurchaseEvent", 15) :: RemoteEvent?
+
+local MonetizationConfig: any = nil
+pcall(function()
+    local sharedFolder = ReplicatedStorage:WaitForChild("Shared", 10)
+    if sharedFolder and sharedFolder:FindFirstChild("MonetizationConfig") then
+        MonetizationConfig = require(sharedFolder:FindFirstChild("MonetizationConfig") :: ModuleScript)
+    end
+end)
 
 -- Безопасная загрузка JuiceEffects (поддержка как script, так и script.Parent)
 local juiceModule = script:FindFirstChild("JuiceEffects")
@@ -757,6 +766,266 @@ UserInputService.InputBegan:Connect(function(input, processed)
         claimRetentionGifts()
     end
 end)
+
+-- 3.6 Виджет Кибер-Магазина (Gamepasses & DevProducts)
+local shopBtn = Instance.new("TextButton")
+shopBtn.Name = "ShopButton"
+shopBtn.Size = UDim2.new(0, 160, 0, 48)
+shopBtn.Position = UDim2.new(0, 20, 0.5, 88)
+shopBtn.BackgroundColor3 = Color3.fromRGB(243, 156, 18)
+shopBtn.Text = "🛒 МАГАЗИН [B]\n[ГЕЙМПАСЫ & АУРА]"
+shopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+shopBtn.TextScaled = true
+shopBtn.Font = Enum.Font.FredokaOne
+shopBtn.Parent = screenGui
+
+local sbCornerShop = Instance.new("UICorner")
+sbCornerShop.CornerRadius = UDim.new(0, 10)
+sbCornerShop.Parent = shopBtn
+
+local sbStrokeShop = Instance.new("UIStroke")
+sbStrokeShop.Color = Color3.fromRGB(255, 230, 100)
+sbStrokeShop.Thickness = 2
+sbStrokeShop.Parent = shopBtn
+
+-- Модальное окно Магазина
+local shopModal = Instance.new("Frame")
+shopModal.Name = "ShopModal"
+shopModal.Size = UDim2.new(0, 680, 0, 490)
+shopModal.Position = UDim2.new(0.5, -340, 0.5, -245)
+shopModal.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
+shopModal.BorderSizePixel = 0
+shopModal.Visible = false
+shopModal.ZIndex = 50
+shopModal.Parent = screenGui
+
+local smCorner = Instance.new("UICorner")
+smCorner.CornerRadius = UDim.new(0, 14)
+smCorner.Parent = shopModal
+
+local smStroke = Instance.new("UIStroke")
+smStroke.Color = Color3.fromRGB(241, 196, 15)
+smStroke.Thickness = 2.5
+smStroke.Parent = shopModal
+
+local shopTitle = Instance.new("TextLabel")
+shopTitle.Size = UDim2.new(1, -80, 0, 40)
+shopTitle.Position = UDim2.new(0, 20, 0, 10)
+shopTitle.BackgroundTransparency = 1
+shopTitle.Text = "🛒 КИБЕР-МАГАЗИН BRAINROT (ROBUX)"
+shopTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
+shopTitle.TextScaled = true
+shopTitle.Font = Enum.Font.FredokaOne
+shopTitle.ZIndex = 51
+shopTitle.Parent = shopModal
+
+local shopCloseBtn = Instance.new("TextButton")
+shopCloseBtn.Size = UDim2.new(0, 36, 0, 36)
+shopCloseBtn.Position = UDim2.new(1, -48, 0, 12)
+shopCloseBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+shopCloseBtn.Text = "X"
+shopCloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+shopCloseBtn.TextScaled = true
+shopCloseBtn.Font = Enum.Font.FredokaOne
+shopCloseBtn.ZIndex = 52
+shopCloseBtn.Parent = shopModal
+
+local scCorner = Instance.new("UICorner")
+scCorner.CornerRadius = UDim.new(0, 8)
+scCorner.Parent = shopCloseBtn
+
+shopCloseBtn.MouseButton1Click:Connect(function()
+    shopModal.Visible = false
+end)
+
+local function toggleShop()
+    shopModal.Visible = not shopModal.Visible
+    if shopModal.Visible then
+        JuiceEffects.playSound("chime", 0.8)
+    end
+end
+
+shopBtn.MouseButton1Click:Connect(toggleShop)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.B then
+        toggleShop()
+    end
+end)
+
+-- Переключатели вкладок: Геймпасы / Аура & Rebirth
+local tabGamepasses = Instance.new("TextButton")
+tabGamepasses.Size = UDim2.new(0, 180, 0, 34)
+tabGamepasses.Position = UDim2.new(0, 20, 0, 56)
+tabGamepasses.BackgroundColor3 = Color3.fromRGB(241, 196, 15)
+tabGamepasses.Text = "🔥 ГЕЙМПАСЫ"
+tabGamepasses.TextColor3 = Color3.fromRGB(20, 20, 20)
+tabGamepasses.TextScaled = true
+tabGamepasses.Font = Enum.Font.FredokaOne
+tabGamepasses.ZIndex = 51
+tabGamepasses.Parent = shopModal
+
+local tgCorner = Instance.new("UICorner")
+tgCorner.CornerRadius = UDim.new(0, 8)
+tgCorner.Parent = tabGamepasses
+
+local tabProducts = Instance.new("TextButton")
+tabProducts.Size = UDim2.new(0, 210, 0, 34)
+tabProducts.Position = UDim2.new(0, 210, 0, 56)
+tabProducts.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+tabProducts.Text = "💰 АУРА & REBIRTH"
+tabProducts.TextColor3 = Color3.fromRGB(200, 200, 200)
+tabProducts.TextScaled = true
+tabProducts.Font = Enum.Font.FredokaOne
+tabProducts.ZIndex = 51
+tabProducts.Parent = shopModal
+
+local tpCorner = Instance.new("UICorner")
+tpCorner.CornerRadius = UDim.new(0, 8)
+tpCorner.Parent = tabProducts
+
+-- Контейнеры списков
+local gamepassScroll = Instance.new("ScrollingFrame")
+gamepassScroll.Size = UDim2.new(1, -40, 1, -110)
+gamepassScroll.Position = UDim2.new(0, 20, 0, 98)
+gamepassScroll.BackgroundTransparency = 1
+gamepassScroll.BorderSizePixel = 0
+gamepassScroll.ScrollBarThickness = 6
+gamepassScroll.CanvasSize = UDim2.new(0, 0, 0, 390)
+gamepassScroll.ZIndex = 51
+gamepassScroll.Parent = shopModal
+
+local gpLayout = Instance.new("UIListLayout")
+gpLayout.Padding = UDim.new(0, 10)
+gpLayout.SortOrder = Enum.SortOrder.LayoutOrder
+gpLayout.Parent = gamepassScroll
+
+local productScroll = Instance.new("ScrollingFrame")
+productScroll.Size = UDim2.new(1, -40, 1, -110)
+productScroll.Position = UDim2.new(0, 20, 0, 98)
+productScroll.BackgroundTransparency = 1
+productScroll.BorderSizePixel = 0
+productScroll.ScrollBarThickness = 6
+productScroll.CanvasSize = UDim2.new(0, 0, 0, 480)
+productScroll.Visible = false
+productScroll.ZIndex = 51
+productScroll.Parent = shopModal
+
+local prLayout = Instance.new("UIListLayout")
+prLayout.Padding = UDim.new(0, 10)
+prLayout.SortOrder = Enum.SortOrder.LayoutOrder
+prLayout.Parent = productScroll
+
+tabGamepasses.MouseButton1Click:Connect(function()
+    gamepassScroll.Visible = true
+    productScroll.Visible = false
+    tabGamepasses.BackgroundColor3 = Color3.fromRGB(241, 196, 15)
+    tabGamepasses.TextColor3 = Color3.fromRGB(20, 20, 20)
+    tabProducts.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+    tabProducts.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+tabProducts.MouseButton1Click:Connect(function()
+    gamepassScroll.Visible = false
+    productScroll.Visible = true
+    tabProducts.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+    tabProducts.TextColor3 = Color3.fromRGB(20, 20, 20)
+    tabGamepasses.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+    tabGamepasses.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+-- Создание карточки товара
+local function createShopCard(parentScroll: ScrollingFrame, titleText: string, descText: string, buttonColor: Color3, onBuy: () -> ())
+    local card = Instance.new("Frame")
+    card.Size = UDim2.new(1, -10, 0, 80)
+    card.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+    card.BorderSizePixel = 0
+    card.ZIndex = 52
+    card.Parent = parentScroll
+
+    local cardCorner = Instance.new("UICorner")
+    cardCorner.CornerRadius = UDim.new(0, 10)
+    cardCorner.Parent = card
+
+    local cardStroke = Instance.new("UIStroke")
+    cardStroke.Color = Color3.fromRGB(60, 60, 80)
+    cardStroke.Thickness = 1.2
+    cardStroke.Parent = card
+
+    local titleLbl = Instance.new("TextLabel")
+    titleLbl.Size = UDim2.new(1, -150, 0, 28)
+    titleLbl.Position = UDim2.new(0, 14, 0, 10)
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.Text = titleText
+    titleLbl.TextColor3 = Color3.fromRGB(255, 235, 120)
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.TextScaled = true
+    titleLbl.Font = Enum.Font.FredokaOne
+    titleLbl.ZIndex = 53
+    titleLbl.Parent = card
+
+    local descLbl = Instance.new("TextLabel")
+    descLbl.Size = UDim2.new(1, -150, 0, 30)
+    descLbl.Position = UDim2.new(0, 14, 0, 40)
+    descLbl.BackgroundTransparency = 1
+    descLbl.Text = descText
+    descLbl.TextColor3 = Color3.fromRGB(180, 185, 200)
+    descLbl.TextXAlignment = Enum.TextXAlignment.Left
+    descLbl.TextScaled = true
+    descLbl.Font = Enum.Font.FredokaOne
+    descLbl.ZIndex = 53
+    descLbl.Parent = card
+
+    local buyBtn = Instance.new("TextButton")
+    buyBtn.Size = UDim2.new(0, 115, 0, 48)
+    buyBtn.Position = UDim2.new(1, -125, 0.5, -24)
+    buyBtn.BackgroundColor3 = buttonColor
+    buyBtn.Text = "КУПИТЬ\n(R$)"
+    buyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    buyBtn.TextScaled = true
+    buyBtn.Font = Enum.Font.FredokaOne
+    buyBtn.ZIndex = 53
+    buyBtn.Parent = card
+
+    local bCorner = Instance.new("UICorner")
+    bCorner.CornerRadius = UDim.new(0, 8)
+    bCorner.Parent = buyBtn
+
+    buyBtn.MouseButton1Click:Connect(onBuy)
+end
+
+-- Наполнение карточками геймпасов
+if MonetizationConfig and MonetizationConfig.GAMEPASSES then
+    for _, pass in pairs(MonetizationConfig.GAMEPASSES) do
+        createShopCard(gamepassScroll, pass.name, pass.description, Color3.fromRGB(230, 126, 34), function()
+            if promptPurchaseEvent then
+                promptPurchaseEvent:FireServer("Gamepass", pass.id)
+            end
+            JuiceEffects.playSound("buy", 0.6)
+            showToast("🛒 Открыто окно покупки геймпаса: " .. pass.name, Color3.fromRGB(241, 196, 15))
+        end)
+    end
+end
+
+-- Наполнение карточками DevProducts (Аура и Rebirth)
+if MonetizationConfig and MonetizationConfig.PRODUCTS then
+    for _, prod in pairs(MonetizationConfig.PRODUCTS) do
+        local desc = if prod.rewardType == "Cash"
+            then string.format("+%s Ауры на баланс", tostring(prod.rewardAmount))
+            elseif prod.rewardType == "Rebirth"
+            then "+1 Rebirth и моментальный сброс базы"
+            else "Мемный разрушительный серверный Nuke"
+
+        createShopCard(productScroll, prod.name, desc, Color3.fromRGB(46, 204, 113), function()
+            if promptPurchaseEvent then
+                promptPurchaseEvent:FireServer("Product", prod.id)
+            end
+            JuiceEffects.playSound("buy", 0.6)
+            showToast("🛒 Открыто окно покупки: " .. prod.name, Color3.fromRGB(46, 204, 113))
+        end)
+    end
+end
 
 -- 4. Способности фракций (Инвентарь, хоткей [E] для активного предмета)
 local abilityBtn = Instance.new("TextButton")

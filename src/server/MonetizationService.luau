@@ -170,6 +170,21 @@ function MonetizationService.getPlayerMultiplier(player: Player): number
     return mult
 end
 
+type GamepassCallback = (player: Player, passId: number) -> ()
+local onGamepassGranted: GamepassCallback? = nil
+
+function MonetizationService.setGamepassHandler(handler: GamepassCallback)
+    onGamepassGranted = handler
+end
+
+function MonetizationService.setGamepassOwned(player: Player, passId: number)
+    local userId = player.UserId
+    if not playerGamepasses[userId] then
+        playerGamepasses[userId] = {}
+    end
+    playerGamepasses[userId][passId] = true
+end
+
 function MonetizationService.init()
     -- P0-04: Инициализация отдельного DataStore для чеков
     local dsOk, dsResult = pcall(function()
@@ -185,6 +200,17 @@ function MonetizationService.init()
     MarketplaceService.ProcessReceipt = function(receiptInfo)
         return MonetizationService.processReceiptLogic(receiptInfo)
     end
+
+    -- Мгновенная активация геймпаса при покупке прямо в игре
+    MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, passId: number, wasPurchased: boolean)
+        if wasPurchased and player and player.Parent then
+            MonetizationService.setGamepassOwned(player, passId)
+            print(string.format("[MonetizationService] %s purchased Gamepass ID %d!", player.Name, passId))
+            if onGamepassGranted then
+                onGamepassGranted(player, passId)
+            end
+        end
+    end)
 
     Players.PlayerRemoving:Connect(function(player)
         playerGamepasses[player.UserId] = nil

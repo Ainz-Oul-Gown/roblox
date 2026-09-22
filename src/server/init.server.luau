@@ -383,6 +383,12 @@ local function applyGamepassPerks(player: Player)
     end
 end
 
+-- Моментальное применение перков при покупке геймпаса прямо во время игровой сессии
+MonetizationService.setGamepassHandler(function(player: Player, passId: number)
+    applyGamepassPerks(player)
+    print(string.format("[MONETIZATION] Applied gamepass %d perks immediately to %s", passId, player.Name))
+end)
+
 -- Фоновый цикл AUTO_COLLECT для владельцев геймпаса
 task.spawn(function()
     while true do

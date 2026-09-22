@@ -64,7 +64,7 @@
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
 - **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` (JuiceEffects: 8.7/10), `REVIEW_REPORT_STEP2.md` (AbilityVFX Физика мира: 9.4/10), `REVIEW_REPORT_STEP3.md` (Оверхол 48 способностей: 9.1/10), `REVIEW_REPORT_STEP4.md` (Оптимизация под мобильные 60 FPS: 9.8/10), `REVIEW_REPORT_STEP5.md` (Процедурные позы и кинематографическая камера: 9.3/10) и устранение дефектов P0/P1 Zero-Trust аудита (LOD-отсев анимаций, физический рывок через LinearVelocity, клиентский CFrame-телепорт, предотвращение утечек корутин, исправление вращения R15, устранение FOV drift и клиппинга камеры).
 
-- **Полный аудит надежности и безопасности (165/165 тестов пройдено)**:
+- **Полный аудит надежности и безопасности (167/167 тестов пройдено)**:
   - `Procedural Character Animation Engine (CharacterAnimator)`: Универсальная система процедурных анимаций Motor6D для R15 и R6 моделей аватаров без зависимости от ассетов Roblox. Включает 12 культовых поз поколения Альфа:
     * `playShhhPose`: легендарный жест тишины (палец к губам, наклон головы и подбородок вперед) с разворотом торса на 22° в 3/4 профиль для идеальной видимости со спины в виде от 3-го лица.
     * `playGigachadFlex`: двойной бицепс-флекс для Гигачада, Скибиди и Гримаса.
@@ -105,7 +105,7 @@
   - `roblox-pet-gacha-system`: Полнофункциональная система мемных питомцев поколения Альфа (`SkibidiNoob`, `GrimaceShake`, `GigachadFace`, `RizzlerGod`, `CaseOhBlackHole`). Добавлены `OpenEggEvent`, `EquippedPetsEvent`, клиентский визуализатор `PetFollower` с плавной синусоидальной анимацией без серверной физической нагрузки, `equipBest` и мультипликаторы дохода.
   - `roblox-juice-kit`: Процедурный праздничный салют конфетти `JuiceEffects.spawnConfetti` при Rebirth и захвате AirDrop, пружинная отдача экрана, FOV pulse с гарантированным сбросом дефолтного угла обзора, всплывающий 3D-текст урона и ауры.
   - `roblox-retention-engine`: Серверные шлюзы `ClaimPlaytimeRewardEvent` и `ClaimDailyRewardEvent` с расчетом UTC дней и прогрессией наград, кнопка `[T]` в клиентском HUD.
-  - `roblox-monetization-core`: Защищенный RemoteEvent `PromptPurchaseEvent` для Developer Products и GamePasses, обработка чеков в `MarketplaceService.ProcessReceipt` с идемпотентностью.
+  - `roblox-monetization-core`: Защищенный RemoteEvent `PromptPurchaseEvent` для Developer Products и GamePasses, обработка чеков в `MarketplaceService.ProcessReceipt` с идемпотентностью, мгновенный перехват `PromptGamePassPurchaseFinished` для сессионной активации перков и полнофункциональный Cyber Shop GUI в `BrainrotHUD` с хоткеем `[B]`.
   - `roblox-economy-simulator`: CLI инструмент `npm run simulate` (`bin/simulate-economy.js`) для математического моделирования прогрессии и валидации TTFR (~8.4 мин до первого Rebirth).
   - `roblox-game-mode-templates` & `roblox-map-templates`: 2-этажные базы 56x76, защитная крыша, подвесной наклонный желоб сброса руды, святилище Rebirth и монументы на крыше с 400-стадовыми Sky Beacons.
   - `roblox-ability-combat-system`: 48 уникальных мемных способностей (8 фракций x 6 слотов [1..6] / [E, R, Q, F, Z, X]) с 4-фазной моделью визуализации (Anticipation -> Release -> World Fracture -> Dissipation), объемными двухконтурными лазерами, разломами земли, вихрями затяжки, руническими кругами, падением пропсов с неба и кинематографичной отдачей камеры.
