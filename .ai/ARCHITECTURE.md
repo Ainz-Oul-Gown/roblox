@@ -61,9 +61,9 @@
 - **Кнопки**: Анимация сжатия (Squash & Stretch) при покупке и вибрация при недостатке средств.
 - **Вспышки экрана и Bloom Pulse**: Золотой эффект при сборе кассы/лута, красный при смерти, динамический импульс Bloom (`screenBloomFlash`) при ультимейтах.
 - **Trauma-based Camera Shake**: Физическая тряска экрана по шуму Перлина с квадратичным затуханием ($Trauma^2$), направленный толчок камеры (`cameraKick`).
-- **Хитстоп (Hitstop Engine)**: Микро-фриз на 0.05с (`hitstop`) кастера и цели для ощущения сокрушительной массы удара.
+- **Хитстоп (Hitstop Engine)**: Микро-фриз на 0.07с (`hitstop`) кастера и цели для ощущения сокрушительной массы удара (min 0.07с enforced).
 - **Target Impact Flash**: Кратковременный белый световой оверлей на теле жертвы (`impactFlash`) при получении урона.
-- **PointLight Dynamic Burst**: Вспышка динамического источника света (`spawnLightBurst`) с тенями и экспоненциальным затуханием.
+- **PointLight Dynamic Burst**: Вспышка динамического источника света (`spawnLightBurst`) с тенями и экспоненциальным затуханием, LOD-отсечкой на 120 стадов и минимальной длительностью 0.25с.
 
 ## Серверные службы
 - `TycoonService`: Экономика, Сейф (`vaultCashMap`), DataStore (`UpdateAsync` с compare-and-set), PvP-лут (`creator` тег), безопасное списание `deductCash` и `addCashRaw` (без множителя для трансферов), NaN/Infinity guard (`sanitizeNum`), проверка владения в `withdrawVault`, параллельное сохранение в `BindToClose` (25с deadline), подключение составных множителей `getExtraMultiplier`, очистка Tools при Rebirth, полная persistence через callbacks (`getPetDataForSave`, `getRetentionDataForSave`, `getProcessedReceipts`, `getPvPStatsForSave`).
@@ -85,7 +85,7 @@
     - Мощные люстры 1-го этажа (`Lighting_Floor1`: 5 люстр с `PointLight` `3.6` и `SurfaceLight` `3.2`).
     - Пентхаус-освещение 2-го этажа (`Lighting_Floor2`: 6 пилонов + центральная гранд-люстра `Brightness = 4.2`, `Range = 65`).
     - Потолочные световые балки под крышей (`TycoonRoof`, `Brightness = 3.2`, `SurfaceLight = 3.0`).
-- `AbilityService`: Инвентарные тулы способностей, серверный rate-limit (0.3с debounce на `OnServerEvent`), `os.clock()` для субсекундных кулдаунов, PvP-урон с `addCashRaw` (без множителя), `MaxHealth` cap 250, восстановление `WalkSpeed` из `getBaseWalkSpeed`, сохранение transparency при invisibility, обработка уже подключённых игроков, серверная репликация через `AbilityVFXEvent:FireAllClients`.
+- `AbilityService`: Инвентарные тулы способностей, серверный rate-limit (0.3с debounce на `OnServerEvent`), `os.clock()` для субсекундных кулдаунов, PvP-урон с `addCashRaw` (без множителя), `MaxHealth` cap 250, восстановление `WalkSpeed` из `getBaseWalkSpeed`, сохранение transparency при invisibility, обработка уже подключённых игроков, серверная репликация через `AbilityVFXEvent:FireAllClients`. Victim-side VFX: `fireVictimVFX` (VICTIM_IMPACT), `fireBlind` (BLIND) для клиентских эффектов на жертве. Атрибуты: `Invulnerable`, `ReflectDamage`, `DamageVulnerability`, `DoubleDamage`, `TripleDamage`, `SigmaCritActive`, `StunImmune`, `KnockbackImmune`, `AbilityDisabled`. Ongoing godmode VFX: серия ударов через `task.delay` для Skibidi/Sigma/TungTung. Mobility landing AoE: `mobility_land` события для FanumTax/TungTung/CaseOh/Grimace.
 - `AbilityVFX` (клиентский движок эффектов):
   - 48 уникальных наборов визуальных и звуковых эффектов (8 фракций x 6 слотов способностей), реализованных по 4-фазной модели (Anticipation -> Release -> World Fracture -> Dissipation).
   - Световые неоновые столбы (`createPillarOfLight`), ударные волны расширения (`createShockwaveRing`), двухконтурные текстурированные волны (`spawnTexturedShockwave`), лазерные лучи (`createBeamLine`), объемные лучи с белым сердечником (`spawnVolumetricLaser`).
@@ -94,6 +94,10 @@
   - Оптимизация и бюджетирование: адаптивный лимит активных 3D-камней (`MAX_ACTIVE_ROCKS`: 14 на смартфонах, 24 на ПК) с FIFO-вытеснением старых объектов, динамическое масштабирование партиклов (`getQualityScale()`), отключение теней `PointLight.Shadows` на мобильных GPU и дистанционный отсев (`isWithinLOD`, порог 120 стадов) для гарантированных 60 FPS на смартфонах и слабых ПК.
   - Пространственный 3D-звук (`JuiceEffects.play3DSound`) с затуханием по дистанции.
   - Динамическая кинематографическая отдача: тряска экрана (`JuiceEffects.traumaShake`), направленный толчок (`cameraKick`) и импульс FOV (`JuiceEffects.fovPulse`) с защитой от накопления дрейфа.
+  - Ongoing VFX: циклические пульсы эффектов для godmode (Sigma молнии, Skibidi землетрясения, Grimace токсин, TungTung кузнечные удары) через `task.delay`.
+  - Victim-side: `VICTIM_IMPACT` (impactFlash + traumaShake на жертве), `BLIND` (белый screenBloomFlash для ослепления), `TELEPORT` (PivotTo на клиенте).
+  - Mobility landing: `mobility_land` VFX для FanumTax/TungTung/CaseOh/Grimace (кратер + ударная волна при приземлении).
+  - Persistent VFX: нефтяная лужа для FanumTax tactical (`OilPuddleVFX`), слизистая лужа для Grimace mobility (`SlimePuddleVFX`).
 - `JuiceEffects`: Каталог 3D/2D звуков (`laser`, `dash`, `explosion`, `electric`, `magic`, `teleport`, `meteor`, `hammer`, `splash`, `whoosh`, `chime`, `horn`, `parry`, `snatch`, `anvil`), парящие мемные надписи, вспышки экрана, процедурный праздничный салют конфетти (`spawnConfetti`).
 - `LeaderboardService`: Автоматический учет и визуализация топа богатства и фрагов. Статистика сохраняется до рестарта сервера (не стирается при выходе игрока). Поддерживает `restorePvPStats` для восстановления из DataStore.
 - `AirDropService`: Фоновый таймер и спавн ящиков с парашютами и захватом.
