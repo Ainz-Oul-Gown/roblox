@@ -623,7 +623,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     local blinkCF = tRoot.CFrame * CFrame.new(0, 0, 4)
                     char:PivotTo(blinkCF)
                     root.AssemblyLinearVelocity = Vector3.zero
-                    abilityEvent:FireClient(player, "TELEPORT", "ShadowStep", 0, blinkCF)
+                    abilityVFXEvent:FireClient(player, "TELEPORT", blinkCF)
                     tagHumanoid(tHum, player)
                     applyDamage(tHum, 45, player)
                     local ov = Players:GetPlayerFromCharacter(nearestTarget.Character)
@@ -633,7 +633,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 local blinkCF = getClipBlinkCFrame(root.CFrame, 30)
                 char:PivotTo(blinkCF)
                 root.AssemblyLinearVelocity = Vector3.zero
-                abilityEvent:FireClient(player, "TELEPORT", "ShadowStep", 0, blinkCF)
+                abilityVFXEvent:FireClient(player, "TELEPORT", blinkCF)
             end
         else
             -- B6 FIX: Brazilian Phonk Overload — DoT 20/с × 8с (вместо одноразового 70 урона)
@@ -1132,7 +1132,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             local blinkCF = getClipBlinkCFrame(root.CFrame, 20)
             char:PivotTo(blinkCF)
             root.AssemblyLinearVelocity = Vector3.zero
-            abilityEvent:FireClient(player, "TELEPORT", "HeartbreakDash", 0, blinkCF)
+            abilityVFXEvent:FireClient(player, "TELEPORT", blinkCF)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
                     local oRoot = other.Character:FindFirstChild("HumanoidRootPart")

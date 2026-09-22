@@ -1024,10 +1024,10 @@ if abilityVFXEvent then
                 end
 
             elseif firstArg == "TELEPORT" then
-                -- Принудительный телепорт локального персонажа (Sigma mobility A3)
+                -- Принудительный мгновенный телепорт локального персонажа (Sigma / Rizzler mobility)
                 local targetCFrame = ...
                 local myChar = localPlayer.Character
-                if myChar and targetCFrame then
+                if myChar and typeof(targetCFrame) == "CFrame" then
                     myChar:PivotTo(targetCFrame)
                 end
             end

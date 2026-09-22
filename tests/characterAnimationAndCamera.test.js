@@ -250,5 +250,53 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
             assert.ok(!block.includes('spawnVolumetricLaser'), `Mobility slot ${i} must NOT contain static spawnVolumetricLaser`);
         }
     });
+
+    test('CharacterAnimator playSigmaTilt, playRizzlerFlourish, and playMoneySnatch rotate torso for 3rd-person camera visibility', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        // playSigmaTilt
+        assert.ok(content.includes('math.rad(16)'), 'playSigmaTilt must rotate torso 16 degrees for 3rd person visibility');
+        // playRizzlerFlourish
+        assert.ok(content.includes('math.rad(-18)'), 'playRizzlerFlourish must tilt/rotate torso 18 degrees');
+        // playMoneySnatch
+        assert.ok(content.includes('math.rad(18)') && content.includes('math.rad(-6)'), 'playMoneySnatch must lean torso forward 18 degrees and pull back -6 degrees');
+    });
+
+    test('AbilityService and init.client.luau safely handle TELEPORT event with CFrame validation', () => {
+        const serverServicePath = path.join(rootDir, 'src', 'server', 'AbilityService.luau');
+        const clientInitPath = path.join(rootDir, 'src', 'client', 'init.client.luau');
+
+        const serverContent = fs.readFileSync(serverServicePath, 'utf8');
+        const clientContent = fs.readFileSync(clientInitPath, 'utf8');
+
+        assert.ok(serverContent.includes('abilityVFXEvent:FireClient(player, "TELEPORT", blinkCF)'), 'AbilityService must fire TELEPORT via abilityVFXEvent with blinkCF');
+        assert.ok(!serverContent.includes('abilityEvent:FireClient(player, "TELEPORT", "ShadowStep"'), 'AbilityService must not pass string as first TELEPORT arg');
+        assert.ok(clientContent.includes('typeof(targetCFrame) == "CFrame"'), 'init.client.luau must validate typeof targetCFrame == CFrame');
+        assert.ok(clientContent.includes('myChar:PivotTo(targetCFrame)'), 'init.client.luau must apply PivotTo with validated targetCFrame');
+    });
+
+    test('AbilityVFX Sigma tactical parry barrier is oriented relative to character lookVector with sideVec', () => {
+        const content = fs.readFileSync(vfxPath, 'utf8');
+        const sigmaBlock = content.match(/fId == "Sigma"[\s\S]*?slot == "tactical"[\s\S]*?then([\s\S]*?)elseif slot ==/)[1];
+
+        assert.ok(sigmaBlock.includes('lookVector:Cross(Vector3.yAxis)'), 'Sigma parry barrier must calculate sideVec from lookVector:Cross');
+        assert.ok(sigmaBlock.includes('barrierCenter'), 'Sigma parry must center barrier relative to character pos and lookVector');
+        assert.ok(sigmaBlock.includes('spawnMagicCircle'), 'Sigma parry must spawn protective magic rune circle');
+        assert.ok(!sigmaBlock.includes('Vector3.new(-3, 1.5, 0)'), 'Sigma parry must NOT use static world-axis offsets');
+    });
+
+    test('All tactical ability slots include CharacterAnimator poses (100% animation coverage)', () => {
+        const content = fs.readFileSync(vfxPath, 'utf8');
+        const skibidiTac = content.match(/fId == "Skibidi"[\s\S]*?slot == "tactical"[\s\S]*?then([\s\S]*?)elseif slot ==/)[1];
+        const fanumTac = content.match(/fId == "FanumTax"[\s\S]*?slot == "tactical"[\s\S]*?then([\s\S]*?)elseif slot ==/)[1];
+        const grimaceTac = content.match(/fId == "Grimace"[\s\S]*?slot == "tactical"[\s\S]*?then([\s\S]*?)elseif slot ==/)[1];
+
+        assert.ok(skibidiTac.includes('CharacterAnimator.playGigachadFlex'), 'Skibidi tactical must play CharacterAnimator.playGigachadFlex');
+        assert.ok(fanumTac.includes('CharacterAnimator.playMoneySnatch'), 'FanumTax tactical must play CharacterAnimator.playMoneySnatch');
+        assert.ok(grimaceTac.includes('CharacterAnimator.playGroundPound'), 'Grimace tactical must play CharacterAnimator.playGroundPound');
+
+        const totalPlayCalls = (content.match(/CharacterAnimator\.play\w+/g) || []).length;
+        assert.ok(totalPlayCalls >= 48, `Must have at least 48 CharacterAnimator.play calls across all slots (found ${totalPlayCalls})`);
+    });
 });
+
 

@@ -320,6 +320,16 @@ function CharacterAnimator.playSigmaTilt(character: Model, duration: number?)
         tweenJoint(joints.leftShoulder, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-25), 0, math.rad(-15)))
     end
 
+    -- Разворот торса на 16 градусов в полупрофиль: наклон головы и холодный взгляд становятся видны со спины
+    local torsoJoint = joints.waist or joints.rootJoint
+    if torsoJoint then
+        local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
+        local rot = if joints.isR15
+            then CFrame.Angles(math.rad(4), math.rad(16), 0)
+            else CFrame.Angles(0, 0, math.rad(16))
+        tweenJoint(torsoJoint, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * rot)
+    end
+
     task.delay(dur, function()
         if activeAnimTokens[character] == token and isCharacterAlive(character) then
             restoreJoints(character, joints, 0.3)
@@ -446,6 +456,16 @@ function CharacterAnimator.playRizzlerFlourish(character: Model, duration: numbe
         tweenJoint(joints.neck, TweenInfo.new(0.28, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-8), math.rad(18), math.rad(15)))
     end
 
+    -- Изящный наклон и полуразворот корпуса на 18 градусов для выразительного силуэта сзади
+    local torsoJoint = joints.waist or joints.rootJoint
+    if torsoJoint then
+        local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
+        local rot = if joints.isR15
+            then CFrame.Angles(math.rad(4), math.rad(-18), math.rad(6))
+            else CFrame.Angles(0, 0, math.rad(-18))
+        tweenJoint(torsoJoint, TweenInfo.new(0.28, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), orig * rot)
+    end
+
     -- Плавный взмах в сторону цели
     task.delay(0.32, function()
         if activeAnimTokens[character] ~= token or not isCharacterAlive(character) then return end
@@ -524,9 +544,26 @@ function CharacterAnimator.playMoneySnatch(character: Model, duration: number?)
         tweenJoint(joints.leftShoulder, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(85), math.rad(15), 0))
     end
 
+    -- Наклон торса вперед на 18 градусов при броске за добычей
+    local torsoJoint = joints.waist or joints.rootJoint
+    if torsoJoint then
+        local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
+        local rot = if joints.isR15
+            then CFrame.Angles(math.rad(18), 0, 0)
+            else CFrame.Angles(0, math.rad(18), 0)
+        tweenJoint(torsoJoint, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * rot)
+    end
+
     -- Загребание назад к груди
     task.delay(0.2, function()
         if activeAnimTokens[character] ~= token or not isCharacterAlive(character) then return end
+        if torsoJoint then
+            local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
+            local rot = if joints.isR15
+                then CFrame.Angles(math.rad(-6), 0, 0)
+                else CFrame.Angles(0, math.rad(-6), 0)
+            tweenJoint(torsoJoint, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * rot)
+        end
         if joints.rightShoulder then
             local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
             tweenJoint(joints.rightShoulder, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(45), math.rad(25), math.rad(35)))

@@ -611,7 +611,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.traumaShake(0.4) end
 
         elseif slot == "tactical" then
-            -- Скибиди Броня (Керамический панцирь)
+            -- Скибиди Броня (Керамический панцирь + защитная поза)
+            if casterChar then CharacterAnimator.playGigachadFlex(casterChar, 0.7) end
             spawnMagicCircle(pos, Color3.fromRGB(241, 196, 15), 0.7)
             createPillarOfLight(pos, 10, 4.5, Color3.fromRGB(240, 240, 255), 0.5)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(241, 196, 15), 12, 25, 0.2)
@@ -807,9 +808,13 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
         elseif slot == "tactical" then
             -- Сигма Парирование (Багровый защитный крест + стойка SHHH)
             if casterChar then CharacterAnimator.playShhhPose(casterChar, 0.6) end
-            spawnVolumetricLaser(pos + Vector3.new(-3, 1.5, 0), pos + Vector3.new(3, 1.5, 0), Color3.fromRGB(255, 50, 50), 0.8, 0.45)
-            spawnVolumetricLaser(pos + Vector3.new(0, -1.5, 0), pos + Vector3.new(0, 4.5, 0), Color3.fromRGB(255, 50, 50), 0.8, 0.45)
-            JuiceEffects.spawnLightBurst(pos + lookVector * 3, Color3.fromRGB(255, 50, 50), 22, 25, 0.25)
+            local sideVec = lookVector:Cross(Vector3.yAxis)
+            if sideVec.Magnitude < 0.01 then sideVec = Vector3.xAxis else sideVec = sideVec.Unit end
+            local barrierCenter = pos + lookVector * 2.5 + Vector3.new(0, 1.5, 0)
+            spawnVolumetricLaser(barrierCenter - sideVec * 2.5, barrierCenter + sideVec * 2.5, Color3.fromRGB(255, 50, 50), 0.7, 0.4)
+            spawnVolumetricLaser(barrierCenter - Vector3.new(0, 1.8, 0), barrierCenter + Vector3.new(0, 1.8, 0), Color3.fromRGB(255, 50, 50), 0.7, 0.4)
+            spawnMagicCircle(pos, Color3.fromRGB(255, 50, 50), 0.6)
+            JuiceEffects.spawnLightBurst(barrierCenter, Color3.fromRGB(255, 50, 50), 22, 25, 0.25)
             JuiceEffects.play3DSound("parry", pos, 1.2)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "⚡ СИГМА ПАРИРОВАНИЕ!", Color3.fromRGB(255, 50, 50))
             if isSelf then JuiceEffects.hitstop(0.07) end
@@ -892,7 +897,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🍔 НАЛОГ ВЗЯТ!", Color3.fromRGB(241, 196, 15))
 
         elseif slot == "tactical" then
-            -- Ловушка Фастфуда (Масляная лужа)
+            -- Ловушка Фастфуда (Масляная лужа + жест сброса)
+            if casterChar then CharacterAnimator.playMoneySnatch(casterChar, 0.6) end
             -- C11 FIX: Персистентная масляная зона на 8с
             local ground = getGroundPosition(pos)
             local oilPart = Instance.new("Part")
@@ -1007,7 +1013,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🥤 ТОКСИЧНЫЙ ШЕЙК!", Color3.fromRGB(155, 89, 182))
 
         elseif slot == "tactical" then
-            -- Коктейльная Лужа (Липкая фиолетовая жижа)
+            -- Коктейльная Лужа (Липкая фиолетовая жижа + удар по земле)
+            if casterChar then CharacterAnimator.playGroundPound(casterChar, 0.6) end
             spawnGroundCracks(pos, 15, Color3.fromRGB(74, 35, 90), 3.5)
             spawnTexturedShockwave(pos, 15, Color3.fromRGB(142, 68, 173), 0.5)
             JuiceEffects.play3DSound("splash", pos, 0.9)
