@@ -149,8 +149,8 @@ local function updateLeaderboards()
     table.sort(wealthList, function(a, b)
         local aStat = a:FindFirstChild("leaderstats")
         local bStat = b:FindFirstChild("leaderstats")
-        local aCash: IntValue = if aStat and aStat:FindFirstChild("Aura") then (aStat:FindFirstChild("Aura")).Value else 0
-        local bCash: IntValue = if bStat and bStat:FindFirstChild("Aura") then (bStat:FindFirstChild("Aura")).Value else 0
+        local aCash = if aStat and aStat:FindFirstChild("Aura") then (aStat:FindFirstChild("Aura")).Value else 0
+        local bCash = if bStat and bStat:FindFirstChild("Aura") then (bStat:FindFirstChild("Aura")).Value else 0
         return aCash > bCash
     end)
 
@@ -161,7 +161,7 @@ local function updateLeaderboards()
         if row then
             if p then
                 local aStat = p:FindFirstChild("leaderstats")
-                local val: IntValue = if aStat and aStat:FindFirstChild("Aura") then (aStat:FindFirstChild("Aura")).Value else 0
+                local val = if aStat and aStat:FindFirstChild("Aura") then (aStat:FindFirstChild("Aura")).Value else 0
                 row.Text = string.format("%s #%d %s — %d AURA 🔥", rankMedals[i], i, p.Name, val)
             else
                 row.Text = string.format("%s #%d [Свободно]", rankMedals[i], i)

@@ -15,20 +15,20 @@ screenGui.Name = "BrainrotHUD"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
-local abilityEvent: RemoteEvent = ReplicatedStorage:WaitForChild("AbilityEvent", 15)
-local claimPlotEvent: RemoteEvent = ReplicatedStorage:WaitForChild("ClaimPlotEvent", 15)
-local plotStateEvent: RemoteEvent = ReplicatedStorage:WaitForChild("PlotStateEvent", 15)
-local vaultUpdatedEvent: RemoteEvent = ReplicatedStorage:WaitForChild("VaultUpdatedEvent", 15)
-local withdrawEvent: RemoteEvent = ReplicatedStorage:WaitForChild("WithdrawEvent", 15)
-local pvpKillEvent: RemoteEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15)
-local airDropEvent: RemoteEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15)
-local adminGiveCashEvent: RemoteEvent = ReplicatedStorage:WaitForChild("AdminGiveCashEvent", 15)
-local rebirthEvent: RemoteEvent = ReplicatedStorage:WaitForChild("RebirthEvent", 15)
-local abilityVFXEvent: RemoteEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15)
-local equippedPetsEvent: RemoteEvent = ReplicatedStorage:WaitForChild("EquippedPetsEvent", 15)
-local openEggEvent: RemoteEvent = ReplicatedStorage:WaitForChild("OpenEggEvent", 15)
-local claimPlaytimeEvent: RemoteEvent = ReplicatedStorage:WaitForChild("ClaimPlaytimeRewardEvent", 15)
-local claimDailyEvent: RemoteEvent = ReplicatedStorage:WaitForChild("ClaimDailyRewardEvent", 15)
+local abilityEvent = ReplicatedStorage:WaitForChild("AbilityEvent", 15)
+local claimPlotEvent = ReplicatedStorage:WaitForChild("ClaimPlotEvent", 15)
+local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent", 15)
+local vaultUpdatedEvent = ReplicatedStorage:WaitForChild("VaultUpdatedEvent", 15)
+local withdrawEvent = ReplicatedStorage:WaitForChild("WithdrawEvent", 15)
+local pvpKillEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15)
+local airDropEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15)
+local adminGiveCashEvent = ReplicatedStorage:WaitForChild("AdminGiveCashEvent", 15)
+local rebirthEvent = ReplicatedStorage:WaitForChild("RebirthEvent", 15)
+local abilityVFXEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15)
+local equippedPetsEvent = ReplicatedStorage:WaitForChild("EquippedPetsEvent", 15)
+local openEggEvent = ReplicatedStorage:WaitForChild("OpenEggEvent", 15)
+local claimPlaytimeEvent = ReplicatedStorage:WaitForChild("ClaimPlaytimeRewardEvent", 15)
+local claimDailyEvent = ReplicatedStorage:WaitForChild("ClaimDailyRewardEvent", 15)
 
 -- Безопасная загрузка JuiceEffects (поддержка как script, так и script.Parent)
 local juiceModule = script:FindFirstChild("JuiceEffects")
@@ -138,7 +138,7 @@ local function updateWorldStatus()
         return
     end
 
-    local statusVal: StringValue? = ReplicatedStorage:FindFirstChild("ServerInitStatus")
+    local statusVal = ReplicatedStorage:FindFirstChild("ServerInitStatus")
     if statusVal and statusVal.Value ~= "" then
         applyStatusText(statusVal.Value)
     else
@@ -519,7 +519,7 @@ local function triggerAdminCash()
 
     local char = localPlayer.Character
     if char then
-        local root: BasePart? = char:FindFirstChild("HumanoidRootPart")
+        local root = char:FindFirstChild("HumanoidRootPart")
         if root then
             JuiceEffects.showFloatingText(root.Position + Vector3.new(0, 3.5, 0), "+1,000,000 AURA 👑", Color3.fromRGB(255, 215, 0), 1.5)
         end
@@ -690,7 +690,7 @@ if rebirthEvent then
         showToast(string.format("👑 ПЕРЕРОЖДЕНИЕ #%d ВЫПОЛНЕНО! Множитель x%.1f 🔥", newRebirths, newMult), Color3.fromRGB(255, 215, 0))
         local char = localPlayer.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
-            local pos: BasePart = (char:FindFirstChild("HumanoidRootPart")).Position
+            local pos = (char:FindFirstChild("HumanoidRootPart")).Position
             JuiceEffects.spawnConfetti(pos)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), string.format("👑 REBIRTH #%d! x%.1f MULTIPLIER", newRebirths, newMult), Color3.fromRGB(255, 215, 0), 2.5)
         end
@@ -963,7 +963,7 @@ if abilityEvent then
             -- Локальные визуальные спецэффекты
             local char = localPlayer.Character
             if char then
-                local root: BasePart? = char:FindFirstChild("HumanoidRootPart")
+                local root = char:FindFirstChild("HumanoidRootPart")
                 if root and string.find(string.lower(messageOrName), "spin") then
                     task.spawn(function()
                         for _ = 1, 15 do
@@ -1053,7 +1053,7 @@ UserInputService.JumpRequest:Connect(function()
     local char = localPlayer.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
-    local root: BasePart? = char:FindFirstChild("HumanoidRootPart")
+    local root = char:FindFirstChild("HumanoidRootPart")
 
     if hum and root and canDoubleJump and not hasDoubleJumped then
         hasDoubleJumped = true
@@ -1079,8 +1079,8 @@ localPlayer.CharacterAdded:Connect(setupCharacter)
 -- 5. Привязка к leaderstats
 local function bindStats()
     local function hookLeaderstats(leaderstats: Instance)
-        local auraVal: IntValue? = leaderstats:WaitForChild("Aura", 10)
-        local rebirthVal: IntValue? = leaderstats:WaitForChild("Rebirths", 10)
+        local auraVal = leaderstats:WaitForChild("Aura", 10)
+        local rebirthVal = leaderstats:WaitForChild("Rebirths", 10)
 
         local function updateStats()
             local aura = if auraVal then auraVal.Value else 0

@@ -36,8 +36,8 @@ local function sanitizeNum(val: number): number
     return val
 end
 
-local function getOrCreateRemote(name: string): RemoteEvent
-    local existing: any = ReplicatedStorage:FindFirstChild(name)
+local function getOrCreateRemote(name: string)
+    local existing = ReplicatedStorage:FindFirstChild(name)
     if existing then return existing end
     local remote = Instance.new("RemoteEvent")
     remote.Name = name
@@ -117,7 +117,7 @@ function TycoonService.handlePlayerDeath(victim: Player)
     local killer: Player? = nil
 
     -- Ищем тег убийцы (creator tag)
-    local creatorTag: ObjectValue? = hum:FindFirstChild("creator")
+    local creatorTag = hum:FindFirstChild("creator")
     if creatorTag and creatorTag.Value and creatorTag.Value:IsA("Player") then
         local killerCandidate = creatorTag.Value :: Player
         if killerCandidate ~= victim and killerCandidate.Parent == Players then
@@ -129,7 +129,7 @@ function TycoonService.handlePlayerDeath(victim: Player)
     victimData.cash = 0
     local vLeaderstats = victim:FindFirstChild("leaderstats")
     if vLeaderstats then
-        local aVal: IntValue? = vLeaderstats:FindFirstChild("Aura")
+        local aVal = vLeaderstats:FindFirstChild("Aura")
         if aVal then aVal.Value = 0 end
     end
 
@@ -330,7 +330,7 @@ function TycoonService.addCash(player: Player, amount: number)
 
     local leaderstats = player:FindFirstChild("leaderstats")
     if leaderstats then
-        local auraVal: IntValue? = leaderstats:FindFirstChild("Aura")
+        local auraVal = leaderstats:FindFirstChild("Aura")
         if auraVal then
             auraVal.Value = data.cash
         end
@@ -349,7 +349,7 @@ function TycoonService.addCashRaw(player: Player, amount: number)
 
     local leaderstats = player:FindFirstChild("leaderstats")
     if leaderstats then
-        local auraVal: IntValue? = leaderstats:FindFirstChild("Aura")
+        local auraVal = leaderstats:FindFirstChild("Aura")
         if auraVal then
             auraVal.Value = data.cash
         end
@@ -370,7 +370,7 @@ function TycoonService.deductCash(player: Player, amount: number): number
 
     local leaderstats = player:FindFirstChild("leaderstats")
     if leaderstats then
-        local auraVal: IntValue? = leaderstats:FindFirstChild("Aura")
+        local auraVal = leaderstats:FindFirstChild("Aura")
         if auraVal then
             auraVal.Value = data.cash
         end
@@ -430,7 +430,7 @@ function TycoonService.withdrawVault(player: Player, plotIndex: number): number
         data.cash += stored
         local leaderstats = player:FindFirstChild("leaderstats")
         if leaderstats then
-            local auraVal: IntValue? = leaderstats:FindFirstChild("Aura")
+            local auraVal = leaderstats:FindFirstChild("Aura")
             if auraVal then auraVal.Value = data.cash end
         end
     end
@@ -459,7 +459,7 @@ function TycoonService.purchaseItem(player: Player, itemId: string): boolean
 
     local leaderstats = player:FindFirstChild("leaderstats")
     if leaderstats then
-        local auraVal: IntValue? = leaderstats:FindFirstChild("Aura")
+        local auraVal = leaderstats:FindFirstChild("Aura")
         if auraVal then
             auraVal.Value = data.cash
         end
@@ -505,10 +505,10 @@ function TycoonService.performRebirth(player: Player): (boolean, string?)
 
     local leaderstats = player:FindFirstChild("leaderstats")
     if leaderstats then
-        local auraVal: IntValue? = leaderstats:FindFirstChild("Aura")
+        local auraVal = leaderstats:FindFirstChild("Aura")
         if auraVal then auraVal.Value = 0 end
 
-        local rebirthVal: IntValue? = leaderstats:FindFirstChild("Rebirths")
+        local rebirthVal = leaderstats:FindFirstChild("Rebirths")
         if rebirthVal then rebirthVal.Value = data.rebirths end
     end
 

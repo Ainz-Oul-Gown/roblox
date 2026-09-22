@@ -1856,7 +1856,7 @@ function PlotBuilder.activatePlot(player: Player, plotIndex: number)
     if claimPad then claimPad:Destroy() end
 
     -- Обновляем вывеску владельца
-    local sign: Part? = plotModel:FindFirstChild("OwnerSign")
+    local sign = plotModel:FindFirstChild("OwnerSign")
     if sign then
         local gui = sign:FindFirstChild("InfoGui")
         if gui then gui:Destroy() end
@@ -2007,7 +2007,7 @@ function PlotBuilder.resetPlotToUnclaimed(plotIndex: number, onClaimCallback: (p
     vaultLabels[plotIndex] = nil
     TycoonService.resetVault(plotIndex)
 
-    local sign: Part? = plotModel:FindFirstChild("OwnerSign")
+    local sign = plotModel:FindFirstChild("OwnerSign")
     if sign then
         local gui = sign:FindFirstChild("InfoGui")
         if gui then gui:Destroy() end
