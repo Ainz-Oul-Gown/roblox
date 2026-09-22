@@ -17,6 +17,7 @@
 ]=]
 
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 export type JointMap = {
     rightShoulder: Motor6D?,
@@ -36,8 +37,24 @@ local originalC0Cache: { [Motor6D]: CFrame } = setmetatable({}, { __mode = "k" }
 local activeAnimTokens: { [Model]: number } = setmetatable({}, { __mode = "k" })
 local activeJointTweens: { [Motor6D]: Tween } = setmetatable({}, { __mode = "k" })
 local deadConnections: { [Humanoid]: RBXScriptConnection } = setmetatable({}, { __mode = "k" })
+local activeTransformOffsets: { [Motor6D]: CFrame } = setmetatable({}, { __mode = "k" })
 
--- Безопасный запуск твина сустава через CFrameValue (обход ограничения движка Roblox на read-only C0 для TweenService)
+-- Подключение к циклу анимации Stepped/PreSimulation: наложение процедурных трансформаций на Motor6D.Transform
+-- В Roblox свойство Transform предназначено специально для клиентской процедурной анимации
+local steppedEvent = (RunService :: any).PreSimulation or RunService.Stepped
+steppedEvent:Connect(function()
+    for joint, offset in pairs(activeTransformOffsets) do
+        if joint and joint.Parent then
+            pcall(function()
+                joint.Transform = joint.Transform * offset
+            end)
+        else
+            activeTransformOffsets[joint] = nil
+        end
+    end
+end)
+
+-- Безопасный запуск твина сустава через CFrameValue + Transform layer
 local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame): Tween?
     if not joint or not joint.Parent then return nil end
 
@@ -58,7 +75,17 @@ local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame
     local conn: RBXScriptConnection? = nil
     conn = cfVal.Changed:Connect(function(newVal: CFrame)
         if joint and joint.Parent then
-            joint.C0 = newVal
+            -- Защита от read-only C0 на клиенте через pcall (в Roblox Client Joint C0 может быть read-only)
+            pcall(function()
+                joint.C0 = newVal
+            end)
+            -- Вычисляем относительный поворот от базового C0 для применения в Motor6D.Transform
+            local orig = originalC0Cache[joint] or joint.C0
+            local relRot = if orig then orig:Inverse() * newVal else newVal
+            activeTransformOffsets[joint] = relRot
+            pcall(function()
+                joint.Transform = relRot
+            end)
         end
     end)
 
@@ -75,7 +102,15 @@ local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame
             cfVal:Destroy()
         end)
         if joint and joint.Parent then
-            joint.C0 = targetC0
+            pcall(function()
+                joint.C0 = targetC0
+            end)
+            local orig = originalC0Cache[joint] or joint.C0
+            local relRot = if orig then orig:Inverse() * targetC0 else targetC0
+            activeTransformOffsets[joint] = relRot
+            pcall(function()
+                joint.Transform = relRot
+            end)
         end
         return nil
     end
@@ -93,6 +128,11 @@ local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame
         pcall(function()
             cfVal:Destroy()
         end)
+        -- Если поза вернулась в исходное состояние, убираем оффсет из activeTransformOffsets
+        local orig = originalC0Cache[joint]
+        if orig and (cfVal.Value.Position - orig.Position).Magnitude < 0.005 then
+            activeTransformOffsets[joint] = nil
+        end
     end
 
     tw.Destroying:Connect(cleanup)
@@ -244,6 +284,11 @@ CharacterAnimator.restoreJoints = restoreJoints
 function CharacterAnimator.stopAnimation(character: Model)
     if not character or not character:IsA("Model") then return end
     local joints = getJoints(character)
+    for _, joint in pairs(joints :: any) do
+        if typeof(joint) == "Instance" and joint:IsA("Motor6D") then
+            activeTransformOffsets[joint] = nil
+        end
+    end
     restoreJoints(character, joints, 0.1)
 end
 
@@ -558,7 +603,10 @@ function CharacterAnimator.playSpinSalute(character: Model, duration: number?)
         -- Безопасный переход фазы через task.delay вместо блокирующего tw.Completed:Wait() исключает утечку потоков
         task.delay(0.2, function()
             if activeAnimTokens[character] == token and isCharacterAlive(character) and spinJoint and spinJoint.Parent then
-                spinJoint.C0 = orig * rotN179
+                pcall(function()
+                    spinJoint.C0 = orig * rotN179
+                end)
+                activeTransformOffsets[spinJoint] = rotN179
                 tweenJoint(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), orig)
             end
         end)
