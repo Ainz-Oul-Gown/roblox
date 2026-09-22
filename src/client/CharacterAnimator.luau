@@ -38,7 +38,9 @@ local activeJointTweens: { [Motor6D]: Tween } = setmetatable({}, { __mode = "k" 
 local deadConnections: { [Humanoid]: RBXScriptConnection } = setmetatable({}, { __mode = "k" })
 
 -- Безопасный запуск твина сустава через CFrameValue (обход ограничения движка Roblox на read-only C0 для TweenService)
-local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame): Tween
+local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame): Tween?
+    if not joint or not joint.Parent then return nil end
+
     local prev = activeJointTweens[joint]
     if prev then
         prev:Cancel()
@@ -49,7 +51,10 @@ local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame
     end
 
     local cfVal = Instance.new("CFrameValue")
+    cfVal.Name = "AnimC0Proxy"
     cfVal.Value = joint.C0
+    cfVal.Parent = joint
+
     local conn: RBXScriptConnection? = nil
     conn = cfVal.Changed:Connect(function(newVal: CFrame)
         if joint and joint.Parent then
@@ -57,7 +62,24 @@ local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame
         end
     end)
 
-    local tw = TweenService:Create(cfVal, tweenInfo, { Value = targetC0 })
+    local success, tw = pcall(function()
+        return TweenService:Create(cfVal, tweenInfo, { Value = targetC0 })
+    end)
+
+    if not success or not tw then
+        if conn then
+            conn:Disconnect()
+            conn = nil
+        end
+        pcall(function()
+            cfVal:Destroy()
+        end)
+        if joint and joint.Parent then
+            joint.C0 = targetC0
+        end
+        return nil
+    end
+
     activeJointTweens[joint] = tw
 
     local function cleanup()

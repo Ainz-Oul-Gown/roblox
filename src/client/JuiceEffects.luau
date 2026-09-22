@@ -26,8 +26,8 @@ end
 
 -- Каталог надежных официальных Roblox аудио-идентификаторов (гарантированная загрузка)
 local SOUND_IDS: { [string]: string } = {
-    cash = "rbxassetid://9069609200",                  -- Звон кассы (Cha-ching! Официальный Roblox)
-    buy = "rbxassetid://9069609200",                   -- Звон успешной покупки
+    cash = "rbxassetid://131070686",                  -- Легендарный чистый звон кассы "Ча-чинг!" (Roblox Classic)
+    buy = "rbxassetid://6895079853",                   -- Мягкий приятный кристальный клик покупки
     error = "rbxassetid://9069610484",                 -- Звук ошибки / недостатка денег (Buzzer)
     siren = "rbxassetid://2865227271",                 -- Сирена AirDrop
     fanfare = "rbxassetid://9069611227",               -- Торжественная победная фанфара Rebirth
@@ -46,7 +46,7 @@ local SOUND_IDS: { [string]: string } = {
     chime = "rbxassetid://6895079853",                 -- Звонкий колокольчик / клик
     horn = "rbxassetid://9069611227",                  -- Мемный горн / фанфара
     parry = "rbxassetid://9069608930",                 -- Парирование / звон клинка
-    snatch = "rbxassetid://9069609200",                -- Налог / звон монет
+    snatch = "rbxassetid://131070686",                 -- Налог / звон монет
     anvil = "rbxassetid://9069609584",                 -- Звон наковальни / бас
     bass_drop = "rbxassetid://9069609584",             -- Глубокий суб-бас
 }
@@ -57,11 +57,19 @@ function JuiceEffects.playSound(soundName: string, volume: number?)
 
     local sound = Instance.new("Sound")
     sound.SoundId = assetId
-    sound.Volume = volume or 0.85
-    sound.PlaybackSpeed = math.random(94, 106) / 100
+    -- Комфортная балансировка громкости: для cash/buy убираем оглушительный пик
+    local baseVol = volume or 0.85
+    if soundName == "cash" or soundName == "buy" or soundName == "snatch" then
+        baseVol = baseVol * 0.45
+    end
+    sound.Volume = baseVol
+    -- Для звука кассы, покупки и колокольчика отключаем случайный pitch jitter, сохраняя чистый приятный звук
+    sound.PlaybackSpeed = if soundName == "cash" or soundName == "buy" or soundName == "chime" or soundName == "snatch"
+        then 1.0
+        else math.random(94, 106) / 100
     sound.Parent = SoundService
     sound:Play()
-    Debris:AddItem(sound, 4)
+    Debris:AddItem(sound, 3)
 end
 
 -- Многослойный кинематографический аудио-удар (Sub-Bass + Transient Impact + Whoosh)
