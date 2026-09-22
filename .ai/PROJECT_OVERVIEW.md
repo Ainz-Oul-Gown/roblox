@@ -106,6 +106,7 @@
   - `roblox-economy-simulator`: CLI инструмент `npm run simulate` (`bin/simulate-economy.js`) для математического моделирования прогрессии и валидации TTFR (~8.4 мин до первого Rebirth).
   - `roblox-game-mode-templates` & `roblox-map-templates`: 2-этажные базы 56x76, защитная крыша, подвесной наклонный желоб сброса руды, святилище Rebirth и монументы на крыше с 400-стадовыми Sky Beacons.
   - `roblox-ability-combat-system`: 48 уникальных мемных способностей (8 фракций x 6 слотов [1..6] / [E, R, Q, F, Z, X]) с 4-фазной моделью визуализации (Anticipation -> Release -> World Fracture -> Dissipation), объемными двухконтурными лазерами, разломами земли, вихрями затяжки, руническими кругами, падением пропсов с неба и кинематографичной отдачей камеры.
+  - `CharacterAnimator & CinematicCamera`: Процедурный анимационный движок R15/R6 без внешних asset ID (жест "SHHH"/мьюинг, гигачад-флекс, флуриш Риззлера, скрадывание Фанум-такс, рывки) с обходом ограничения движка Roblox на read-only `Motor6D.C0` через `CFrameValue` прокси-твининг, динамические полупрофили туловища (16-22°) для идеальной читаемости от 3-го лица и кинематографичный режиссер камеры (`CinematicCamera`) с ракурсами снизу, Dutch roll (10-15°) и Focus Cut-In.
   - `rojo-toolchain-master` & `wally-package-manager`: Стандартизированная сборка, sourcemap и скрипты в `package.json`.
 
 ## Быстрый старт

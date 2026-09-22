@@ -51,6 +51,14 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(content.includes('activeAnimTokens[character] = (activeAnimTokens[character] or 0) + 1'), 'restoreJoints must invalidate token to cancel delayed attack phases');
     });
 
+    test('CharacterAnimator bypasses Roblox read-only Motor6D C0 restriction using CFrameValue proxy', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('Instance.new("CFrameValue")'), 'Must create CFrameValue proxy for tweening');
+        assert.ok(content.includes('cfVal.Changed:Connect'), 'Must hook cfVal.Changed to update joint.C0');
+        assert.ok(content.includes('joint.C0 = newVal'), 'Must set joint.C0 directly on value change');
+        assert.ok(!content.includes('TweenService:Create(joint,'), 'Must NEVER call TweenService:Create directly on Motor6D C0');
+    });
+
     test('CinematicCamera.luau exists and exports camera director functions', () => {
         assert.ok(fs.existsSync(cameraPath), 'CinematicCamera.luau should exist');
         const content = fs.readFileSync(cameraPath, 'utf8');

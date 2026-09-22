@@ -37,7 +37,7 @@ local activeAnimTokens: { [Model]: number } = setmetatable({}, { __mode = "k" })
 local activeJointTweens: { [Motor6D]: Tween } = setmetatable({}, { __mode = "k" })
 local deadConnections: { [Humanoid]: RBXScriptConnection } = setmetatable({}, { __mode = "k" })
 
--- Безопасный запуск твина сустава с отменой предыдущего и освобождением ресурсов C++
+-- Безопасный запуск твина сустава через CFrameValue (обход ограничения движка Roblox на read-only C0 для TweenService)
 local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame): Tween
     local prev = activeJointTweens[joint]
     if prev then
@@ -47,16 +47,40 @@ local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame
         end)
         activeJointTweens[joint] = nil
     end
-    local tw = TweenService:Create(joint, tweenInfo, { C0 = targetC0 })
+
+    local cfVal = Instance.new("CFrameValue")
+    cfVal.Value = joint.C0
+    local conn: RBXScriptConnection? = nil
+    conn = cfVal.Changed:Connect(function(newVal: CFrame)
+        if joint and joint.Parent then
+            joint.C0 = newVal
+        end
+    end)
+
+    local tw = TweenService:Create(cfVal, tweenInfo, { Value = targetC0 })
     activeJointTweens[joint] = tw
-    tw.Completed:Connect(function()
+
+    local function cleanup()
         if activeJointTweens[joint] == tw then
             activeJointTweens[joint] = nil
         end
+        if conn then
+            conn:Disconnect()
+            conn = nil
+        end
+        pcall(function()
+            cfVal:Destroy()
+        end)
+    end
+
+    tw.Destroying:Connect(cleanup)
+    tw.Completed:Connect(function()
+        cleanup()
         pcall(function()
             tw:Destroy()
         end)
     end)
+
     tw:Play()
     return tw
 end
