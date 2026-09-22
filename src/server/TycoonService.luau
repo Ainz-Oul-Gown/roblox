@@ -83,8 +83,17 @@ function TycoonService.applyRebirthPerks(player: Player)
     end
 end
 
--- Получить базовый WalkSpeed игрока с учётом rebirth-перков (P1-01)
+-- Получить базовый WalkSpeed игрока с учётом rebirth-перков и геймпасса SPEED_PERK
 function TycoonService.getBaseWalkSpeed(player: Player): number
+    -- SPEED_PERK gamepass (id 10004) даёт базовую скорость 28 (высший приоритет)
+    local MonetizationService = require(script.Parent:WaitForChild("MonetizationService", 5))
+    if MonetizationService and MonetizationService.userOwnsGamepass then
+        local ok, owns = pcall(MonetizationService.userOwnsGamepass, player, 10004)
+        if ok and owns then
+            return 28
+        end
+    end
+    -- Rebirth 4+ даёт скорость 22
     local rebirths = TycoonService.getRebirths(player)
     if rebirths >= 4 then
         return 22

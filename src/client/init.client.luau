@@ -997,10 +997,48 @@ if abilityEvent then
 end
 
 -- Обработка спецэффектов и звука способностей для всех игроков вокруг
+-- C9 FIX: VICTIM_IMPACT handler + C15: BLIND handler + TELEPORT handler
 if abilityVFXEvent then
-    abilityVFXEvent.OnClientEvent:Connect(function(caster: Player, fId: string, slot: string, originPos: Vector3, lookVector: Vector3)
-        if AbilityVFX and AbilityVFX.play then
-            AbilityVFX.play(caster, fId, slot, originPos, lookVector)
+    abilityVFXEvent.OnClientEvent:Connect(function(firstArg: any, ...)
+        -- Маршрутизация по типу первого аргумента
+        if typeof(firstArg) == "string" then
+            -- Серверные события для жертвы: FireClient(victim, "VICTIM_IMPACT", fId, slot, dmg)
+            if firstArg == "VICTIM_IMPACT" then
+                local fId, slot, dmg = ...
+                -- Показываем impactFlash на локальном персонаже (мы — жертва)
+                local myChar = localPlayer.Character
+                if myChar and JuiceEffects and JuiceEffects.impactFlash then
+                    local flashColor = Color3.fromRGB(255, 60, 60) -- красная вспышка урона
+                    JuiceEffects.impactFlash(myChar, flashColor, 0.15)
+                end
+                if JuiceEffects and JuiceEffects.traumaShake then
+                    local intensity = math.clamp((dmg or 20) / 80, 0.15, 0.6)
+                    JuiceEffects.traumaShake(intensity)
+                end
+
+            elseif firstArg == "BLIND" then
+                -- C15 FIX: сервер ослепляет жертву белой вспышкой
+                local dur = ... or 2.0
+                if JuiceEffects and JuiceEffects.screenBloomFlash then
+                    JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 255, 255), dur)
+                end
+
+            elseif firstArg == "TELEPORT" then
+                -- Принудительный телепорт локального персонажа (Sigma mobility A3)
+                local targetCFrame = ...
+                local myChar = localPlayer.Character
+                if myChar and targetCFrame then
+                    myChar:PivotTo(targetCFrame)
+                end
+            end
+
+        elseif typeof(firstArg) == "Instance" and firstArg:IsA("Player") then
+            -- Стандартный формат: FireAllClients(caster, fId, slot, originPos, lookVector)
+            local caster: Player = firstArg :: Player
+            local fId, slot, originPos, lookVector = ...
+            if AbilityVFX and AbilityVFX.play then
+                AbilityVFX.play(caster, fId, slot, originPos, lookVector)
+            end
         end
     end)
 end

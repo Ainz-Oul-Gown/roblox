@@ -115,9 +115,13 @@ AbilityVFX.getGroundPosition = getGroundPosition
 -- ============================================================================
 
 -- Создание расширяющегося неонового ударного кольца на земле
+-- C6 & C7 FIX: isWithinLOD check + mobile quality scale
 local function createShockwaveRing(pos: Vector3, maxRadius: number, color: Color3, duration: number?)
-    local dur = duration or 0.5
     local groundPos = getGroundPosition(pos)
+    if not isWithinLOD(groundPos) then return end
+    local qScale = getQualityScale()
+    local scaledRadius = maxRadius * qScale
+    local dur = duration or 0.5
     local ring = Instance.new("Part")
     ring.Name = "ShockwaveRing"
     ring.Shape = Enum.PartType.Cylinder
@@ -131,7 +135,7 @@ local function createShockwaveRing(pos: Vector3, maxRadius: number, color: Color
     ring.Parent = Workspace
 
     local tween = TweenService:Create(ring, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = Vector3.new(0.3, maxRadius * 2, maxRadius * 2),
+        Size = Vector3.new(0.3, scaledRadius * 2, scaledRadius * 2),
         Transparency = 1,
     })
     tween:Play()
@@ -183,13 +187,17 @@ end
 AbilityVFX.spawnTexturedShockwave = spawnTexturedShockwave
 
 -- Вспышка вертикального энергетического столба
+-- C6 & C7 FIX: isWithinLOD + getQualityScale
 local function createPillarOfLight(pos: Vector3, height: number, radius: number, color: Color3, duration: number?)
-    local dur = duration or 0.6
     local groundPos = getGroundPosition(pos)
+    if not isWithinLOD(groundPos) then return end
+    local qScale = getQualityScale()
+    local scaledRadius = radius * qScale
+    local dur = duration or 0.6
     local pillar = Instance.new("Part")
     pillar.Name = "EnergyPillar"
     pillar.Shape = Enum.PartType.Cylinder
-    pillar.Size = Vector3.new(height, radius * 2, radius * 2)
+    pillar.Size = Vector3.new(height, scaledRadius * 2, scaledRadius * 2)
     pillar.CFrame = CFrame.new(groundPos + Vector3.new(0, height / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
     pillar.Anchored = true
     pillar.CanCollide = false
@@ -199,7 +207,7 @@ local function createPillarOfLight(pos: Vector3, height: number, radius: number,
     pillar.Parent = Workspace
 
     local tween = TweenService:Create(pillar, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = Vector3.new(height, (radius * 2) * 1.6, (radius * 2) * 1.6),
+        Size = Vector3.new(height, (scaledRadius * 2) * 1.6, (scaledRadius * 2) * 1.6),
         Transparency = 1,
     })
     tween:Play()
@@ -208,9 +216,11 @@ end
 AbilityVFX.createPillarOfLight = createPillarOfLight
 
 -- Временный направленный неоновый лазер / луч
+-- C6 & D7 FIX: LOD check + minimum 0.35s duration
 local function createBeamLine(fromPos: Vector3, toPos: Vector3, color: Color3, thickness: number?, duration: number?)
-    local dur = duration or 0.4
-    local thick = thickness or 0.8
+    if not isWithinLOD(fromPos) and not isWithinLOD(toPos) then return end
+    local dur = math.max(duration or 0.4, 0.35)
+    local thick = (thickness or 0.8) * getQualityScale()
     local dist = (toPos - fromPos).Magnitude
     local beamPart = Instance.new("Part")
     beamPart.Name = "LaserBeamPart"
@@ -440,7 +450,9 @@ end
 AbilityVFX.spawnMagicCircle = spawnMagicCircle
 
 -- Атмосферный вход падающего объекта с неба (метеорит, наковальня, банхаммер, пицца)
+-- C6 & C13 FIX: isWithinLOD check + safe cleanup
 local function spawnFallingSkyProp(targetPos: Vector3, propBuilder: () -> BasePart, onImpact: () -> (), fallHeight: number?, customCrater: boolean?)
+    if not isWithinLOD(targetPos) then return end
     local h = fallHeight or 55
     -- Наклонная траектория падения (динамический угол входа в атмосферу)
     local spawnPos = targetPos + Vector3.new(10, h, 8)
@@ -456,7 +468,6 @@ local function spawnFallingSkyProp(targetPos: Vector3, propBuilder: () -> BasePa
         CFrame = CFrame.new(targetPos) * rot,
     })
     tween:Play()
-    Debris:AddItem(prop, fallTime + 1.0)
     tween.Completed:Connect(function()
         if prop and prop.Parent then
             prop:Destroy()
@@ -475,16 +486,11 @@ end
 AbilityVFX.spawnFallingSkyProp = spawnFallingSkyProp
 
 -- Главная функция проигрывания VFX/SFX способности
-function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: Vector3, lookVector: Vector3)
+function AbilityVFX.play(caster: Player, factionId: string, slot: string, originPos: Vector3, lookDir: Vector3)
     local isSelf = (caster == localPlayer)
     local pos = originPos or Vector3.zero
-    local look = if lookVector and lookVector.Magnitude > 0 then lookVector.Unit else Vector3.new(0, 0, -1)
-    local currentFaction = fId
-    if not currentFaction or currentFaction == "" then
-        currentFaction = "Skibidi"
-    end
-    local fId = currentFaction
-    local lookVector = look
+    local lookVector = if lookDir and lookDir.Magnitude > 0 then lookDir.Unit else Vector3.new(0, 0, -1)
+    local fId = if factionId and factionId ~= "" then factionId else "Skibidi"
 
     print(string.format("[AbilityVFX] Playing %s VFX for %s (slot: %s, isSelf: %s)", fId, tostring(caster and caster.Name), tostring(slot), tostring(isSelf)))
 
@@ -492,7 +498,8 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
     if fId == "Skibidi" then
         if slot == "base" then
             -- Skibidi Spin (Вихрь смыва)
-            spawnAnticipationVortex(pos, Color3.fromRGB(0, 180, 255), 0.15)
+            -- D2 FIX: 0.15с → 0.3с
+            spawnAnticipationVortex(pos, Color3.fromRGB(0, 180, 255), 0.3)
             spawnTexturedShockwave(pos, 22, Color3.fromRGB(0, 180, 255), 0.45)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(0, 200, 255), 14, 30, 0.2)
             JuiceEffects.play3DSound("splash", pos, 1.0)
@@ -572,6 +579,18 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
                     JuiceEffects.hitstop(0.07)
                 end
             end, 55, true)
+            -- C8 FIX: ongoing hammer quake VFX for 8s
+            for step = 1, 7 do
+                task.delay(step * 1.0, function()
+                    local center = if caster and caster.Character and caster.Character:FindFirstChild("HumanoidRootPart")
+                        then caster.Character.HumanoidRootPart.Position
+                        else pos
+                    spawnEarthFracture(center, 12, 6)
+                    spawnTexturedShockwave(center, 20, Color3.fromRGB(255, 120, 0), 0.4)
+                    JuiceEffects.spawnLightBurst(center, Color3.fromRGB(255, 215, 0), 16, 25, 0.2)
+                    JuiceEffects.play3DSound("slam", center, 0.8)
+                end)
+            end
         end
 
     -- 2. GIGACHAD MEWING (Looksmaxing / Diamond & Granite Monolith)
@@ -610,9 +629,10 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
             -- Looksmaxing Flash (Вспышка ультра-резкости)
             spawnTexturedShockwave(pos, 25, Color3.fromRGB(0, 220, 255), 0.4)
             createPillarOfLight(pos, 20, 7, Color3.fromRGB(255, 255, 255), 0.45)
-            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 255, 255), 24, 45, 0.2)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 255, 255), 24, 45, 0.25)
             JuiceEffects.play3DSound("magic", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "✨ LOOKSMAXING FLASH!", Color3.fromRGB(255, 255, 255))
+            -- C15 FIX: Ослепление близких игроков (для кастера лёгкая вспышка, для жертв — сервер отправит BLIND)
             if isSelf then JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 255, 255), 0.35) end
 
         elseif slot == "mobility" then
@@ -658,12 +678,14 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
 
         elseif slot == "tactical" then
             -- Сигма Парирование (Багровый защитный крест)
-            spawnVolumetricLaser(pos + Vector3.new(-3, 1.5, 0), pos + Vector3.new(3, 1.5, 0), Color3.fromRGB(255, 50, 50), 0.8, 0.2)
-            spawnVolumetricLaser(pos + Vector3.new(0, -1.5, 0), pos + Vector3.new(0, 4.5, 0), Color3.fromRGB(255, 50, 50), 0.8, 0.2)
-            JuiceEffects.spawnLightBurst(pos + lookVector * 3, Color3.fromRGB(255, 50, 50), 18, 25, 0.15)
+            -- D1 FIX: 0.2с → 0.45с (видимый крест парирования)
+            spawnVolumetricLaser(pos + Vector3.new(-3, 1.5, 0), pos + Vector3.new(3, 1.5, 0), Color3.fromRGB(255, 50, 50), 0.8, 0.45)
+            spawnVolumetricLaser(pos + Vector3.new(0, -1.5, 0), pos + Vector3.new(0, 4.5, 0), Color3.fromRGB(255, 50, 50), 0.8, 0.45)
+            -- D5 FIX: 0.15с → 0.25с, brightness 22
+            JuiceEffects.spawnLightBurst(pos + lookVector * 3, Color3.fromRGB(255, 50, 50), 22, 25, 0.25)
             JuiceEffects.play3DSound("parry", pos, 1.2)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "⚡ СИГМА ПАРИРОВАНИЕ!", Color3.fromRGB(255, 50, 50))
-            if isSelf then JuiceEffects.hitstop(0.06) end
+            if isSelf then JuiceEffects.hitstop(0.07) end
 
         elseif slot == "ultimate" then
             -- Сигма Доминация (Аура превосходства)
@@ -688,7 +710,7 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
 
         elseif slot == "mobility" then
             -- Теневой Шаг (Телепорт за спину)
-            spawnVolumetricLaser(pos, pos + lookVector * 28, Color3.fromRGB(142, 68, 173), 1.0, 0.25)
+            spawnVolumetricLaser(pos, pos + lookVector * 28, Color3.fromRGB(142, 68, 173), 1.0, 0.35)
             JuiceEffects.play3DSound("teleport", pos, 0.9)
             JuiceEffects.play3DSound("whoosh", pos, 0.8)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🔪 ТЕНЕВОЙ ШАГ!", Color3.fromRGB(142, 68, 173))
@@ -696,6 +718,7 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
 
         elseif slot == "godmode" then
             -- Brazilian Phonk Overload (Перегрузка фонка и молний)
+            -- C8 FIX: ongoing VFX молний на протяжении 8с
             spawnEarthFracture(pos, 18, 9)
             spawnGroundCracks(pos, 20, Color3.fromRGB(80, 10, 30), 3.5)
             createPillarOfLight(pos, 45, 12, Color3.fromRGB(231, 76, 60), 1.1)
@@ -707,6 +730,18 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
             if isSelf then
                 JuiceEffects.traumaShake(1.3)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(231, 76, 60), 0.4)
+            end
+            for step = 1, 7 do
+                task.delay(step * 1.0, function()
+                    local center = if caster and caster.Character and caster.Character:FindFirstChild("HumanoidRootPart")
+                        then caster.Character.HumanoidRootPart.Position
+                        else pos
+                    local strikePos = center + Vector3.new(math.random(-12, 12), 0, math.random(-12, 12))
+                    createBeamLine(strikePos + Vector3.new(0, 35, 0), strikePos, Color3.fromRGB(255, 50, 50), 0.9, 0.35)
+                    createShockwaveRing(strikePos, 10, Color3.fromRGB(231, 76, 60), 0.4)
+                    JuiceEffects.spawnLightBurst(strikePos, Color3.fromRGB(255, 50, 50), 16, 25, 0.2)
+                    JuiceEffects.play3DSound("electric", strikePos, 0.8)
+                end)
             end
         end
 
@@ -722,10 +757,34 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
 
         elseif slot == "tactical" then
             -- Ловушка Фастфуда (Масляная лужа)
+            -- C11 FIX: Персистентная масляная зона на 8с
+            local ground = getGroundPosition(pos)
+            local oilPart = Instance.new("Part")
+            oilPart.Name = "OilPuddleVFX"
+            oilPart.Size = Vector3.new(18, 0.1, 18)
+            oilPart.Shape = Enum.PartType.Cylinder
+            oilPart.CFrame = CFrame.new(ground + Vector3.new(0, 0.05, 0)) * CFrame.Angles(0, 0, math.rad(90))
+            oilPart.Anchored = true
+            oilPart.CanCollide = false
+            oilPart.Material = Enum.Material.Glass
+            oilPart.Color = Color3.fromRGB(60, 45, 15)
+            oilPart.Transparency = 0.35
+            oilPart.Parent = Workspace
+            Debris:AddItem(oilPart, 8)
+
             spawnGroundCracks(pos, 14, Color3.fromRGB(200, 130, 20), 3.2)
             spawnTexturedShockwave(pos, 15, Color3.fromRGB(230, 126, 34), 0.5)
             JuiceEffects.play3DSound("splash", pos, 0.9)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🍟 МАСЛЯНАЯ ЛОВУШКА!", Color3.fromRGB(230, 126, 34))
+
+        elseif slot == "mobility_land" then
+            -- C10 FIX: VFX приземления Cola Rocket Jump
+            spawnEarthFracture(pos, 14, 6)
+            spawnTexturedShockwave(pos, 22, Color3.fromRGB(230, 126, 34), 0.5)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 140, 0), 18, 35, 0.25)
+            JuiceEffects.play3DSound("slam", pos, 1.2)
+            JuiceEffects.play3DSound("splash", pos, 1.0)
+            if isSelf then JuiceEffects.traumaShake(0.65) end
 
         elseif slot == "ultimate" then
             -- Великий Налоговый Аудит (Вихрь купюр и монет)
@@ -836,6 +895,28 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 3.5, 0), "🟣 СЛИЗИСТЫЙ ПРЫЖОК!", Color3.fromRGB(155, 89, 182))
             if isSelf then JuiceEffects.fovPulse(15, 0.35) end
 
+        elseif slot == "mobility_land" then
+            -- C14 FIX: Персистентная жижа при приземлении (липкая зона)
+            local ground = getGroundPosition(pos)
+            local slimePart = Instance.new("Part")
+            slimePart.Name = "SlimePuddleVFX"
+            slimePart.Size = Vector3.new(20, 0.15, 20)
+            slimePart.Shape = Enum.PartType.Cylinder
+            slimePart.CFrame = CFrame.new(ground + Vector3.new(0, 0.05, 0)) * CFrame.Angles(0, 0, math.rad(90))
+            slimePart.Anchored = true
+            slimePart.CanCollide = false
+            slimePart.Material = Enum.Material.Glass
+            slimePart.Color = Color3.fromRGB(74, 35, 90)
+            slimePart.Transparency = 0.3
+            slimePart.Parent = Workspace
+            Debris:AddItem(slimePart, 6)
+            spawnEarthFracture(pos, 12, 6)
+            spawnTexturedShockwave(pos, 18, Color3.fromRGB(155, 89, 182), 0.5)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(155, 89, 182), 16, 30, 0.25)
+            JuiceEffects.play3DSound("splash", pos, 1.1)
+            JuiceEffects.play3DSound("slam", pos, 0.9)
+            if isSelf then JuiceEffects.traumaShake(0.55) end
+
         elseif slot == "godmode" then
             -- Ритуал 23 Июня (Элдрические щупальца бездны)
             spawnEarthFracture(pos, 18, 10)
@@ -850,6 +931,17 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
                 JuiceEffects.traumaShake(1.35)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(142, 68, 173), 0.45)
                 JuiceEffects.hitstop(0.07)
+            end
+            -- C8 FIX: ongoing toxic VFX pulses for godmode duration (3.5s stun cycle)
+            for step = 1, 3 do
+                task.delay(step * 1.0, function()
+                    local center = if caster and caster.Character and caster.Character:FindFirstChild("HumanoidRootPart")
+                        then caster.Character.HumanoidRootPart.Position
+                        else pos
+                    spawnTexturedShockwave(center, 30, Color3.fromRGB(142, 68, 173), 0.6)
+                    JuiceEffects.spawnLightBurst(center, Color3.fromRGB(155, 89, 182), 18, 30, 0.2)
+                    JuiceEffects.play3DSound("electric", center, 0.7)
+                end)
             end
         end
 
@@ -874,7 +966,8 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
 
         elseif slot == "ultimate" then
             -- Метеорит КейсОха
-            spawnFallingSkyProp(pos + lookVector * 18, function()
+            -- C5 FIX: VFX падает на pos (root.Position), а не на pos + lookVector * 18
+            spawnFallingSkyProp(pos, function()
                 local met = Instance.new("Part")
                 met.Shape = Enum.PartType.Ball
                 met.Size = Vector3.new(12, 12, 12)
@@ -882,8 +975,8 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
                 met.Color = Color3.fromRGB(230, 126, 34)
                 return met
             end, function()
-                createPillarOfLight(pos + lookVector * 18, 35, 12, Color3.fromRGB(230, 126, 34), 0.8)
-                spawnTexturedShockwave(pos + lookVector * 18, 42, Color3.fromRGB(230, 126, 34), 0.8)
+                createPillarOfLight(pos, 35, 12, Color3.fromRGB(230, 126, 34), 0.8)
+                spawnTexturedShockwave(pos, 42, Color3.fromRGB(230, 126, 34), 0.8)
                 JuiceEffects.play3DSound("meteor", pos, 1.4)
                 JuiceEffects.play3DSound("slam", pos, 1.2)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 6, 0), "☄️ МЕТЕОРИТ КЕЙСОХА!", Color3.fromRGB(230, 126, 34))
@@ -913,7 +1006,7 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
                 end
             end, 55)
 
-        elseif slot == "mobility" then
+        elseif slot == "mobility" or slot == "mobility_start" then
             -- Вафельный Каток
             spawnVolumetricLaser(pos, pos + lookVector * 32, Color3.fromRGB(230, 126, 34), 1.4, 0.35)
             spawnEarthFracture(pos, 10, 5)
@@ -924,6 +1017,15 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
                 JuiceEffects.fovPulse(16, 0.4)
                 JuiceEffects.traumaShake(0.5)
             end
+
+        elseif slot == "mobility_land" then
+            -- C10 FIX: VFX приземления Вафельного Катка
+            spawnEarthFracture(pos, 16, 8)
+            spawnTexturedShockwave(pos, 26, Color3.fromRGB(230, 126, 34), 0.55)
+            spawnGroundCracks(pos, 20, Color3.fromRGB(40, 45, 50), 2.5)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(230, 126, 34), 20, 40, 0.25)
+            JuiceEffects.play3DSound("slam", pos, 1.3)
+            if isSelf then JuiceEffects.traumaShake(0.6) end
 
         elseif slot == "godmode" then
             -- Смещение Земной Оси (Планетарное сотрясение)
@@ -1046,7 +1148,7 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
             if isSelf then
                 JuiceEffects.traumaShake(0.85)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(46, 204, 113), 0.3)
-                JuiceEffects.hitstop(0.05)
+                JuiceEffects.hitstop(0.07)
             end
 
         elseif slot == "special" then
@@ -1074,6 +1176,16 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
                 JuiceEffects.cameraKick(Vector3.new(0, 1, 0), 0.5)
             end
 
+        elseif slot == "mobility_land" then
+            -- C10 FIX: VFX приземления Молот-Джамп
+            spawnEarthFracture(pos, 16, 8)
+            spawnTexturedShockwave(pos, 24, Color3.fromRGB(46, 204, 113), 0.5)
+            spawnGroundCracks(pos, 18, Color3.fromRGB(30, 80, 40), 2.5)
+            JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(46, 204, 113), 20, 40, 0.25)
+            JuiceEffects.play3DSound("slam", pos, 1.3)
+            JuiceEffects.play3DSound("hammer", pos, 1.1)
+            if isSelf then JuiceEffects.traumaShake(0.7) end
+
         elseif slot == "godmode" then
             -- Ярость Вулкана Этна (Падение раскаленного молота вулкана)
             spawnFallingSkyProp(pos, function()
@@ -1097,6 +1209,18 @@ function AbilityVFX.play(caster: Player, fId: string, slot: string, originPos: V
                     JuiceEffects.hitstop(0.07)
                 end
             end, 55, true)
+            -- C8 FIX: ongoing molten quake VFX for 10s
+            for step = 1, 9 do
+                task.delay(step * 1.0, function()
+                    local center = if caster and caster.Character and caster.Character:FindFirstChild("HumanoidRootPart")
+                        then caster.Character.HumanoidRootPart.Position
+                        else pos
+                    spawnEarthFracture(center, 14, 7)
+                    spawnTexturedShockwave(center, 22, Color3.fromRGB(192, 57, 43), 0.5)
+                    JuiceEffects.spawnLightBurst(center, Color3.fromRGB(230, 126, 34), 18, 30, 0.2)
+                    JuiceEffects.play3DSound("hammer", center, 0.7)
+                end)
+            end
         end
     end
 end

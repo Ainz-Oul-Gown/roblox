@@ -87,16 +87,26 @@ test('AbilityVFX: implements Step 2 physical world fracture generators, LOD cull
     assert.ok(content.includes('if not r or not r.Parent then'), 'pruneOldRocks must clean nil references');
 });
 
-test('Replication: Server fires AbilityVFXEvent to all clients and Client connects to it', () => {
+test('Replication: Server fires AbilityVFXEvent to all clients and Client connects with routing', () => {
     const serverPath = path.join(__dirname, '../src/server/AbilityService.luau');
     const serverContent = fs.readFileSync(serverPath, 'utf8');
     assert.ok(serverContent.includes('local abilityVFXEvent = getOrCreateRemote("AbilityVFXEvent")'), 'Server must create AbilityVFXEvent');
     assert.ok(serverContent.includes('abilityVFXEvent:FireAllClients(player, fId, slot, root.Position, root.CFrame.LookVector)'), 'Server must fire AbilityVFXEvent to all clients');
 
+    // Victim-side helpers
+    assert.ok(serverContent.includes('function fireVictimVFX'), 'Server must define fireVictimVFX helper');
+    assert.ok(serverContent.includes('function fireBlind'), 'Server must define fireBlind helper');
+    assert.ok(serverContent.includes('VICTIM_IMPACT'), 'Server must fire VICTIM_IMPACT events');
+    assert.ok(serverContent.includes('BLIND'), 'Server must fire BLIND events');
+
     const clientPath = path.join(__dirname, '../src/client/init.client.luau');
     const clientContent = fs.readFileSync(clientPath, 'utf8');
     assert.ok(clientContent.includes('local abilityVFXEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15)'), 'Client must resolve AbilityVFXEvent');
-    assert.ok(clientContent.includes('AbilityVFX.play(caster, fId, slot, originPos, lookVector)'), 'Client must route AbilityVFXEvent to AbilityVFX.play');
+    // C9/C15: Client must handle VICTIM_IMPACT, BLIND, and standard VFX
+    assert.ok(clientContent.includes('VICTIM_IMPACT'), 'Client must handle VICTIM_IMPACT events');
+    assert.ok(clientContent.includes('BLIND'), 'Client must handle BLIND events');
+    assert.ok(clientContent.includes('TELEPORT'), 'Client must handle TELEPORT events');
+    assert.ok(clientContent.includes('AbilityVFX.play(caster, fId, slot, originPos, lookVector)'), 'Client must route standard events to AbilityVFX.play');
 });
 
 test('AbilityVFX: Step 3 - all 48 ability slots integrate 4-phase VFX, earth fracture, and camera trauma', () => {
@@ -164,9 +174,9 @@ test('AbilityVFX: Step 3 Review Fixes - player character raycast filtering, prop
     assert.ok(content.includes('CFrame.new(spawnPos) * rot'), 'spawnFallingSkyProp must apply rotation to spawn CFrame');
     assert.ok(content.includes('CFrame.new(targetPos) * rot'), 'spawnFallingSkyProp must apply rotation to target CFrame');
 
-    // Bug 4: originPos and lookVector nil-safe fallbacks
+    // Bug 4: originPos and lookVector nil-safe fallbacks (C12 renamed to avoid shadowing)
     assert.ok(content.includes('local pos = originPos or Vector3.zero'), 'AbilityVFX.play must provide safe fallback for originPos');
-    assert.ok(content.includes('local look = if lookVector and lookVector.Magnitude > 0 then lookVector.Unit else Vector3.new(0, 0, -1)'), 'AbilityVFX.play must provide safe fallback for lookVector');
+    assert.ok(content.includes('lookDir'), 'AbilityVFX.play must use lookDir param to avoid variable shadowing');
 });
 
 test('AbilityVFX & JuiceEffects: Step 4 - mobile LOD scaling, GPU shadow culling, particle budgeting, and memory cleanup', () => {
@@ -192,5 +202,140 @@ test('AbilityVFX & JuiceEffects: Step 4 - mobile LOD scaling, GPU shadow culling
     assert.ok(vfxContent.includes('vortexBurst = math.max(6, math.floor(18 * getQualityScale()))'), 'Anticipation vortex particles must scale with quality scale');
 });
 
+test('61-defect audit: LOD checks on ShockwaveRing/Pillar/Beam/SkyProp (C6)', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const content = fs.readFileSync(vfxPath, 'utf8');
 
+    // C6: isWithinLOD guard on heavy effects
+    const shockwaveIdx = content.indexOf('function createShockwaveRing');
+    const shockwaveSection = content.slice(shockwaveIdx, shockwaveIdx + 300);
+    assert.ok(shockwaveSection.includes('isWithinLOD'), 'createShockwaveRing must check isWithinLOD');
 
+    const pillarIdx = content.indexOf('function createPillarOfLight');
+    const pillarSection = content.slice(pillarIdx, pillarIdx + 300);
+    assert.ok(pillarSection.includes('isWithinLOD'), 'createPillarOfLight must check isWithinLOD');
+
+    const beamIdx = content.indexOf('function createBeamLine');
+    const beamSection = content.slice(beamIdx, beamIdx + 300);
+    assert.ok(beamSection.includes('isWithinLOD'), 'createBeamLine must check isWithinLOD');
+
+    const skyPropIdx = content.indexOf('function spawnFallingSkyProp');
+    const skyPropSection = content.slice(skyPropIdx, skyPropIdx + 300);
+    assert.ok(skyPropSection.includes('isWithinLOD'), 'spawnFallingSkyProp must check isWithinLOD');
+});
+
+test('61-defect audit: quality scale on ShockwaveRing/Pillar (C7)', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const content = fs.readFileSync(vfxPath, 'utf8');
+
+    const shockwaveIdx = content.indexOf('function createShockwaveRing');
+    const shockwaveSection = content.slice(shockwaveIdx, shockwaveIdx + 400);
+    assert.ok(shockwaveSection.includes('getQualityScale'), 'createShockwaveRing must use getQualityScale');
+
+    const pillarIdx = content.indexOf('function createPillarOfLight');
+    const pillarSection = content.slice(pillarIdx, pillarIdx + 400);
+    assert.ok(pillarSection.includes('getQualityScale'), 'createPillarOfLight must use getQualityScale');
+});
+
+test('61-defect audit: timing fixes D1-D8', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const vfxContent = fs.readFileSync(vfxPath, 'utf8');
+    const juicePath = path.join(__dirname, '../src/client/JuiceEffects.luau');
+    const juiceContent = fs.readFileSync(juicePath, 'utf8');
+
+    // D1: Sigma parry cross 0.45s
+    assert.ok(vfxContent.includes('0.45)'), 'Sigma parry lasers must use 0.45s duration');
+    // D2: AnticipationVortex 0.3s
+    assert.ok(vfxContent.includes('0, 180, 255), 0.3)'), 'Skibidi base AnticipationVortex must be 0.3s');
+    // D3: impactFlash 0.15s
+    assert.ok(juiceContent.includes('local dur = duration or 0.15'), 'impactFlash default must be 0.15s');
+    // D4: hitstop min 0.07s
+    assert.ok(juiceContent.includes('math.max(duration or 0.07, 0.07)'), 'hitstop must enforce 0.07s minimum');
+    // D7: BeamLine min 0.35s
+    const beamIdx = vfxContent.indexOf('function createBeamLine');
+    const beamSection = vfxContent.slice(beamIdx, beamIdx + 400);
+    assert.ok(beamSection.includes('math.max('), 'createBeamLine must enforce minimum duration');
+    // D8: LightBurst LOD check
+    assert.ok(juiceContent.includes('Magnitude > 120'), 'spawnLightBurst must skip distant bursts at 120+ studs');
+});
+
+test('61-defect audit: ongoing godmode VFX (C8)', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const content = fs.readFileSync(vfxPath, 'utf8');
+
+    // Sigma godmode: ongoing lightning
+    const sigmaGodIdx = content.indexOf('BRAZILIAN PHONK OVERLOAD');
+    assert.ok(sigmaGodIdx !== -1, 'Must have Sigma godmode VFX');
+    const sigmaAfter = content.slice(sigmaGodIdx, sigmaGodIdx + 600);
+    assert.ok(sigmaAfter.includes('task.delay(step'), 'Sigma godmode must have ongoing VFX with task.delay');
+
+    // Skibidi godmode: ongoing quakes
+    const skibidiGodIdx = content.indexOf('ТИТАН СКИБИДИ-КРУШИТЕЛЬ');
+    assert.ok(skibidiGodIdx !== -1, 'Must have Skibidi godmode VFX');
+    const skibidiAfter = content.slice(skibidiGodIdx, skibidiGodIdx + 600);
+    assert.ok(skibidiAfter.includes('task.delay(step'), 'Skibidi godmode must have ongoing VFX with task.delay');
+
+    // TungTung godmode: ongoing quakes
+    const tungGodIdx = content.indexOf('ЯРОСТЬ ВУЛКАНА ЭТНА');
+    assert.ok(tungGodIdx !== -1, 'Must have TungTung godmode VFX');
+    const tungAfter = content.slice(tungGodIdx, tungGodIdx + 600);
+    assert.ok(tungAfter.includes('task.delay(step'), 'TungTung godmode must have ongoing VFX with task.delay');
+});
+
+test('61-defect audit: mobility_land VFX handlers (C10)', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const content = fs.readFileSync(vfxPath, 'utf8');
+
+    assert.ok(content.includes('"mobility_land"'), 'AbilityVFX must handle mobility_land slot');
+
+    // Verify FanumTax, TungTung, CaseOh, Grimace have mobility_land
+    const fanuIdx = content.indexOf('fId == "FanumTax"');
+    const grimIdx = content.indexOf('fId == "Grimace"');
+    const caseIdx = content.indexOf('fId == "CaseOh"');
+    const tungIdx = content.indexOf('fId == "TungTung"');
+    
+    for (const [name, idx] of [['FanumTax', fanuIdx], ['CaseOh', caseIdx], ['TungTung', tungIdx], ['Grimace', grimIdx]]) {
+        const nextFaction = content.indexOf('elseif fId ==', idx + 1);
+        const section = content.slice(idx, nextFaction !== -1 ? nextFaction : undefined);
+        assert.ok(section.includes('mobility_land'), `${name} must have mobility_land VFX handler`);
+    }
+});
+
+test('61-defect audit: C5 CaseOh ultimate VFX offset fix', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const content = fs.readFileSync(vfxPath, 'utf8');
+
+    // C5: meteor VFX should target pos, not pos + lookVector * 18
+    const meteorIdx = content.indexOf('МЕТЕОРИТ КЕЙСОХА');
+    assert.ok(meteorIdx !== -1, 'Must have CaseOh meteor VFX');
+    const meteorSection = content.slice(Math.max(0, meteorIdx - 400), meteorIdx);
+    // The spawnFallingSkyProp should use pos not pos + lookVector * 18
+    assert.ok(!meteorSection.includes('lookVector * 18'), 'CaseOh ultimate VFX must NOT offset by lookVector * 18');
+});
+
+test('61-defect audit: C11 FanumTax tactical persistent oil puddle', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const content = fs.readFileSync(vfxPath, 'utf8');
+
+    assert.ok(content.includes('OilPuddleVFX'), 'FanumTax tactical VFX must spawn persistent oil puddle part');
+});
+
+test('61-defect audit: C12 variable shadowing fix', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const content = fs.readFileSync(vfxPath, 'utf8');
+
+    // C12: play() must NOT shadow fId or lookVector from outer params
+    const playIdx = content.indexOf('function AbilityVFX.play');
+    const playSignature = content.slice(playIdx, playIdx + 200);
+    assert.ok(playSignature.includes('factionId'), 'play() param must be factionId not fId to avoid shadowing');
+    assert.ok(playSignature.includes('lookDir'), 'play() param must be lookDir not lookVector to avoid shadowing');
+    // Must NOT contain "local fId = currentFaction" (old shadowing pattern)
+    assert.ok(!content.includes('local fId = currentFaction'), 'Must not shadow fId with local redeclaration');
+});
+
+test('61-defect audit: C14 Grimace mobility persistent slime puddle', () => {
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const content = fs.readFileSync(vfxPath, 'utf8');
+
+    assert.ok(content.includes('SlimePuddleVFX'), 'Grimace mobility_land VFX must spawn persistent slime puddle');
+});

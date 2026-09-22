@@ -176,8 +176,9 @@ local activeHitstopCount: number = 0
 local cachedOriginalWalkSpeed: number = 16
 
 -- Хитстоп (Hitstop / Micro-Freeze) для колоссального ощущения веса удара
+-- D4 FIX: минимум 0.07с = 4+ кадра при 60fps (1.5 кадра было недостаточно на Mobile)
 function JuiceEffects.hitstop(duration: number?)
-    local dur = duration or 0.05
+    local dur = math.max(duration or 0.07, 0.07)
     local char = localPlayer.Character
     if not char then return end
     local humanoid = char:FindFirstChildOfClass("Humanoid")
@@ -200,9 +201,10 @@ function JuiceEffects.hitstop(duration: number?)
 end
 
 -- Target Impact Flash (кратковременный белый силуэт цели при получении урона)
+-- D3 FIX: 0.08с → 0.15с (был невидим на Mobile: ~2.4 кадра → теперь минимум 4.5 кадра)
 function JuiceEffects.impactFlash(targetChar: Model, color: Color3?, duration: number?)
     if not targetChar or not targetChar:IsA("Model") then return end
-    local dur = duration or 0.08
+    local dur = duration or 0.15
     local flashColor = color or Color3.fromRGB(255, 255, 255)
 
     local existingHighlight = targetChar:FindFirstChild("ImpactFlashHighlight")
@@ -227,8 +229,18 @@ function JuiceEffects.impactFlash(targetChar: Model, color: Color3?, duration: n
 end
 
 -- Динамический импульсный свет (PointLight Impact Burst) для мгновенных объемных теней
+-- D8 FIX: LOD check + min 0.25с на дальних дистанциях
 function JuiceEffects.spawnLightBurst(pos: Vector3, color: Color3, brightness: number?, radius: number?, duration: number?)
-    local dur = duration or 0.22
+    -- LOD: пропуск далёких вспышек за 120 studs
+    local cam = Workspace.CurrentCamera
+    if cam and (cam.CFrame.Position - pos).Magnitude > 120 then return end
+
+    local baseDur = duration or 0.22
+    -- На дальних дистанциях (>50 studs) увеличиваем длительность для видимости
+    if cam and (cam.CFrame.Position - pos).Magnitude > 50 then
+        baseDur = math.max(baseDur, 0.3)
+    end
+    local dur = math.max(baseDur, 0.25)
     local b = brightness or 16
     local r = if isMobileDevice then math.min(radius or 40, 24) else (radius or 40)
 
@@ -257,8 +269,9 @@ function JuiceEffects.spawnLightBurst(pos: Vector3, color: Color3, brightness: n
 end
 
 -- Пост-процессинг вспышка Bloom / ColorCorrection
+-- D6 FIX: default 0.18с → 0.25с; для godmode-способностей вызывать с 0.35с явно
 function JuiceEffects.screenBloomFlash(color: Color3?, duration: number?)
-    local dur = duration or 0.18
+    local dur = duration or 0.25
     local bloom = Lighting:FindFirstChild("CombatBloomPulse") :: BloomEffect?
     if not bloom then
         bloom = Instance.new("BloomEffect")
