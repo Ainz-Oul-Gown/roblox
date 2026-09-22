@@ -87,8 +87,28 @@
     - Потолочные световые балки под крышей (`TycoonRoof`, `PL Brightness = 0.55, Range = 20`, `SL Brightness = 0.45, Range = 18`, `beam Transparency = 0.45`).
     - Неоновые полосы стен (`BrainrotWalls`, `Transparency = 0.15`) — приглушены для предотвращения пересвечивания.
 - `AbilityService`: Инвентарные тулы способностей, серверный rate-limit (0.3с debounce на `OnServerEvent`), `os.clock()` для субсекундных кулдаунов, PvP-урон с `addCashRaw` (без множителя), `MaxHealth` cap 250, восстановление `WalkSpeed` из `getBaseWalkSpeed`, сохранение transparency при invisibility, обработка уже подключённых игроков, серверная репликация через `AbilityVFXEvent:FireAllClients`. Victim-side VFX: `fireVictimVFX` (VICTIM_IMPACT), `fireBlind` (BLIND) для клиентских эффектов на жертве. Атрибуты: `Invulnerable`, `ReflectDamage`, `DamageVulnerability`, `DoubleDamage`, `TripleDamage`, `SigmaCritActive`, `StunImmune`, `KnockbackImmune`, `AbilityDisabled`. Ongoing godmode VFX: серия ударов через `task.delay` для Skibidi/Sigma/TungTung. Mobility landing AoE: `mobility_land` события для FanumTax/TungTung/CaseOh/Grimace.
+- `CharacterAnimator` (клиентский движок процедурной анимации):
+  - Полнофункциональная система процедурной анимации без внешних ассетов Roblox (работает автономно для R15 и R6 аватаров).
+  - Управление суставами `Motor6D` (`RightShoulder`, `LeftShoulder`, `Waist/RootJoint`, `Neck`) через `TweenService` с динамической интерполяцией C0 CFrame.
+  - Автоматическое кэширование начального положения суставов (`originalC0Cache`) с гарантированным сбросом `restoreJoints` по истечении длительности или при новом вызове.
+  - Набор из 8 сигнатурных поз мемов поколения Альфа:
+    * `playShhhPose`: легендарный жест тишины (поднятие пальца к губам, наклон головы и выдвижение челюсти) для ультимейта Сигмы и абилок Мьюинга.
+    * `playGigachadFlex`: двойной бицепс-флекс (поднятие и сгибание обоих предплечий с наклоном груди назад).
+    * `playSigmaTilt`: фирменный холодный наклон головы вбок и легкий разворот торса.
+    * `playGroundPound`: сокрушительный прыжковый удар двумя руками о землю.
+    * `playHammerSwing`: тяжелый замах кузнечным молотом с разворотом торса.
+    * `playRizzlerFlourish`: манерный флуриш рукой у виска с наклоном.
+    * `playSpinSalute`: 360-градусный вихревой поворот с прикладыванием руки к фуражке.
+    * `playMoneySnatch`: выпад двумя руками вперед для захвата наличных.
+- `CinematicCamera` (клиентский режиссер кинематографической камеры):
+  - Модуль драматического управления перспективой камеры во время активации ключевых способностей:
+    * `focusCutIn`: кинематографический наезд перед лицом/грудью персонажа с настраиваемым голландским углом (Dutch Angle: наклон горизонта на 10-15 градусов) и компрессией FOV (70 -> 52).
+    * `groundSlamPerspective`: драматический нижний ракурс снизу вверх для тяжелых приземлений и падений объектов с неба.
+    * `explosiveSnapBack`: мгновенный отскок камеры с импульсом FOV и тряской при ударе.
+    * Защищенный сброс (`resetCamera` / `safeReset`): гарантированное возвращение `CameraType.Custom` и `CameraSubject` к Humanoid даже при дисконнекте, смерти или спаме абилок.
 - `AbilityVFX` (клиентский движок эффектов):
   - 48 уникальных наборов визуальных и звуковых эффектов (8 фракций x 6 слотов способностей), реализованных по 4-фазной модели (Anticipation -> Release -> World Fracture -> Dissipation).
+  - Интеграция с `CharacterAnimator` и `CinematicCamera`: все 8 фракций сопровождаются фирменными позами персонажей и ракурсами камеры при касте способностей (включая ультимейт Сигмы с жестом "SHHH" и голландским углом).
   - Световые неоновые столбы (`createPillarOfLight`), ударные волны расширения (`createShockwaveRing`), двухконтурные текстурированные волны (`spawnTexturedShockwave`), лазерные лучи (`createBeamLine`), объемные лучи с белым сердечником (`spawnVolumetricLaser`).
   - Процедурная физика мира: вылет 3D-камней земли (`spawnEarthFracture`: материал Slate/Basalt с анти-гравитационным зависанием), декали трещин с растворением (`spawnGroundCracks`), втягивающий вихрь частиц (`spawnAnticipationVortex`), вращающийся рунический круг под ногами (`spawnMagicCircle`).
   - Атмосферный наклонный вход падающих объектов (`spawnFallingSkyProp`: метеориты КейсОха, банхаммеры, наковальни и пиццы) с формированием детонационного кратера, света и камней.

@@ -45,7 +45,55 @@ if not JuiceEffects then
     }
 end
 
+local animModule = script:FindFirstChild("CharacterAnimator")
+    or (script.Parent and script.Parent:FindFirstChild("CharacterAnimator"))
+    or script:WaitForChild("CharacterAnimator", 2)
+    or (script.Parent and script.Parent:WaitForChild("CharacterAnimator", 2))
+
+local CharacterAnimator: any = nil
+if animModule and animModule:IsA("ModuleScript") then
+    local ok, res = pcall(require, animModule)
+    if ok and res then
+        CharacterAnimator = res
+    end
+end
+if not CharacterAnimator then
+    CharacterAnimator = {
+        playShhhPose = function() end,
+        playGigachadFlex = function() end,
+        playSigmaTilt = function() end,
+        playGroundPound = function() end,
+        playHammerSwing = function() end,
+        playRizzlerFlourish = function() end,
+        playSpinSalute = function() end,
+        playMoneySnatch = function() end,
+    }
+end
+
+local cameraModule = script:FindFirstChild("CinematicCamera")
+    or (script.Parent and script.Parent:FindFirstChild("CinematicCamera"))
+    or script:WaitForChild("CinematicCamera", 2)
+    or (script.Parent and script.Parent:WaitForChild("CinematicCamera", 2))
+
+local CinematicCamera: any = nil
+if cameraModule and cameraModule:IsA("ModuleScript") then
+    local ok, res = pcall(require, cameraModule)
+    if ok and res then
+        CinematicCamera = res
+    end
+end
+if not CinematicCamera then
+    CinematicCamera = {
+        focusCutIn = function() end,
+        explosiveSnapBack = function() end,
+        groundSlamPerspective = function() end,
+        resetCamera = function() end,
+    }
+end
+
 local AbilityVFX = {}
+AbilityVFX.CharacterAnimator = CharacterAnimator
+AbilityVFX.CinematicCamera = CinematicCamera
 
 local localPlayer = Players.LocalPlayer
 local isMobileDevice = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
@@ -501,6 +549,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     local pos = originPos or Vector3.zero
     local lookVector = if lookDir and lookDir.Magnitude > 0 then lookDir.Unit else Vector3.new(0, 0, -1)
     local fId = if factionId and factionId ~= "" then factionId else "Skibidi"
+    local casterChar = if caster then caster.Character else nil
 
     print(string.format("[AbilityVFX] Playing %s VFX for %s (slot: %s, isSelf: %s)", fId, tostring(caster and caster.Name), tostring(slot), tostring(isSelf)))
 
@@ -508,7 +557,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     if fId == "Skibidi" then
         if slot == "base" then
             -- Skibidi Spin (Вихрь смыва)
-            -- D2 FIX: 0.15с → 0.3с
+            if casterChar then CharacterAnimator.playSpinSalute(casterChar, 0.8) end
             spawnAnticipationVortex(pos, Color3.fromRGB(0, 180, 255), 0.3)
             spawnTexturedShockwave(pos, 22, Color3.fromRGB(0, 180, 255), 0.45)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(0, 200, 255), 14, 30, 0.2)
@@ -526,6 +575,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
 
         elseif slot == "ultimate" then
             -- Мега-Смыв 3000 (Титанический водоворот)
+            if casterChar then CharacterAnimator.playSpinSalute(casterChar, 1.2) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.4, 5.0, -10) end
             spawnAnticipationVortex(pos, Color3.fromRGB(0, 120, 255), 0.25)
             spawnMagicCircle(pos, Color3.fromRGB(0, 220, 255), 0.8)
             spawnTexturedShockwave(pos, 36, Color3.fromRGB(0, 180, 255), 0.7)
@@ -546,6 +597,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
 
         elseif slot == "special" then
             -- Skibidi Dop Dop Anthem (Звуковой мем-взрыв)
+            if casterChar then CharacterAnimator.playSpinSalute(casterChar, 0.9) end
             for i = 1, 3 do
                 task.delay((i - 1) * 0.12, function()
                     spawnTexturedShockwave(pos, 12 * i + 4, Color3.fromRGB(255, 215, 0), 0.4)
@@ -570,6 +622,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
 
         elseif slot == "godmode" then
             -- Титан Скибиди-Крушитель (Падение Золотого Унитаза Титана)
+            if casterChar then CharacterAnimator.playSpinSalute(casterChar, 1.5) end
+            if isSelf and casterChar then CinematicCamera.groundSlamPerspective(casterChar, 0.65) end
             spawnFallingSkyProp(pos, function()
                 local titanProp = Instance.new("Part")
                 titanProp.Size = Vector3.new(10, 8, 8)
@@ -609,7 +663,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     -- 2. GIGACHAD MEWING (Looksmaxing / Diamond & Granite Monolith)
     elseif fId == "Mewing" then
         if slot == "base" then
-            -- Mewing Stare (Челюстной лазерный стан)
+            -- Mewing Stare (Челюстной лазерный стан + жест SHHH)
+            if casterChar then CharacterAnimator.playShhhPose(casterChar, 1.0) end
             spawnVolumetricLaser(pos + Vector3.new(0, 2, 0), pos + lookVector * 32 + Vector3.new(0, 2, 0), Color3.fromRGB(0, 220, 255), 0.85, 0.35)
             spawnTexturedShockwave(pos, 12, Color3.fromRGB(0, 220, 255), 0.3)
             JuiceEffects.play3DSound("laser", pos, 0.9)
@@ -617,7 +672,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.traumaShake(0.35) end
 
         elseif slot == "tactical" then
-            -- Алмазный Подбородок (Отражающий кристалл)
+            -- Алмазный Подбородок (Отражающий кристалл + жест SHHH)
+            if casterChar then CharacterAnimator.playShhhPose(casterChar, 1.1) end
             createPillarOfLight(pos, 9, 4, Color3.fromRGB(180, 240, 255), 0.5)
             spawnMagicCircle(pos, Color3.fromRGB(0, 240, 255), 0.6)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(0, 240, 255), 15, 30, 0.2)
@@ -625,7 +681,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "💎 АЛМАЗНЫЙ ПОДБОРОДОК!", Color3.fromRGB(0, 230, 255))
 
         elseif slot == "ultimate" then
-            -- Bye Bye Shockwave (Сверхзвуковой плоский срез)
+            -- Bye Bye Shockwave (Сверхзвуковой плоский срез + жест SHHH и наезд камеры)
+            if casterChar then CharacterAnimator.playShhhPose(casterChar, 1.3) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.45, 4.5, 12) end
             spawnTexturedShockwave(pos, 38, Color3.fromRGB(0, 240, 255), 0.65)
             spawnEarthFracture(pos, 15, 8)
             spawnGroundCracks(pos, 16, Color3.fromRGB(0, 180, 220), 2.5)
@@ -641,7 +699,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end
 
         elseif slot == "special" then
-            -- Looksmaxing Flash (Вспышка ультра-резкости)
+            -- Looksmaxing Flash (Вспышка ультра-резкости + жест SHHH)
+            if casterChar then CharacterAnimator.playShhhPose(casterChar, 0.9) end
             spawnTexturedShockwave(pos, 25, Color3.fromRGB(0, 220, 255), 0.4)
             createPillarOfLight(pos, 20, 7, Color3.fromRGB(255, 255, 255), 0.45)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 255, 255), 24, 45, 0.25)
@@ -665,7 +724,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end
 
         elseif slot == "godmode" then
-            -- Альфа Доминация (Монументальное сокрушение)
+            -- Альфа Доминация (Монументальное сокрушение + Гигачад Power Flex)
+            if casterChar then CharacterAnimator.playGigachadFlex(casterChar, 1.8) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.5, 4.8, 0) end
             spawnAnticipationVortex(pos, Color3.fromRGB(0, 240, 255), 0.3)
             spawnEarthFracture(pos, 18, 10)
             spawnGroundCracks(pos, 20, Color3.fromRGB(0, 160, 200), 3.2)
@@ -686,7 +747,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     -- 3. PATRICK SIGMA (Phonk Rage / Dark Neon Crimson & Shadow Glitch)
     elseif fId == "Sigma" then
         if slot == "base" then
-            -- Phonk Rage (Багрово-пурпурная ярость)
+            -- Phonk Rage (Багрово-пурпурная ярость + наклон головы)
+            if casterChar then CharacterAnimator.playSigmaTilt(casterChar, 0.7) end
             spawnTexturedShockwave(pos, 20, Color3.fromRGB(231, 76, 60), 0.45)
             spawnMagicCircle(pos, Color3.fromRGB(142, 68, 173), 0.7)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(231, 76, 60), 15, 30, 0.2)
@@ -696,18 +758,19 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.traumaShake(0.4) end
 
         elseif slot == "tactical" then
-            -- Сигма Парирование (Багровый защитный крест)
-            -- D1 FIX: 0.2с → 0.45с (видимый крест парирования)
+            -- Сигма Парирование (Багровый защитный крест + стойка SHHH)
+            if casterChar then CharacterAnimator.playShhhPose(casterChar, 0.6) end
             spawnVolumetricLaser(pos + Vector3.new(-3, 1.5, 0), pos + Vector3.new(3, 1.5, 0), Color3.fromRGB(255, 50, 50), 0.8, 0.45)
             spawnVolumetricLaser(pos + Vector3.new(0, -1.5, 0), pos + Vector3.new(0, 4.5, 0), Color3.fromRGB(255, 50, 50), 0.8, 0.45)
-            -- D5 FIX: 0.15с → 0.25с, brightness 22
             JuiceEffects.spawnLightBurst(pos + lookVector * 3, Color3.fromRGB(255, 50, 50), 22, 25, 0.25)
             JuiceEffects.play3DSound("parry", pos, 1.2)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "⚡ СИГМА ПАРИРОВАНИЕ!", Color3.fromRGB(255, 50, 50))
             if isSelf then JuiceEffects.hitstop(0.07) end
 
         elseif slot == "ultimate" then
-            -- Сигма Доминация (Аура превосходства)
+            -- Сигма Доминация (Аура превосходства + культовый жест SHHH и голландский угол камеры)
+            if casterChar then CharacterAnimator.playShhhPose(casterChar, 1.4) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.5, 4.5, -14) end
             spawnEarthFracture(pos, 15, 8)
             spawnGroundCracks(pos, 16, Color3.fromRGB(60, 10, 20), 2.8)
             spawnTexturedShockwave(pos, 36, Color3.fromRGB(231, 76, 60), 0.7)
@@ -715,7 +778,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(231, 76, 60), 22, 50, 0.3)
             JuiceEffects.spawnDebrisBlast(pos, 18, Color3.fromRGB(231, 76, 60))
             JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
-            JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🕶️ СИГМА ДОМИНАЦИЯ!", Color3.fromRGB(231, 76, 60))
+            JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🤫 СИГМА ДОМИНАЦИЯ!", Color3.fromRGB(231, 76, 60))
             if isSelf then
                 JuiceEffects.traumaShake(0.9)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(231, 76, 60), 0.3)
@@ -723,7 +786,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end
 
         elseif slot == "special" then
-            -- Lone Wolf Grindset (Теневая невидимость)
+            -- Lone Wolf Grindset (Теневая невидимость + наклон)
+            if casterChar then CharacterAnimator.playSigmaTilt(casterChar, 0.8) end
             spawnTexturedShockwave(pos, 16, Color3.fromRGB(30, 30, 35), 0.5)
             JuiceEffects.play3DSound("teleport", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🐺 LONE WOLF GRINDSET!", Color3.fromRGB(180, 180, 180))
@@ -737,8 +801,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.fovPulse(16, 0.35) end
 
         elseif slot == "godmode" then
-            -- Brazilian Phonk Overload (Перегрузка фонка и молний)
-            -- C8 FIX: ongoing VFX молний на протяжении 8с
+            -- Brazilian Phonk Overload (Перегрузка фонка и молний + наклон сигмы и кинематографическая камера)
+            if casterChar then CharacterAnimator.playSigmaTilt(casterChar, 1.8) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.5, 4.8, 10) end
             spawnEarthFracture(pos, 18, 9)
             spawnGroundCracks(pos, 20, Color3.fromRGB(80, 10, 30), 3.5)
             createPillarOfLight(pos, 45, 12, Color3.fromRGB(231, 76, 60), 1.1)
@@ -769,7 +834,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     -- 4. FANUM TAX (Grease / Street Food Feast / Cash & Sizzle)
     elseif fId == "FanumTax" then
         if slot == "base" then
-            -- Tax Snatch (Выкачивание наличных)
+            -- Tax Snatch (Выкачивание наличных + анимация кражи)
+            if casterChar then CharacterAnimator.playMoneySnatch(casterChar, 0.6) end
             spawnVolumetricLaser(pos + lookVector * 22, pos, Color3.fromRGB(241, 196, 15), 0.9, 0.35)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(241, 196, 15), 14, 25, 0.2)
             JuiceEffects.play3DSound("snatch", pos, 1.1)
@@ -809,7 +875,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.traumaShake(0.65) end
 
         elseif slot == "ultimate" then
-            -- Великий Налоговый Аудит (Вихрь купюр и монет)
+            -- Великий Налоговый Аудит (Вихрь купюр и монет + анимация кражи и зум камеры)
+            if casterChar then CharacterAnimator.playMoneySnatch(casterChar, 1.2) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.45, 5.0, 8) end
             spawnAnticipationVortex(pos, Color3.fromRGB(241, 196, 15), 0.25)
             spawnEarthFracture(pos, 14, 7)
             spawnGroundCracks(pos, 16, Color3.fromRGB(180, 90, 10), 2.8)
@@ -827,6 +895,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
 
         elseif slot == "special" then
             -- Fries Carpet Bomb (Ковровая бомбардировка картошкой фри)
+            if casterChar then CharacterAnimator.playMoneySnatch(casterChar, 0.7) end
             for i = 1, 3 do
                 task.delay((i - 1) * 0.12, function()
                     local bombPos = pos + lookVector * (9 * i)
@@ -851,6 +920,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
 
         elseif slot == "godmode" then
             -- Мега-Фанум Пиршество (Падение гигантской золотой пиццы)
+            if casterChar then CharacterAnimator.playMoneySnatch(casterChar, 1.5) end
+            if isSelf and casterChar then CinematicCamera.groundSlamPerspective(casterChar, 0.7) end
             spawnFallingSkyProp(pos, function()
                 local pizza = Instance.new("Part")
                 pizza.Shape = Enum.PartType.Cylinder
@@ -877,7 +948,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     -- 5. GRIMACE SHAKE (Toxic Biohazard / Eldritch Purple)
     elseif fId == "Grimace" then
         if slot == "base" then
-            -- Grimace Cloud (Токсичное облако)
+            -- Grimace Cloud (Токсичное облако + стойка)
+            if casterChar then CharacterAnimator.playGigachadFlex(casterChar, 0.7) end
             spawnTexturedShockwave(pos, 18, Color3.fromRGB(155, 89, 182), 0.6)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(155, 89, 182), 14, 28, 0.2)
             JuiceEffects.play3DSound("splash", pos, 0.9)
@@ -891,7 +963,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🟣 КОКТЕЙЛЬНАЯ ЛУЖА!", Color3.fromRGB(142, 68, 173))
 
         elseif slot == "ultimate" then
-            -- Катаклизм Гримаса (Аренный токсичный туман)
+            -- Катаклизм Гримаса (Аренный токсичный туман + флекс и зум камеры)
+            if casterChar then CharacterAnimator.playGigachadFlex(casterChar, 1.3) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.45, 4.5, -8) end
             spawnAnticipationVortex(pos, Color3.fromRGB(155, 89, 182), 0.3)
             spawnEarthFracture(pos, 16, 8)
             spawnGroundCracks(pos, 18, Color3.fromRGB(60, 20, 80), 3.0)
@@ -908,7 +982,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end
 
         elseif slot == "special" then
-            -- Grimace Birthday Eclipse (Затмение дня рождения)
+            -- Grimace Birthday Eclipse (Затмение дня рождения + спин)
+            if casterChar then CharacterAnimator.playSpinSalute(casterChar, 0.8) end
             spawnMagicCircle(pos, Color3.fromRGB(74, 35, 90), 0.9)
             createPillarOfLight(pos, 22, 7, Color3.fromRGB(155, 89, 182), 0.6)
             JuiceEffects.play3DSound("magic", pos, 1.0)
@@ -947,7 +1022,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.traumaShake(0.55) end
 
         elseif slot == "godmode" then
-            -- Ритуал 23 Июня (Элдрические щупальца бездны)
+            -- Ритуал 23 Июня (Элдрические щупальца бездны + мощный флекс и динамический ракурс)
+            if casterChar then CharacterAnimator.playGigachadFlex(casterChar, 1.8) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.5, 5.0, 12) end
             spawnEarthFracture(pos, 18, 10)
             spawnGroundCracks(pos, 20, Color3.fromRGB(50, 10, 70), 3.8)
             createPillarOfLight(pos, 48, 15, Color3.fromRGB(100, 10, 130), 1.2)
@@ -979,7 +1056,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     -- 6. CASEOH GRAVITY (Singularity & Colossal Kinetic Mass)
     elseif fId == "CaseOh" then
         if slot == "base" then
-            -- CaseOh Slam (Гравитационный слэм)
+            -- CaseOh Slam (Гравитационный слэм + мощный удар о землю двумя руками)
+            if casterChar then CharacterAnimator.playGroundPound(casterChar, 0.8) end
             spawnEarthFracture(pos, 14, 7)
             spawnTexturedShockwave(pos, 22, Color3.fromRGB(230, 126, 34), 0.5)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(230, 126, 34), 16, 35, 0.2)
@@ -989,6 +1067,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
 
         elseif slot == "tactical" then
             -- Горизонт Событий (Черная дыра)
+            if casterChar then CharacterAnimator.playGroundPound(casterChar, 0.6) end
             spawnAnticipationVortex(pos, Color3.fromRGB(241, 196, 15), 0.4)
             spawnMagicCircle(pos, Color3.fromRGB(30, 30, 35), 0.8)
             createPillarOfLight(pos, 16, 6, Color3.fromRGB(241, 196, 15), 0.6)
@@ -996,8 +1075,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🕳️ ГОРИЗОНТ СОБЫТИЙ!", Color3.fromRGB(230, 126, 34))
 
         elseif slot == "ultimate" then
-            -- Метеорит КейсОха
-            -- C5 FIX: VFX падает на pos (root.Position), а не на pos + lookVector * 18
+            -- Метеорит КейсОха (Падение метеорита + слэм земли и нижний кинематографический ракурс)
+            if casterChar then CharacterAnimator.playGroundPound(casterChar, 1.4) end
+            if isSelf and casterChar then CinematicCamera.groundSlamPerspective(casterChar, 0.8) end
             spawnFallingSkyProp(pos, function()
                 local met = Instance.new("Part")
                 met.Shape = Enum.PartType.Ball
@@ -1019,7 +1099,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end, 60)
 
         elseif slot == "special" then
-            -- BAN HAMMER METEOR (Падение колоссального банхаммера)
+            -- BAN HAMMER METEOR (Падение банхаммера + замах молота и наезд камеры)
+            if casterChar then CharacterAnimator.playHammerSwing(casterChar, 1.1) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.4, 5.2, -10) end
             spawnFallingSkyProp(pos + lookVector * 12, function()
                 local hammer = Instance.new("Part")
                 hammer.Size = Vector3.new(8, 5, 12)
@@ -1052,6 +1134,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
 
         elseif slot == "mobility_land" then
             -- C10 FIX: VFX приземления Вафельного Катка
+            if casterChar then CharacterAnimator.playGroundPound(casterChar, 0.7) end
             spawnEarthFracture(pos, 16, 8)
             spawnTexturedShockwave(pos, 26, Color3.fromRGB(230, 126, 34), 0.55)
             spawnGroundCracks(pos, 20, Color3.fromRGB(40, 45, 50), 2.5)
@@ -1061,7 +1144,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.traumaShake(0.6) end
 
         elseif slot == "godmode" then
-            -- Смещение Земной Оси (Планетарное сотрясение)
+            -- Смещение Земной Оси (Планетарное сотрясение + сокрушительный слэм и перспектива земли)
+            if casterChar then CharacterAnimator.playGroundPound(casterChar, 1.8) end
+            if isSelf and casterChar then CinematicCamera.groundSlamPerspective(casterChar, 0.85) end
             spawnEarthFracture(pos, 22, 10)
             spawnGroundCracks(pos, 24, Color3.fromRGB(40, 45, 50), 3.8)
             spawnTexturedShockwave(pos, 55, Color3.fromRGB(230, 126, 34), 1.1)
@@ -1081,21 +1166,25 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     -- 7. RIZZLER & GRONK (Hypnotic Romance / Magenta & Roses)
     elseif fId == "Rizzler" then
         if slot == "base" then
-            -- Unspoken Rizz (Розовый всплеск очарования)
+            -- Unspoken Rizz (Розовый всплеск очарования + романтический жест)
+            if casterChar then CharacterAnimator.playRizzlerFlourish(casterChar, 0.8) end
             spawnTexturedShockwave(pos, 18, Color3.fromRGB(255, 105, 180), 0.5)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 105, 180), 14, 28, 0.2)
             JuiceEffects.play3DSound("chime", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "❤️ UNSPOKEN RIZZ!", Color3.fromRGB(255, 105, 180))
 
         elseif slot == "tactical" then
-            -- Ризз Гипноз (Концентрические кольца любви)
+            -- Ризз Гипноз (Концентрические кольца любви + флуриш)
+            if casterChar then CharacterAnimator.playRizzlerFlourish(casterChar, 0.9) end
             spawnMagicCircle(pos, Color3.fromRGB(255, 20, 147), 0.8)
             createPillarOfLight(pos, 10, 4, Color3.fromRGB(255, 105, 180), 0.5)
             JuiceEffects.play3DSound("magic", pos, 0.9)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🌀 РИЗЗ ГИПНОЗ!", Color3.fromRGB(255, 105, 180))
 
         elseif slot == "ultimate" then
-            -- Взрыв Сверхризза (Ослепительная розовая вспышка)
+            -- Взрыв Сверхризза (Ослепительная розовая вспышка + жест и кинематографический наезд)
+            if casterChar then CharacterAnimator.playRizzlerFlourish(casterChar, 1.3) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.45, 4.2, 14) end
             spawnAnticipationVortex(pos, Color3.fromRGB(255, 105, 180), 0.25)
             spawnTexturedShockwave(pos, 36, Color3.fromRGB(255, 20, 147), 0.75)
             createPillarOfLight(pos, 26, 8, Color3.fromRGB(255, 105, 180), 0.8)
@@ -1111,7 +1200,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end
 
         elseif slot == "special" then
-            -- Cupid's Brainrot Arrow (Стрела Купидона)
+            -- Cupid's Brainrot Arrow (Стрела Купидона + жест)
+            if casterChar then CharacterAnimator.playRizzlerFlourish(casterChar, 0.9) end
             spawnVolumetricLaser(pos + Vector3.new(0, 2, 0), pos + lookVector * 34 + Vector3.new(0, 2, 0), Color3.fromRGB(255, 20, 147), 0.8, 0.35)
             JuiceEffects.play3DSound("laser", pos, 1.0)
             JuiceEffects.play3DSound("chime", pos, 0.9)
@@ -1126,7 +1216,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.fovPulse(15, 0.35) end
 
         elseif slot == "godmode" then
-            -- Аура Гипер-Ризза 999+
+            -- Аура Гипер-Ризза 999+ (Культовый флуриш и динамический ракурс)
+            if casterChar then CharacterAnimator.playRizzlerFlourish(casterChar, 1.6) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.5, 4.5, -12) end
             spawnMagicCircle(pos, Color3.fromRGB(255, 20, 147), 1.2)
             spawnTexturedShockwave(pos, 45, Color3.fromRGB(255, 105, 180), 0.9)
             createPillarOfLight(pos, 42, 14, Color3.fromRGB(255, 20, 147), 1.1)
@@ -1145,7 +1237,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     -- 8. TUNG TUNG SAHUR (Blacksmith Volcano / Molten Steel & Sparks)
     elseif fId == "TungTung" then
         if slot == "base" then
-            -- Tung Tung Hammer (Сокрушительный удар молотом)
+            -- Tung Tung Hammer (Сокрушительный удар молотом + процедурный взмах)
+            if casterChar then CharacterAnimator.playHammerSwing(casterChar, 0.8) end
             spawnEarthFracture(pos, 12, 6)
             spawnTexturedShockwave(pos, 20, Color3.fromRGB(46, 204, 113), 0.45)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(46, 204, 113), 15, 30, 0.2)
@@ -1155,7 +1248,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.traumaShake(0.55) end
 
         elseif slot == "tactical" then
-            -- Наковальня Сахура (Сброс вольфрамовой наковальни)
+            -- Наковальня Сахура (Сброс вольфрамовой наковальни + нижний ракурс)
+            if casterChar then CharacterAnimator.playHammerSwing(casterChar, 0.9) end
+            if isSelf and casterChar then CinematicCamera.groundSlamPerspective(casterChar, 0.5) end
             spawnFallingSkyProp(pos + lookVector * 10, function()
                 local anvil = Instance.new("Part")
                 anvil.Size = Vector3.new(4, 3, 6)
@@ -1172,7 +1267,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end, 50)
 
         elseif slot == "ultimate" then
-            -- Итальянский Торнадо (Вихрь рассекающих молотов)
+            -- Итальянский Торнадо (Вихрь рассекающих молотов + анимация и кинематографический наезд)
+            if casterChar then CharacterAnimator.playHammerSwing(casterChar, 1.3) end
+            if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.45, 4.6, -10) end
             spawnAnticipationVortex(pos, Color3.fromRGB(46, 204, 113), 0.25)
             spawnMagicCircle(pos, Color3.fromRGB(39, 174, 96), 0.8)
             spawnTexturedShockwave(pos, 38, Color3.fromRGB(46, 204, 113), 0.7)
@@ -1193,6 +1290,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
 
         elseif slot == "special" then
             -- Базука Сахура (Выстрел тяжелым снарядом молота)
+            if casterChar then CharacterAnimator.playHammerSwing(casterChar, 0.8) end
             spawnVolumetricLaser(pos + Vector3.new(0, 2, 0), pos + lookVector * 36 + Vector3.new(0, 2, 0), Color3.fromRGB(46, 204, 113), 1.2, 0.35)
             spawnEarthFracture(pos + lookVector * 36, 10, 5)
             spawnTexturedShockwave(pos + lookVector * 36, 18, Color3.fromRGB(46, 204, 113), 0.4)
@@ -1218,6 +1316,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
 
         elseif slot == "mobility_land" then
             -- C10 FIX: VFX приземления Молот-Джамп
+            if casterChar then CharacterAnimator.playHammerSwing(casterChar, 0.7) end
             spawnEarthFracture(pos, 16, 8)
             spawnTexturedShockwave(pos, 24, Color3.fromRGB(46, 204, 113), 0.5)
             spawnGroundCracks(pos, 18, Color3.fromRGB(30, 80, 40), 2.5)
@@ -1228,7 +1327,9 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.traumaShake(0.7) end
 
         elseif slot == "godmode" then
-            -- Ярость Вулкана Этна (Падение раскаленного молота вулкана)
+            -- Ярость Вулкана Этна (Падение раскаленного молота вулкана + кинематографическая камера)
+            if casterChar then CharacterAnimator.playHammerSwing(casterChar, 1.6) end
+            if isSelf and casterChar then CinematicCamera.groundSlamPerspective(casterChar, 0.8) end
             spawnFallingSkyProp(pos, function()
                 local godHammer = Instance.new("Part")
                 godHammer.Size = Vector3.new(10, 6, 6)
