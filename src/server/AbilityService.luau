@@ -931,7 +931,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                         end
                     end
                 end
-            end
+            end)
         else
             -- A17 FIX: Grimace Godmode — стан 3.5с + 85 урона
             for _, other in ipairs(Players:GetPlayers()) do
