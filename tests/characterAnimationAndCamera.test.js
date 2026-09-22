@@ -146,4 +146,25 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         const poseStarts = content.match(/restoreJoints\(character, joints, 0\.08\)/g);
         assert.ok(poseStarts && poseStarts.length >= 8, 'All 8 signature poses must call restoreJoints at start');
     });
+
+    test('CharacterAnimator guards callbacks with isCharacterAlive and cleans up completed tweens', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('isCharacterAlive(character)'), 'CharacterAnimator must check isCharacterAlive in delayed phases');
+        assert.ok(content.includes('tw.Completed:Connect'), 'CharacterAnimator must disconnect/clear completed tweens');
+        assert.ok(content.includes('state == Enum.PlaybackState.Completed'), 'CharacterAnimator.playSpinSalute must check for PlaybackState.Completed');
+    });
+
+    test('CinematicCamera uses RenderStepped dynamic tracking and clamps FOV against leaks', () => {
+        const content = fs.readFileSync(cameraPath, 'utf8');
+        assert.ok(content.includes('RunService.RenderStepped:Connect'), 'CinematicCamera must dynamically track character via RenderStepped');
+        assert.ok(content.includes('cameraUpdateConnection:Disconnect()'), 'CinematicCamera.resetCamera must disconnect RenderStepped update');
+        assert.ok(content.includes('math.clamp(originalFOV, 65, 75)'), 'CinematicCamera must clamp originalFOV on restore to prevent distortion');
+    });
+
+    test('AbilityVFX loader uses non-blocking lookups without stalling client initialization', () => {
+        const content = fs.readFileSync(vfxPath, 'utf8');
+        assert.ok(!content.includes('WaitForChild("CharacterAnimator", 2)'), 'AbilityVFX must not stall with WaitForChild timeout on animator');
+        assert.ok(!content.includes('WaitForChild("CinematicCamera", 2)'), 'AbilityVFX must not stall with WaitForChild timeout on camera');
+    });
 });
+

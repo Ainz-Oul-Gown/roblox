@@ -45,10 +45,8 @@ if not JuiceEffects then
     }
 end
 
-local animModule = script:FindFirstChild("CharacterAnimator")
-    or (script.Parent and script.Parent:FindFirstChild("CharacterAnimator"))
-    or script:WaitForChild("CharacterAnimator", 2)
-    or (script.Parent and script.Parent:WaitForChild("CharacterAnimator", 2))
+local animModule = (script.Parent and script.Parent:FindFirstChild("CharacterAnimator"))
+    or script:FindFirstChild("CharacterAnimator")
 
 local CharacterAnimator: any = nil
 if animModule and animModule:IsA("ModuleScript") then
@@ -70,10 +68,8 @@ if not CharacterAnimator then
     }
 end
 
-local cameraModule = script:FindFirstChild("CinematicCamera")
-    or (script.Parent and script.Parent:FindFirstChild("CinematicCamera"))
-    or script:WaitForChild("CinematicCamera", 2)
-    or (script.Parent and script.Parent:WaitForChild("CinematicCamera", 2))
+local cameraModule = (script.Parent and script.Parent:FindFirstChild("CinematicCamera"))
+    or script:FindFirstChild("CinematicCamera")
 
 local CinematicCamera: any = nil
 if cameraModule and cameraModule:IsA("ModuleScript") then

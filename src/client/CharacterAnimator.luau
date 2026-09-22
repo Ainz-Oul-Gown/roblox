@@ -45,10 +45,23 @@ local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame
     end
     local tw = TweenService:Create(joint, tweenInfo, { C0 = targetC0 })
     activeJointTweens[joint] = tw
+    tw.Completed:Connect(function()
+        if activeJointTweens[joint] == tw then
+            activeJointTweens[joint] = nil
+        end
+    end)
     tw:Play()
     return tw
 end
 CharacterAnimator.tweenJoint = tweenJoint
+
+-- Проверка живого состояния персонажа во избежание деформации трупа при смерти/рэгдолле
+local function isCharacterAlive(character: Model): boolean
+    if not character or not character.Parent then return false end
+    local hum = character:FindFirstChildOfClass("Humanoid")
+    return hum ~= nil and hum.Health > 0
+end
+CharacterAnimator.isCharacterAlive = isCharacterAlive
 
 -- Поиск и классификация суставов персонажа (R15 и R6)
 local function getJoints(character: Model): JointMap
@@ -157,7 +170,7 @@ function CharacterAnimator.playShhhPose(character: Model, duration: number?)
 
     -- Удержание позы и плавный возврат
     task.delay(dur, function()
-        if activeAnimTokens[character] == token and character.Parent then
+        if activeAnimTokens[character] == token and isCharacterAlive(character) then
             restoreJoints(character, joints, 0.3)
         end
     end)
@@ -200,7 +213,7 @@ function CharacterAnimator.playGigachadFlex(character: Model, duration: number?)
     end
 
     task.delay(dur, function()
-        if activeAnimTokens[character] == token and character.Parent then
+        if activeAnimTokens[character] == token and isCharacterAlive(character) then
             restoreJoints(character, joints, 0.35)
         end
     end)
@@ -232,7 +245,7 @@ function CharacterAnimator.playSigmaTilt(character: Model, duration: number?)
     end
 
     task.delay(dur, function()
-        if activeAnimTokens[character] == token and character.Parent then
+        if activeAnimTokens[character] == token and isCharacterAlive(character) then
             restoreJoints(character, joints, 0.3)
         end
     end)
@@ -265,7 +278,7 @@ function CharacterAnimator.playGroundPound(character: Model, duration: number?)
 
     -- Фаза 2: Сокрушительный удар вниз
     task.delay(0.28, function()
-        if activeAnimTokens[character] ~= token or not character.Parent then return end
+        if activeAnimTokens[character] ~= token or not isCharacterAlive(character) then return end
 
         if joints.rightShoulder then
             local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
@@ -284,7 +297,7 @@ function CharacterAnimator.playGroundPound(character: Model, duration: number?)
     end)
 
     task.delay(dur, function()
-        if activeAnimTokens[character] == token and character.Parent then
+        if activeAnimTokens[character] == token and isCharacterAlive(character) then
             restoreJoints(character, joints, 0.28)
         end
     end)
@@ -313,7 +326,7 @@ function CharacterAnimator.playHammerSwing(character: Model, duration: number?)
 
     -- Рассекающий рубящий удар вперед
     task.delay(0.25, function()
-        if activeAnimTokens[character] ~= token or not character.Parent then return end
+        if activeAnimTokens[character] ~= token or not isCharacterAlive(character) then return end
 
         if joints.rightShoulder then
             local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
@@ -328,7 +341,7 @@ function CharacterAnimator.playHammerSwing(character: Model, duration: number?)
     end)
 
     task.delay(dur, function()
-        if activeAnimTokens[character] == token and character.Parent then
+        if activeAnimTokens[character] == token and isCharacterAlive(character) then
             restoreJoints(character, joints, 0.3)
         end
     end)
@@ -355,7 +368,7 @@ function CharacterAnimator.playRizzlerFlourish(character: Model, duration: numbe
 
     -- Плавный взмах в сторону цели
     task.delay(0.32, function()
-        if activeAnimTokens[character] ~= token or not character.Parent then return end
+        if activeAnimTokens[character] ~= token or not isCharacterAlive(character) then return end
         if joints.rightShoulder then
             local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
             tweenJoint(joints.rightShoulder, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(70), math.rad(30), math.rad(25)))
@@ -363,7 +376,7 @@ function CharacterAnimator.playRizzlerFlourish(character: Model, duration: numbe
     end)
 
     task.delay(dur, function()
-        if activeAnimTokens[character] == token and character.Parent then
+        if activeAnimTokens[character] == token and isCharacterAlive(character) then
             restoreJoints(character, joints, 0.3)
         end
     end)
@@ -396,8 +409,8 @@ function CharacterAnimator.playSpinSalute(character: Model, duration: number?)
         local rotN179 = if (joints.isR15 and spinJoint == joints.waist) then CFrame.Angles(0, math.rad(-179), 0) else CFrame.Angles(0, 0, math.rad(-179))
         task.spawn(function()
             local tw1 = tweenJoint(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), orig * rot180)
-            tw1.Completed:Wait()
-            if activeAnimTokens[character] == token and spinJoint and spinJoint.Parent then
+            local state = tw1.Completed:Wait()
+            if state == Enum.PlaybackState.Completed and activeAnimTokens[character] == token and isCharacterAlive(character) and spinJoint and spinJoint.Parent then
                 spinJoint.C0 = orig * rotN179
                 tweenJoint(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), orig)
             end
@@ -405,7 +418,7 @@ function CharacterAnimator.playSpinSalute(character: Model, duration: number?)
     end
 
     task.delay(dur, function()
-        if activeAnimTokens[character] == token and character.Parent then
+        if activeAnimTokens[character] == token and isCharacterAlive(character) then
             restoreJoints(character, joints, 0.25)
         end
     end)
@@ -432,7 +445,7 @@ function CharacterAnimator.playMoneySnatch(character: Model, duration: number?)
 
     -- Загребание назад к груди
     task.delay(0.2, function()
-        if activeAnimTokens[character] ~= token or not character.Parent then return end
+        if activeAnimTokens[character] ~= token or not isCharacterAlive(character) then return end
         if joints.rightShoulder then
             local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
             tweenJoint(joints.rightShoulder, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(45), math.rad(25), math.rad(35)))
@@ -444,7 +457,7 @@ function CharacterAnimator.playMoneySnatch(character: Model, duration: number?)
     end)
 
     task.delay(dur, function()
-        if activeAnimTokens[character] == token and character.Parent then
+        if activeAnimTokens[character] == token and isCharacterAlive(character) then
             restoreJoints(character, joints, 0.25)
         end
     end)
