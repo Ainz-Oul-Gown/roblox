@@ -76,8 +76,8 @@ function CentralArena.init()
             for _, player in ipairs(Players:GetPlayers()) do
                 local char = player.Character
                 if char then
-                    local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
-                    local hum = char:FindFirstChild("Humanoid") :: Humanoid?
+                    local root = char:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local hum = char:FindFirstChildOfClass("Humanoid")
                     if root and hum and hum.Health > 0 then
                         local dist = (root.Position - centerPos).Magnitude
                         if dist <= closestDist then

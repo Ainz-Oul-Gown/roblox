@@ -15,20 +15,20 @@ screenGui.Name = "BrainrotHUD"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
-local abilityEvent = ReplicatedStorage:WaitForChild("AbilityEvent", 15) :: RemoteEvent?
-local claimPlotEvent = ReplicatedStorage:WaitForChild("ClaimPlotEvent", 15) :: RemoteEvent?
-local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent", 15) :: RemoteEvent?
-local vaultUpdatedEvent = ReplicatedStorage:WaitForChild("VaultUpdatedEvent", 15) :: RemoteEvent?
-local withdrawEvent = ReplicatedStorage:WaitForChild("WithdrawEvent", 15) :: RemoteEvent?
-local pvpKillEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15) :: RemoteEvent?
-local airDropEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15) :: RemoteEvent?
-local adminGiveCashEvent = ReplicatedStorage:WaitForChild("AdminGiveCashEvent", 15) :: RemoteEvent?
-local rebirthEvent = ReplicatedStorage:WaitForChild("RebirthEvent", 15) :: RemoteEvent?
-local abilityVFXEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15) :: RemoteEvent?
-local equippedPetsEvent = ReplicatedStorage:WaitForChild("EquippedPetsEvent", 15) :: RemoteEvent?
-local openEggEvent = ReplicatedStorage:WaitForChild("OpenEggEvent", 15) :: RemoteEvent?
-local claimPlaytimeEvent = ReplicatedStorage:WaitForChild("ClaimPlaytimeRewardEvent", 15) :: RemoteEvent?
-local claimDailyEvent = ReplicatedStorage:WaitForChild("ClaimDailyRewardEvent", 15) :: RemoteEvent?
+local abilityEvent = ReplicatedStorage:WaitForChild("AbilityEvent", 15) :: any :: RemoteEvent?
+local claimPlotEvent = ReplicatedStorage:WaitForChild("ClaimPlotEvent", 15) :: any :: RemoteEvent?
+local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent", 15) :: any :: RemoteEvent?
+local vaultUpdatedEvent = ReplicatedStorage:WaitForChild("VaultUpdatedEvent", 15) :: any :: RemoteEvent?
+local withdrawEvent = ReplicatedStorage:WaitForChild("WithdrawEvent", 15) :: any :: RemoteEvent?
+local pvpKillEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15) :: any :: RemoteEvent?
+local airDropEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15) :: any :: RemoteEvent?
+local adminGiveCashEvent = ReplicatedStorage:WaitForChild("AdminGiveCashEvent", 15) :: any :: RemoteEvent?
+local rebirthEvent = ReplicatedStorage:WaitForChild("RebirthEvent", 15) :: any :: RemoteEvent?
+local abilityVFXEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15) :: any :: RemoteEvent?
+local equippedPetsEvent = ReplicatedStorage:WaitForChild("EquippedPetsEvent", 15) :: any :: RemoteEvent?
+local openEggEvent = ReplicatedStorage:WaitForChild("OpenEggEvent", 15) :: any :: RemoteEvent?
+local claimPlaytimeEvent = ReplicatedStorage:WaitForChild("ClaimPlaytimeRewardEvent", 15) :: any :: RemoteEvent?
+local claimDailyEvent = ReplicatedStorage:WaitForChild("ClaimDailyRewardEvent", 15) :: any :: RemoteEvent?
 
 -- Безопасная загрузка JuiceEffects (поддержка как script, так и script.Parent)
 local juiceModule = script:FindFirstChild("JuiceEffects")
@@ -138,7 +138,7 @@ local function updateWorldStatus()
         return
     end
 
-    local statusVal = ReplicatedStorage:FindFirstChild("ServerInitStatus") :: StringValue?
+    local statusVal = ReplicatedStorage:FindFirstChild("ServerInitStatus") :: any :: StringValue?
     if statusVal and statusVal.Value ~= "" then
         applyStatusText(statusVal.Value)
     else
@@ -519,7 +519,7 @@ local function triggerAdminCash()
 
     local char = localPlayer.Character
     if char then
-        local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+        local root = char:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
         if root then
             JuiceEffects.showFloatingText(root.Position + Vector3.new(0, 3.5, 0), "+1,000,000 AURA 👑", Color3.fromRGB(255, 215, 0), 1.5)
         end
@@ -627,7 +627,7 @@ if pvpKillEvent then
             JuiceEffects.screenFlash(Color3.fromRGB(255, 215, 0), 0.35)
             local char = localPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") then
-                JuiceEffects.showFloatingText((char:FindFirstChild("HumanoidRootPart") :: BasePart).Position + Vector3.new(0, 3, 0), string.format("+$%d AURA! 💀", data.amount or 0), Color3.fromRGB(255, 215, 0), 1.6)
+                JuiceEffects.showFloatingText((char:FindFirstChild("HumanoidRootPart") :: any :: BasePart).Position + Vector3.new(0, 3, 0), string.format("+$%d AURA! 💀", data.amount or 0), Color3.fromRGB(255, 215, 0), 1.6)
             end
         elseif data.type == "death" then
             showPvPBanner(false, data.killerName or "Враг", data.amount or 0)
@@ -635,7 +635,7 @@ if pvpKillEvent then
             JuiceEffects.screenFlash(Color3.fromRGB(231, 76, 60), 0.4)
             local char = localPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") then
-                JuiceEffects.showFloatingText((char:FindFirstChild("HumanoidRootPart") :: BasePart).Position + Vector3.new(0, 3, 0), string.format("-$%d AURA ☠️", data.amount or 0), Color3.fromRGB(255, 80, 80), 1.6)
+                JuiceEffects.showFloatingText((char:FindFirstChild("HumanoidRootPart") :: any :: BasePart).Position + Vector3.new(0, 3, 0), string.format("-$%d AURA ☠️", data.amount or 0), Color3.fromRGB(255, 80, 80), 1.6)
             end
         end
     end)
@@ -660,7 +660,7 @@ if withdrawEvent then
         JuiceEffects.screenFlash(Color3.fromRGB(255, 215, 0), 0.25)
         local char = localPlayer.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
-            JuiceEffects.showFloatingText((char:FindFirstChild("HumanoidRootPart") :: BasePart).Position + Vector3.new(0, 3, 0), string.format("+$%d AURA 💸", amount), Color3.fromRGB(46, 204, 113), 1.4)
+            JuiceEffects.showFloatingText((char:FindFirstChild("HumanoidRootPart") :: any :: BasePart).Position + Vector3.new(0, 3, 0), string.format("+$%d AURA 💸", amount), Color3.fromRGB(46, 204, 113), 1.4)
         end
     end)
 end
@@ -690,7 +690,7 @@ if rebirthEvent then
         showToast(string.format("👑 ПЕРЕРОЖДЕНИЕ #%d ВЫПОЛНЕНО! Множитель x%.1f 🔥", newRebirths, newMult), Color3.fromRGB(255, 215, 0))
         local char = localPlayer.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
-            local pos = (char:FindFirstChild("HumanoidRootPart") :: BasePart).Position
+            local pos = (char:FindFirstChild("HumanoidRootPart") :: any :: BasePart).Position
             JuiceEffects.spawnConfetti(pos)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), string.format("👑 REBIRTH #%d! x%.1f MULTIPLIER", newRebirths, newMult), Color3.fromRGB(255, 215, 0), 2.5)
         end
@@ -963,7 +963,7 @@ if abilityEvent then
             -- Локальные визуальные спецэффекты
             local char = localPlayer.Character
             if char then
-                local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+                local root = char:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
                 if root and string.find(string.lower(messageOrName), "spin") then
                     task.spawn(function()
                         for _ = 1, 15 do
@@ -1053,7 +1053,7 @@ UserInputService.JumpRequest:Connect(function()
     local char = localPlayer.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
-    local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+    local root = char:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
 
     if hum and root and canDoubleJump and not hasDoubleJumped then
         hasDoubleJumped = true
@@ -1062,7 +1062,7 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 local function setupCharacter(char: Model)
-    local hum = char:WaitForChild("Humanoid") :: Humanoid
+    local hum = char:FindFirstChildOfClass("Humanoid") :: any :: Humanoid
     hum.StateChanged:Connect(function(_, newState)
         if newState == Enum.HumanoidStateType.Landed then
             canDoubleJump = false
@@ -1079,8 +1079,8 @@ localPlayer.CharacterAdded:Connect(setupCharacter)
 -- 5. Привязка к leaderstats
 local function bindStats()
     local function hookLeaderstats(leaderstats: Instance)
-        local auraVal = leaderstats:WaitForChild("Aura", 10) :: IntValue?
-        local rebirthVal = leaderstats:WaitForChild("Rebirths", 10) :: IntValue?
+        local auraVal = leaderstats:WaitForChild("Aura", 10) :: any :: IntValue?
+        local rebirthVal = leaderstats:WaitForChild("Rebirths", 10) :: any :: IntValue?
 
         local function updateStats()
             local aura = if auraVal then auraVal.Value else 0

@@ -373,7 +373,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             if char:IsA("Accessory") then char = char.Parent end
             local player = Players:GetPlayerFromCharacter(char)
             if player and player ~= owner then
-                local hum = char:FindFirstChild("Humanoid") :: Humanoid?
+                local hum = char:FindFirstChildOfClass("Humanoid")
                 if hum and hum.Health > 0 then
                     local tag = Instance.new("ObjectValue")
                     tag.Name = "creator"
@@ -463,6 +463,7 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             neonStripe.CanCollide = false
             neonStripe.Material = Enum.Material.Neon
             neonStripe.Color = faction.color
+            neonStripe.Transparency = 0.15
             neonStripe.Parent = wallsModel
         end
 
@@ -591,20 +592,20 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             trim.CanCollide = false
             trim.Material = Enum.Material.Neon
             trim.Color = faction.color
-            trim.Transparency = 0.35
+            trim.Transparency = 0.5
             trim.Parent = lightModel
 
             local pLight = Instance.new("PointLight")
             pLight.Color = Color3.fromRGB(240, 240, 250)
-            pLight.Brightness = 0.95
-            pLight.Range = 28
+            pLight.Brightness = 0.65
+            pLight.Range = 24
             pLight.Parent = fixture
 
             local sLight = Instance.new("SurfaceLight")
             sLight.Face = Enum.NormalId.Bottom
             sLight.Color = faction.color
-            sLight.Brightness = 0.8
-            sLight.Range = 22
+            sLight.Brightness = 0.5
+            sLight.Range = 18
             sLight.Angle = 90
             sLight.Parent = fixture
         end
@@ -1443,20 +1444,20 @@ local function spawnStructure(plotModel: Model, owner: Player, item: TycoonConfi
             beam.CanCollide = false
             beam.Material = Enum.Material.Neon
             beam.Color = faction.color
-            beam.Transparency = 0.3
+            beam.Transparency = 0.45
             beam.Parent = roofModel
 
             local light = Instance.new("PointLight")
             light.Color = Color3.fromRGB(245, 245, 255)
-            light.Brightness = 0.85
-            light.Range = 26
+            light.Brightness = 0.55
+            light.Range = 20
             light.Parent = beam
 
             local sLight = Instance.new("SurfaceLight")
             sLight.Face = Enum.NormalId.Bottom
             sLight.Color = faction.color
-            sLight.Brightness = 0.75
-            sLight.Range = 22
+            sLight.Brightness = 0.45
+            sLight.Range = 18
             sLight.Angle = 90
             sLight.Parent = beam
         end
@@ -1790,13 +1791,13 @@ function PlotBuilder.initAllBases(onClaimCallback: (player: Player, plotIndex: n
             pillar.CanCollide = false
             pillar.Material = Enum.Material.Neon
             pillar.Color = faction.color
-            pillar.Transparency = 0.4
+            pillar.Transparency = 0.55
             pillar.Parent = plotModel
 
             local pLight = Instance.new("PointLight")
             pLight.Color = Color3.fromRGB(240, 240, 250)
-            pLight.Brightness = 0.85
-            pLight.Range = 26
+            pLight.Brightness = 0.55
+            pLight.Range = 22
             pLight.Parent = pillar
         end
 
@@ -1855,7 +1856,7 @@ function PlotBuilder.activatePlot(player: Player, plotIndex: number)
     if claimPad then claimPad:Destroy() end
 
     -- Обновляем вывеску владельца
-    local sign = plotModel:FindFirstChild("OwnerSign") :: Part?
+    local sign = plotModel:FindFirstChild("OwnerSign") :: any :: Part?
     if sign then
         local gui = sign:FindFirstChild("InfoGui")
         if gui then gui:Destroy() end
@@ -2006,7 +2007,7 @@ function PlotBuilder.resetPlotToUnclaimed(plotIndex: number, onClaimCallback: (p
     vaultLabels[plotIndex] = nil
     TycoonService.resetVault(plotIndex)
 
-    local sign = plotModel:FindFirstChild("OwnerSign") :: Part?
+    local sign = plotModel:FindFirstChild("OwnerSign") :: any :: Part?
     if sign then
         local gui = sign:FindFirstChild("InfoGui")
         if gui then gui:Destroy() end

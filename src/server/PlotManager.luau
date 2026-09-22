@@ -28,7 +28,7 @@ local playerPlotMap: { [number]: number } = {}
 
 -- Создание RemoteEvent для выбора базы и синхронизации статуса
 local function getOrCreateRemote(name: string): RemoteEvent
-    local existing = ReplicatedStorage:FindFirstChild(name) :: RemoteEvent?
+    local existing = ReplicatedStorage:FindFirstChild(name) :: any :: RemoteEvent?
     if existing then return existing end
     local remote = Instance.new("RemoteEvent")
     remote.Name = name

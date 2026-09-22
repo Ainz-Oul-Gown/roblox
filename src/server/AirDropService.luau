@@ -22,7 +22,7 @@ local AIRDROP_INTERVAL_SEC = 210
 local AIRDROP_REWARD = 10000
 
 local function getOrCreateRemote(name: string): RemoteEvent
-    local existing = ReplicatedStorage:FindFirstChild(name) :: RemoteEvent?
+    local existing = ReplicatedStorage:FindFirstChild(name) :: any :: RemoteEvent?
     if existing then return existing end
     local remote = Instance.new("RemoteEvent")
     remote.Name = name
@@ -160,7 +160,7 @@ local function spawnAirDrop()
                             break
                         end
                         local hum = captureChar:FindFirstChildOfClass("Humanoid")
-                        local hrp = captureChar:FindFirstChild("HumanoidRootPart") :: BasePart?
+                        local hrp = captureChar:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
                         if not hum or hum.Health <= 0 or not hrp then
                             capturingPlayer = nil
                             captureThreadActive = false
