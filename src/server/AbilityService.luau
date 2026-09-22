@@ -30,7 +30,7 @@ local AbilityService = {}
 export type AbilitySlot = "base" | "tactical" | "ultimate" | "special" | "mobility" | "godmode"
 
 local function getOrCreateRemote(name: string): RemoteEvent
-    local existing = ReplicatedStorage:FindFirstChild(name) :: any :: RemoteEvent
+    local existing: any = ReplicatedStorage:FindFirstChild(name)
     if existing then return existing end
     local remote = Instance.new("RemoteEvent")
     remote.Name = name
@@ -282,7 +282,7 @@ end
 function AbilityService.castAbility(player: Player, slot: AbilitySlot)
     local char = player.Character
     if not char then return end
-    local root = char:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+    local root: BasePart? = char:FindFirstChild("HumanoidRootPart")
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not root or not hum or hum.Health <= 0 then return end
     if player:GetAttribute("AbilityDisabled") then
@@ -341,7 +341,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
         if slot == "base" then
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and oHum.Health > 0 then
                         local diff = oRoot.Position - root.Position
@@ -367,7 +367,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             -- P1-NEW-07 FIX: Мега-Смыв: притягивание + урон + оглушение на 3с
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and oHum.Health > 0 then
                         local diff = root.Position - oRoot.Position
@@ -387,7 +387,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             TycoonService.addCashRaw(player, 2500)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 25 then
                         tagHumanoid(oHum, player)
@@ -404,7 +404,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             root.AssemblyLinearVelocity = look * 95 + Vector3.new(0, 25, 0)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 14 then
                         tagHumanoid(oHum, player)
@@ -422,7 +422,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 if not char.Parent then return end
                 for _, other in ipairs(Players:GetPlayers()) do
                     if other ~= player and other.Character then
-                        local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                        local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                         local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                         if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
                             tagHumanoid(oHum, player)
@@ -449,7 +449,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
         if slot == "base" then
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and oHum.Health > 0 then
                         local toOther = (oRoot.Position - root.Position)
@@ -476,7 +476,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
         elseif slot == "ultimate" then
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
                         tagHumanoid(oHum, player)
@@ -489,7 +489,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             -- B10 FIX: Looksmaxing Flash — ослепление жертв (fireBlind) + замедление
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 28 then
                         tagHumanoid(oHum, player)
@@ -517,7 +517,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             root.AssemblyLinearVelocity = look * 85 + Vector3.new(0, 15, 0)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 15 then
                         tagHumanoid(oHum, player)
@@ -534,7 +534,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             player:SetAttribute("DoubleDamage", true)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 30 then
                         tagHumanoid(oHum, player)
@@ -570,7 +570,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             player:SetAttribute("TripleDamage", true)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 28 then
                         tagHumanoid(oHum, player)
@@ -588,7 +588,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             local savedTransparency: { [BasePart]: number } = {}
             for _, p in ipairs(char:GetDescendants()) do
                 if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then
-                    savedTransparency[p :: any :: BasePart] = p.Transparency
+                    savedTransparency[(p :: any) :: BasePart] = p.Transparency
                     p.Transparency = 0.9
                 end
             end
@@ -609,7 +609,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             local minDist = 45
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     if oRoot then
                         local d = (oRoot.Position - root.Position).Magnitude
                         if d < minDist then minDist = d; nearestTarget = other end
@@ -617,7 +617,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 end
             end
             if nearestTarget and nearestTarget.Character then
-                local tRoot = nearestTarget.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                local tRoot: BasePart? = nearestTarget.Character:FindFirstChild("HumanoidRootPart")
                 local tHum = nearestTarget.Character:FindFirstChildOfClass("Humanoid")
                 if tRoot and tHum then
                     local blinkCF = tRoot.CFrame * CFrame.new(0, 0, 4)
@@ -643,7 +643,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 if not char.Parent then return end
                 for _, other in ipairs(Players:GetPlayers()) do
                     if other ~= player and other.Character then
-                        local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                        local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                         local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                         if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
                             tagHumanoid(oHum, player)
@@ -666,7 +666,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
         if slot == "base" then
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 20 then
                         tagHumanoid(oHum, player)
@@ -717,7 +717,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
         elseif slot == "ultimate" then
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
                         tagHumanoid(oHum, player)
@@ -742,7 +742,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 task.delay(i * 0.2, function()
                     for _, other in ipairs(Players:GetPlayers()) do
                         if other ~= player and other.Character then
-                            local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                            local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                             local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                             if oRoot and oHum and (oRoot.Position - (root.Position + look * (i * 12))).Magnitude <= 14 then
                                 tagHumanoid(oHum, player)
@@ -762,7 +762,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 if not char.Parent then return end
                 for _, other in ipairs(Players:GetPlayers()) do
                     if other ~= player and other.Character then
-                        local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                        local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                         local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                         if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 16 then
                             tagHumanoid(oHum, player); applyDamage(oHum, 35, player)
@@ -779,7 +779,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             player:SetAttribute("Invulnerable", true)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 35 then
                         tagHumanoid(oHum, player)
@@ -799,7 +799,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             -- Shake Splash: конусная волна яда
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and oHum.Health > 0 then
                         local toOther = oRoot.Position - root.Position
@@ -855,7 +855,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 if not char.Parent then return end
                 for _, other in ipairs(Players:GetPlayers()) do
                     if other ~= player and other.Character then
-                        local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                        local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                         local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                         if oRoot and oHum and oHum.Health > 0 and (oRoot.Position - root.Position).Magnitude <= 50 then
                             tagHumanoid(oHum, player)
@@ -871,7 +871,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             -- A10 FIX: Birthday Eclipse — JumpBlock 4с + DoT 15/с (было: vortex pull)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and oHum.Health > 0 and (oRoot.Position - root.Position).Magnitude <= 28 then
                         tagHumanoid(oHum, player)
@@ -921,7 +921,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 end)
                 for _, other in ipairs(Players:GetPlayers()) do
                     if other ~= player and other.Character then
-                        local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                        local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                         local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                         if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 14 then
                             tagHumanoid(oHum, player); applyDamage(oHum, 30, player)
@@ -936,7 +936,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             -- A17 FIX: Grimace Godmode — стан 3.5с + 85 урона
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 35 then
                         tagHumanoid(oHum, player); applyDamage(oHum, 85, player)
@@ -955,7 +955,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             -- B1 FIX: Нокдаун вверх (был Black Hole Pull на себя)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and oHum.Health > 0 then
                         local toOther = oRoot.Position - root.Position
@@ -977,7 +977,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 if not char.Parent then gravConn:Disconnect(); return end
                 for _, other in ipairs(Players:GetPlayers()) do
                     if other ~= player and other.Character then
-                        local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                        local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                         if oRoot and (oRoot.Position - root.Position).Magnitude <= 28 then
                             local pull = (root.Position - oRoot.Position).Unit * 12
                             oRoot.AssemblyLinearVelocity = oRoot.AssemblyLinearVelocity + pull
@@ -988,7 +988,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
         elseif slot == "ultimate" then
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and oHum.Health > 0 then
                         local diff = root.Position - oRoot.Position
@@ -1014,7 +1014,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 if not char.Parent then return end
                 for _, other in ipairs(Players:GetPlayers()) do
                     if other ~= player and other.Character then
-                        local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                        local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                         local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                         if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 20 then
                             tagHumanoid(oHum, player); applyDamage(oHum, 45, player)
@@ -1029,7 +1029,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             -- A12 FIX: Singularity — 50% hp среза + телепорт + 90 урона
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
                         tagHumanoid(oHum, player)
@@ -1052,7 +1052,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             local nearest, minD = nil :: Player?, 20
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     if oRoot then
                         local d = (oRoot.Position - root.Position).Magnitude
                         if d < minD then minD = d; nearest = other end
@@ -1074,7 +1074,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             local near3, minD3 = nil :: Player?, 30
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     if oRoot then
                         local d = (oRoot.Position - root.Position).Magnitude
                         if d < minD3 then minD3 = d; near3 = other end
@@ -1096,7 +1096,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             -- Mega Rizz: AoE замедление + разворот врагов спиной
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 28 then
                         tagHumanoid(oHum, player); applyDamage(oHum, 50, player)
@@ -1115,7 +1115,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             local nearest2, minD2 = nil :: Player?, 22
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     if oRoot then
                         local d = (oRoot.Position - root.Position).Magnitude
                         if d < minD2 then minD2 = d; nearest2 = other end
@@ -1135,7 +1135,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             abilityEvent:FireClient(player, "TELEPORT", "HeartbreakDash", 0, blinkCF)
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 14 then
                         tagHumanoid(oHum, player); applyDamage(oHum, 30, player)
@@ -1150,7 +1150,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             hum.Health = hum.MaxHealth
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 30 then
                         tagHumanoid(oHum, player); applyDamage(oHum, 70, player)
@@ -1173,7 +1173,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             -- Hammer Strike: направленный удар
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and oHum.Health > 0 then
                         local toOther = oRoot.Position - root.Position
@@ -1189,7 +1189,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             local tNear, tDist = nil :: Player?, 30
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     if oRoot then
                         local d = (oRoot.Position - root.Position).Magnitude
                         if d < tDist then tDist = d; tNear = other end
@@ -1197,7 +1197,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 end
             end
             if tNear and tNear.Character then
-                local oRoot = tNear.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                local oRoot: BasePart? = tNear.Character:FindFirstChild("HumanoidRootPart")
                 local oHum = tNear.Character:FindFirstChildOfClass("Humanoid")
                 if oRoot and oHum then
                     local anvilPart = Instance.new("Part")
@@ -1225,7 +1225,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
             -- Earthquake: AoE подброс + высокий урон
             for _, other in ipairs(Players:GetPlayers()) do
                 if other ~= player and other.Character then
-                    local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                    local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                     local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                     if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 32 then
                         tagHumanoid(oHum, player); applyDamage(oHum, 65, player)
@@ -1241,7 +1241,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                     if not char.Parent then return end
                     for _, other in ipairs(Players:GetPlayers()) do
                         if other ~= player and other.Character then
-                            local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                            local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                             local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                             if oRoot and oHum and (oRoot.Position - (root.Position + look * (i * 10))).Magnitude <= 12 then
                                 tagHumanoid(oHum, player); applyDamage(oHum, 55, player)
@@ -1260,7 +1260,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 if not char.Parent then return end
                 for _, other in ipairs(Players:GetPlayers()) do
                     if other ~= player and other.Character then
-                        local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                        local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                         local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                         if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 18 then
                             tagHumanoid(oHum, player); applyDamage(oHum, 40, player)
@@ -1281,7 +1281,7 @@ function AbilityService.castAbility(player: Player, slot: AbilitySlot)
                 if not char.Parent then return end
                 for _, other in ipairs(Players:GetPlayers()) do
                     if other ~= player and other.Character then
-                        local oRoot = other.Character:FindFirstChild("HumanoidRootPart") :: any :: BasePart?
+                        local oRoot: BasePart? = other.Character:FindFirstChild("HumanoidRootPart")
                         local oHum = other.Character:FindFirstChildOfClass("Humanoid")
                         if oRoot and oHum and (oRoot.Position - root.Position).Magnitude <= 30 then
                             tagHumanoid(oHum, player); applyDamage(oHum, 20, player)

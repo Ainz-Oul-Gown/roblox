@@ -101,7 +101,7 @@ test('Replication: Server fires AbilityVFXEvent to all clients and Client connec
 
     const clientPath = path.join(__dirname, '../src/client/init.client.luau');
     const clientContent = fs.readFileSync(clientPath, 'utf8');
-    assert.ok(clientContent.includes('local abilityVFXEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15)'), 'Client must resolve AbilityVFXEvent');
+    assert.ok(clientContent.includes('local abilityVFXEvent: RemoteEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15)'), 'Client must resolve AbilityVFXEvent');
     // C9/C15: Client must handle VICTIM_IMPACT, BLIND, and standard VFX
     assert.ok(clientContent.includes('VICTIM_IMPACT'), 'Client must handle VICTIM_IMPACT events');
     assert.ok(clientContent.includes('BLIND'), 'Client must handle BLIND events');

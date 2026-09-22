@@ -69,7 +69,7 @@ function JuiceEffects.play3DSound(soundName: string, position: Vector3, volume: 
     if not assetId then return end
 
     local char = localPlayer.Character
-    local root = if char then char:FindFirstChild("HumanoidRootPart") :: any :: BasePart? else nil
+    local root: BasePart? = if char then char:FindFirstChild("HumanoidRootPart") else nil
     local dist = if root then (root.Position - position).Magnitude else 999
 
     -- P1-04: Если кастер или игрок рядом (до 30 стадов) — проигрываем только 2D-звук (не дублируем 3D)
