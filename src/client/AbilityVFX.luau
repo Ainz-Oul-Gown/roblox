@@ -32,8 +32,16 @@ if not JuiceEffects then
     JuiceEffects = {
         play3DSound = function() end,
         screenShake = function() end,
+        traumaShake = function() end,
         fovPulse = function() end,
         showFloatingText = function() end,
+        playEpicImpact = function() end,
+        spawnDebrisBlast = function() end,
+        cinematicVignettePulse = function() end,
+        screenBloomFlash = function() end,
+        spawnLightBurst = function() end,
+        hitstop = function() end,
+        cameraKick = function() end,
     }
 end
 
@@ -525,12 +533,14 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnGroundCracks(pos, 16, Color3.fromRGB(0, 100, 180), 2.8)
             createPillarOfLight(pos, 28, 8, Color3.fromRGB(0, 220, 255), 0.8)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(0, 200, 255), 20, 50, 0.3)
+            JuiceEffects.spawnDebrisBlast(pos, 16, Color3.fromRGB(0, 200, 255))
+            JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
             JuiceEffects.play3DSound("splash", pos, 1.3)
-            JuiceEffects.play3DSound("slam", pos, 1.1)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🌀 МЕГА-СМЫВ 3000!", Color3.fromRGB(0, 220, 255))
             if isSelf then
                 JuiceEffects.traumaShake(0.85)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(0, 180, 255), 0.25)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(0, 180, 255), 0.7)
                 JuiceEffects.hitstop(0.05)
             end
 
@@ -572,12 +582,13 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
                 createPillarOfLight(pos, 45, 16, Color3.fromRGB(255, 215, 0), 1.2)
                 spawnTexturedShockwave(pos, 48, Color3.fromRGB(255, 120, 0), 1.0)
                 JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 215, 0), 24, 65, 0.35)
-                JuiceEffects.play3DSound("slam", pos, 1.5)
-                JuiceEffects.play3DSound("fanfare", pos, 1.2)
+                JuiceEffects.spawnDebrisBlast(pos, 22, Color3.fromRGB(241, 196, 15))
+                JuiceEffects.playEpicImpact(pos, "godmode", isSelf)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "⚡ ТИТАН СКИБИДИ-КРУШИТЕЛЬ!", Color3.fromRGB(255, 215, 0))
                 if isSelf then
                     JuiceEffects.traumaShake(1.3, 6, 0.8)
                     JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 215, 0), 0.4)
+                    JuiceEffects.cinematicVignettePulse(Color3.fromRGB(255, 215, 0), 0.85)
                     JuiceEffects.hitstop(0.07)
                 end
             end, 55, true)
@@ -619,10 +630,12 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnEarthFracture(pos, 15, 8)
             spawnGroundCracks(pos, 16, Color3.fromRGB(0, 180, 220), 2.5)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(0, 240, 255), 22, 50, 0.25)
-            JuiceEffects.play3DSound("slam", pos, 1.2)
+            JuiceEffects.spawnDebrisBlast(pos, 18, Color3.fromRGB(0, 240, 255))
+            JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🤫🧏 BYE BYE!", Color3.fromRGB(0, 240, 255))
             if isSelf then
                 JuiceEffects.traumaShake(0.9)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(0, 220, 255), 0.7)
                 JuiceEffects.hitstop(0.06)
                 JuiceEffects.cameraKick(-lookVector, 0.7)
             end
@@ -635,7 +648,10 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.play3DSound("magic", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4.5, 0), "✨ LOOKSMAXING FLASH!", Color3.fromRGB(255, 255, 255))
             -- C15 FIX: Ослепление близких игроков (для кастера лёгкая вспышка, для жертв — сервер отправит BLIND)
-            if isSelf then JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 255, 255), 0.35) end
+            if isSelf then
+                JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 255, 255), 0.35)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(255, 255, 255), 0.5)
+            end
 
         elseif slot == "mobility" then
             -- Гигачад Рывок (Таран плечом)
@@ -656,12 +672,13 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             createPillarOfLight(pos, 48, 14, Color3.fromRGB(0, 240, 255), 1.1)
             spawnTexturedShockwave(pos, 45, Color3.fromRGB(255, 255, 255), 0.9)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(0, 240, 255), 24, 60, 0.35)
-            JuiceEffects.play3DSound("slam", pos, 1.5)
-            JuiceEffects.play3DSound("fanfare", pos, 1.2)
+            JuiceEffects.spawnDebrisBlast(pos, 24, Color3.fromRGB(0, 240, 255))
+            JuiceEffects.playEpicImpact(pos, "godmode", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "👑 АЛЬФА ДОМИНАЦИЯ!", Color3.fromRGB(0, 240, 255))
             if isSelf then
                 JuiceEffects.traumaShake(1.25)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(0, 240, 255), 0.4)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(0, 240, 255), 0.85)
                 JuiceEffects.hitstop(0.06)
             end
         end
@@ -696,12 +713,13 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnTexturedShockwave(pos, 36, Color3.fromRGB(231, 76, 60), 0.7)
             createPillarOfLight(pos, 26, 8, Color3.fromRGB(142, 68, 173), 0.75)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(231, 76, 60), 22, 50, 0.3)
-            JuiceEffects.play3DSound("electric", pos, 1.2)
-            JuiceEffects.play3DSound("slam", pos, 1.1)
+            JuiceEffects.spawnDebrisBlast(pos, 18, Color3.fromRGB(231, 76, 60))
+            JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🕶️ СИГМА ДОМИНАЦИЯ!", Color3.fromRGB(231, 76, 60))
             if isSelf then
                 JuiceEffects.traumaShake(0.9)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(231, 76, 60), 0.3)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(231, 76, 60), 0.7)
             end
 
         elseif slot == "special" then
@@ -726,12 +744,13 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             createPillarOfLight(pos, 45, 12, Color3.fromRGB(231, 76, 60), 1.1)
             spawnTexturedShockwave(pos, 48, Color3.fromRGB(142, 68, 173), 1.0)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(231, 76, 60), 24, 60, 0.35)
-            JuiceEffects.play3DSound("electric", pos, 1.4)
-            JuiceEffects.play3DSound("slam", pos, 1.3)
+            JuiceEffects.spawnDebrisBlast(pos, 22, Color3.fromRGB(231, 76, 60))
+            JuiceEffects.playEpicImpact(pos, "godmode", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "⚡ BRAZILIAN PHONK OVERLOAD!", Color3.fromRGB(231, 76, 60))
             if isSelf then
                 JuiceEffects.traumaShake(1.3)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(231, 76, 60), 0.4)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(142, 68, 173), 0.85)
             end
             for step = 1, 7 do
                 task.delay(step * 1.0, function()
@@ -784,6 +803,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnEarthFracture(pos, 14, 6)
             spawnTexturedShockwave(pos, 22, Color3.fromRGB(230, 126, 34), 0.5)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 140, 0), 18, 35, 0.25)
+            JuiceEffects.spawnDebrisBlast(pos, 12, Color3.fromRGB(255, 140, 0))
             JuiceEffects.play3DSound("slam", pos, 1.2)
             JuiceEffects.play3DSound("splash", pos, 1.0)
             if isSelf then JuiceEffects.traumaShake(0.65) end
@@ -795,12 +815,14 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnGroundCracks(pos, 16, Color3.fromRGB(180, 90, 10), 2.8)
             spawnTexturedShockwave(pos, 35, Color3.fromRGB(241, 196, 15), 0.7)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(241, 196, 15), 20, 50, 0.3)
+            JuiceEffects.spawnDebrisBlast(pos, 18, Color3.fromRGB(241, 196, 15))
+            JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
             JuiceEffects.play3DSound("cash", pos, 1.3)
-            JuiceEffects.play3DSound("slam", pos, 1.1)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🍕 НАЛОГОВЫЙ АУДИТ!", Color3.fromRGB(241, 196, 15))
             if isSelf then
                 JuiceEffects.traumaShake(0.85)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(241, 196, 15), 0.25)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(241, 196, 15), 0.7)
             end
 
         elseif slot == "special" then
@@ -840,12 +862,14 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end, function()
                 createPillarOfLight(pos, 45, 15, Color3.fromRGB(255, 140, 0), 1.2)
                 spawnTexturedShockwave(pos, 48, Color3.fromRGB(241, 196, 15), 1.0)
-                JuiceEffects.play3DSound("slam", pos, 1.5)
+                JuiceEffects.spawnDebrisBlast(pos, 24, Color3.fromRGB(241, 196, 15))
+                JuiceEffects.playEpicImpact(pos, "godmode", isSelf)
                 JuiceEffects.play3DSound("cash", pos, 1.4)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "🍕 МЕГА-ФАНУМ ПИРШЕСТВО!", Color3.fromRGB(255, 215, 0))
                 if isSelf then
                     JuiceEffects.traumaShake(1.35)
                     JuiceEffects.screenBloomFlash(Color3.fromRGB(241, 196, 15), 0.4)
+                    JuiceEffects.cinematicVignettePulse(Color3.fromRGB(241, 196, 15), 0.85)
                 end
             end, 55)
         end
@@ -874,11 +898,13 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnTexturedShockwave(pos, 38, Color3.fromRGB(155, 89, 182), 0.85)
             createPillarOfLight(pos, 30, 9, Color3.fromRGB(142, 68, 173), 0.85)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(155, 89, 182), 22, 50, 0.3)
-            JuiceEffects.play3DSound("slam", pos, 1.2)
+            JuiceEffects.spawnDebrisBlast(pos, 18, Color3.fromRGB(155, 89, 182))
+            JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "💜 КАТАКЛИЗМ ГРИМАСА!", Color3.fromRGB(168, 85, 247))
             if isSelf then
                 JuiceEffects.traumaShake(0.9)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(155, 89, 182), 0.3)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(142, 68, 173), 0.7)
             end
 
         elseif slot == "special" then
@@ -915,6 +941,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnEarthFracture(pos, 12, 6)
             spawnTexturedShockwave(pos, 18, Color3.fromRGB(155, 89, 182), 0.5)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(155, 89, 182), 16, 30, 0.25)
+            JuiceEffects.spawnDebrisBlast(pos, 12, Color3.fromRGB(155, 89, 182))
             JuiceEffects.play3DSound("splash", pos, 1.1)
             JuiceEffects.play3DSound("slam", pos, 0.9)
             if isSelf then JuiceEffects.traumaShake(0.55) end
@@ -926,12 +953,14 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             createPillarOfLight(pos, 48, 15, Color3.fromRGB(100, 10, 130), 1.2)
             spawnTexturedShockwave(pos, 48, Color3.fromRGB(142, 68, 173), 1.0)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(155, 89, 182), 24, 60, 0.35)
-            JuiceEffects.play3DSound("slam", pos, 1.5)
+            JuiceEffects.spawnDebrisBlast(pos, 22, Color3.fromRGB(155, 89, 182))
+            JuiceEffects.playEpicImpact(pos, "godmode", isSelf)
             JuiceEffects.play3DSound("electric", pos, 1.3)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "💀 РИТУАЛ 23 ИЮНЯ!", Color3.fromRGB(168, 85, 247))
             if isSelf then
                 JuiceEffects.traumaShake(1.35)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(142, 68, 173), 0.45)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(74, 35, 90), 0.85)
                 JuiceEffects.hitstop(0.07)
             end
             -- C8 FIX: ongoing toxic VFX pulses for godmode duration (3.5s stun cycle)
@@ -979,12 +1008,13 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end, function()
                 createPillarOfLight(pos, 35, 12, Color3.fromRGB(230, 126, 34), 0.8)
                 spawnTexturedShockwave(pos, 42, Color3.fromRGB(230, 126, 34), 0.8)
-                JuiceEffects.play3DSound("meteor", pos, 1.4)
-                JuiceEffects.play3DSound("slam", pos, 1.2)
+                JuiceEffects.spawnDebrisBlast(pos, 22, Color3.fromRGB(230, 126, 34))
+                JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 6, 0), "☄️ МЕТЕОРИТ КЕЙСОХА!", Color3.fromRGB(230, 126, 34))
                 if isSelf then
                     JuiceEffects.traumaShake(1.25)
                     JuiceEffects.screenBloomFlash(Color3.fromRGB(230, 126, 34), 0.35)
+                    JuiceEffects.cinematicVignettePulse(Color3.fromRGB(230, 126, 34), 0.75)
                 end
             end, 60)
 
@@ -999,8 +1029,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end, function()
                 createPillarOfLight(pos + lookVector * 12, 30, 10, Color3.fromRGB(231, 76, 60), 0.8)
                 spawnTexturedShockwave(pos + lookVector * 12, 35, Color3.fromRGB(231, 76, 60), 0.7)
-                JuiceEffects.play3DSound("hammer", pos, 1.4)
-                JuiceEffects.play3DSound("slam", pos, 1.2)
+                JuiceEffects.spawnDebrisBlast(pos + lookVector * 12, 16, Color3.fromRGB(231, 76, 60))
+                JuiceEffects.playEpicImpact(pos + lookVector * 12, "special", isSelf)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 6, 0), "🔨 YOU ARE BANNED!", Color3.fromRGB(231, 76, 60))
                 if isSelf then
                     JuiceEffects.traumaShake(1.1)
@@ -1026,6 +1056,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnTexturedShockwave(pos, 26, Color3.fromRGB(230, 126, 34), 0.55)
             spawnGroundCracks(pos, 20, Color3.fromRGB(40, 45, 50), 2.5)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(230, 126, 34), 20, 40, 0.25)
+            JuiceEffects.spawnDebrisBlast(pos, 14, Color3.fromRGB(230, 126, 34))
             JuiceEffects.play3DSound("slam", pos, 1.3)
             if isSelf then JuiceEffects.traumaShake(0.6) end
 
@@ -1036,12 +1067,13 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnTexturedShockwave(pos, 55, Color3.fromRGB(230, 126, 34), 1.1)
             createPillarOfLight(pos, 55, 18, Color3.fromRGB(241, 196, 15), 1.3)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(241, 196, 15), 26, 70, 0.4)
-            JuiceEffects.play3DSound("slam", pos, 1.6)
-            JuiceEffects.play3DSound("meteor", pos, 1.4)
+            JuiceEffects.spawnDebrisBlast(pos, 26, Color3.fromRGB(230, 126, 34))
+            JuiceEffects.playEpicImpact(pos, "godmode", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "🌍 СМЕЩЕНИЕ ЗЕМНОЙ ОСИ!", Color3.fromRGB(241, 196, 15))
             if isSelf then
                 JuiceEffects.traumaShake(1.4)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(230, 126, 34), 0.45)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(241, 196, 15), 0.85)
                 JuiceEffects.hitstop(0.08)
             end
         end
@@ -1068,12 +1100,14 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnTexturedShockwave(pos, 36, Color3.fromRGB(255, 20, 147), 0.75)
             createPillarOfLight(pos, 26, 8, Color3.fromRGB(255, 105, 180), 0.8)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 20, 147), 20, 45, 0.25)
+            JuiceEffects.spawnDebrisBlast(pos, 18, Color3.fromRGB(255, 20, 147))
+            JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
             JuiceEffects.play3DSound("chime", pos, 1.3)
-            JuiceEffects.play3DSound("slam", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "💖 ВЗРЫВ СВЕРХРИЗЗА!", Color3.fromRGB(255, 105, 180))
             if isSelf then
                 JuiceEffects.traumaShake(0.8)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 105, 180), 0.3)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(255, 105, 180), 0.7)
             end
 
         elseif slot == "special" then
@@ -1097,12 +1131,14 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnTexturedShockwave(pos, 45, Color3.fromRGB(255, 105, 180), 0.9)
             createPillarOfLight(pos, 42, 14, Color3.fromRGB(255, 20, 147), 1.1)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 105, 180), 24, 60, 0.35)
+            JuiceEffects.spawnDebrisBlast(pos, 24, Color3.fromRGB(255, 20, 147))
+            JuiceEffects.playEpicImpact(pos, "godmode", isSelf)
             JuiceEffects.play3DSound("chime", pos, 1.5)
-            JuiceEffects.play3DSound("fanfare", pos, 1.2)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "💋 АУРА ГИПЕР-РИЗЗА 999+!", Color3.fromRGB(255, 20, 147))
             if isSelf then
                 JuiceEffects.traumaShake(1.15)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 105, 180), 0.4)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(255, 20, 147), 0.85)
             end
         end
 
@@ -1144,12 +1180,14 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnGroundCracks(pos, 16, Color3.fromRGB(30, 80, 40), 2.8)
             createPillarOfLight(pos, 28, 8, Color3.fromRGB(46, 204, 113), 0.8)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(46, 204, 113), 22, 50, 0.3)
-            JuiceEffects.play3DSound("slam", pos, 1.2)
+            JuiceEffects.spawnDebrisBlast(pos, 18, Color3.fromRGB(46, 204, 113))
+            JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
             JuiceEffects.play3DSound("electric", pos, 1.1)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🌪️ ИТАЛЬЯНСКИЙ ТОРНАДО!", Color3.fromRGB(46, 204, 113))
             if isSelf then
                 JuiceEffects.traumaShake(0.85)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(46, 204, 113), 0.3)
+                JuiceEffects.cinematicVignettePulse(Color3.fromRGB(46, 204, 113), 0.7)
                 JuiceEffects.hitstop(0.07)
             end
 
@@ -1184,6 +1222,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             spawnTexturedShockwave(pos, 24, Color3.fromRGB(46, 204, 113), 0.5)
             spawnGroundCracks(pos, 18, Color3.fromRGB(30, 80, 40), 2.5)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(46, 204, 113), 20, 40, 0.25)
+            JuiceEffects.spawnDebrisBlast(pos, 14, Color3.fromRGB(46, 204, 113))
             JuiceEffects.play3DSound("slam", pos, 1.3)
             JuiceEffects.play3DSound("hammer", pos, 1.1)
             if isSelf then JuiceEffects.traumaShake(0.7) end
@@ -1202,12 +1241,14 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
                 createPillarOfLight(pos, 50, 18, Color3.fromRGB(230, 126, 34), 1.3)
                 spawnTexturedShockwave(pos, 50, Color3.fromRGB(192, 57, 43), 1.1)
                 JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(230, 126, 34), 26, 65, 0.35)
-                JuiceEffects.play3DSound("slam", pos, 1.5)
+                JuiceEffects.spawnDebrisBlast(pos, 26, Color3.fromRGB(230, 126, 34))
+                JuiceEffects.playEpicImpact(pos, "godmode", isSelf)
                 JuiceEffects.play3DSound("electric", pos, 1.3)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "🌋 ЯРОСТЬ ВУЛКАНА ЭТНА!", Color3.fromRGB(230, 126, 34))
                 if isSelf then
                     JuiceEffects.traumaShake(1.35)
                     JuiceEffects.screenBloomFlash(Color3.fromRGB(230, 126, 34), 0.45)
+                    JuiceEffects.cinematicVignettePulse(Color3.fromRGB(192, 57, 43), 0.85)
                     JuiceEffects.hitstop(0.07)
                 end
             end, 55, true)

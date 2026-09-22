@@ -339,3 +339,34 @@ test('61-defect audit: C14 Grimace mobility persistent slime puddle', () => {
 
     assert.ok(content.includes('SlimePuddleVFX'), 'Grimace mobility_land VFX must spawn persistent slime puddle');
 });
+
+test('Cinematic Audio & VFX Overhaul: verified audio catalog, layered epic sound, and cinematic VFX helpers', () => {
+    const juicePath = path.join(__dirname, '../src/client/JuiceEffects.luau');
+    const juiceContent = fs.readFileSync(juicePath, 'utf8');
+
+    // Verify broken sound URLs are eliminated
+    assert.ok(!juiceContent.includes('sounds/bell.mp3'), 'Broken bell.mp3 must be removed');
+    assert.ok(!juiceContent.includes('130976108'), 'Broken asset 130976108 must be removed');
+    assert.ok(!juiceContent.includes('sounds/swordhit.wav'), 'Broken swordhit.wav must be removed');
+
+    // Verify layered epic impact & cinematic functions
+    assert.ok(juiceContent.includes('function JuiceEffects.playEpicImpact'), 'Must implement playEpicImpact');
+    assert.ok(juiceContent.includes('function JuiceEffects.spawnDebrisBlast'), 'Must implement spawnDebrisBlast');
+    assert.ok(juiceContent.includes('function JuiceEffects.cinematicVignettePulse'), 'Must implement cinematicVignettePulse');
+
+    // Verify AbilityVFX calls layered audio and cinematic helpers
+    const vfxPath = path.join(__dirname, '../src/client/AbilityVFX.luau');
+    const vfxContent = fs.readFileSync(vfxPath, 'utf8');
+    assert.ok(vfxContent.includes('JuiceEffects.playEpicImpact'), 'AbilityVFX must call playEpicImpact');
+    assert.ok(vfxContent.includes('JuiceEffects.spawnDebrisBlast'), 'AbilityVFX must call spawnDebrisBlast');
+    assert.ok(vfxContent.includes('JuiceEffects.cinematicVignettePulse'), 'AbilityVFX must call cinematicVignettePulse');
+});
+
+test('DataStoreManager: Graceful Studio mock persistence when API access is disabled', () => {
+    const dsmPath = path.join(__dirname, '../src/server/DataStoreManager.luau');
+    const dsmContent = fs.readFileSync(dsmPath, 'utf8');
+
+    assert.ok(dsmContent.includes('studioMockStore'), 'DataStoreManager must maintain in-memory studioMockStore');
+    assert.ok(dsmContent.includes('Studio access to APIs is not allowed'), 'DataStoreManager must detect Studio API restriction');
+});
+

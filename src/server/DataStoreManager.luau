@@ -43,6 +43,7 @@ local tycoonDataStore: any = nil
 local dataStoreChecked = false
 local dataStoreAvailable = false
 local failedToLoad: { [number]: boolean } = {}
+local studioMockStore: { [number]: PlayerSaveData } = {}
 
 local function ensureDataStore()
     if dataStoreChecked then return end
@@ -55,7 +56,7 @@ local function ensureDataStore()
         dataStoreAvailable = true
         print("[DataStoreManager] Connected to Roblox DataStore successfully.")
     else
-        warn("[DataStoreManager] DataStore unavailable (likely Studio API access disabled). Running in local session mode.")
+        warn("[DataStoreManager] DataStore unavailable. Running in local session mode.")
     end
 end
 
@@ -188,7 +189,19 @@ function DataStoreManager.loadData(userId: number): PlayerSaveData
             loadedData = tycoonDataStore:GetAsync(key)
         end)
         if ok then break end
-        warn(string.format("[DataStoreManager] Attempt %d failed loading for %d: %s", attempt, userId, tostring(err)))
+
+        local errStr = tostring(err)
+        if RunService:IsStudio() and (errStr:find("Studio access to APIs is not allowed") or errStr:find("Error code: 7") or errStr:find("StudioAccessToApisNotAllowed")) then
+            warn("[DataStoreManager] Studio API access is disabled in Game Settings. Running with local in-memory Mock DataStore.")
+            dataStoreAvailable = false
+            failedToLoad[userId] = nil
+            if studioMockStore[userId] then
+                return DataStoreManager.validateAndMigrate(studioMockStore[userId])
+            end
+            return DataStoreManager.getDefaultData()
+        end
+
+        warn(string.format("[DataStoreManager] Attempt %d failed loading for %d: %s", attempt, userId, errStr))
         task.wait(attempt * 1.0)
     end
 
@@ -211,8 +224,11 @@ end
 -- P0-07: Сохранение данных с UpdateAsync вместо SetAsync (атомарность)
 function DataStoreManager.saveData(userId: number, data: PlayerSaveData): boolean
     ensureDataStore()
+    local validated = DataStoreManager.validateAndMigrate(data)
+
     if not dataStoreAvailable or not tycoonDataStore then
-        return true -- В режиме сессии считаем успешно
+        studioMockStore[userId] = validated
+        return true -- В режиме сессии сохраняем в памяти
     end
 
     if failedToLoad[userId] then

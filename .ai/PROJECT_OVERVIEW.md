@@ -58,13 +58,15 @@
 - **Инструмент синхронизации**: Rojo v7.7.0 (`bin/rojo.exe`, плагин в Studio)
 - **Язык**: Luau (strict typing `--!strict`)
 - **Мультиплеер**: 8 баз ($R = 180$ studs), остров $R = 250$ studs, центральная площадь
-- **Сохранение**: Roblox DataStoreService (`TycoonSave_v1`)
-- **Тестирование**: Node.js Test Runner (`npm test`, 119 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
+- **Сохранение**: Roblox DataStoreService (`TycoonSave_v1`) с сессионным Mock DataStore в Studio при отключенном API доступе
+- **Тестирование**: Node.js Test Runner (`npm test`, 130 юнит-тестов, 100% покрытие всех механик, граничных случаев и аудита)
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 - **Контроль версий**: Git + GitHub (`Ainz-Oul-Gown/roblox`)
 - **Независимый аудит и код-ревью**: `REVIEW_REPORT_STEP1.md` (JuiceEffects: 8.7/10), `REVIEW_REPORT_STEP2.md` (AbilityVFX Физика мира: 9.4/10), `REVIEW_REPORT_STEP3.md` (Оверхол 48 способностей: 9.1/10) и `REVIEW_REPORT_STEP4.md` (Оптимизация под мобильные 60 FPS: 9.8/10).
 
-- **Полный аудит надежности и безопасности (119/119 тестов пройдено)**:
+- **Полный аудит надежности и безопасности (130/130 тестов пройдено)**:
+  - `Cinematic VFX & Layered Audio Overhaul`: Полная замена устаревших/сбойных путей `rbxasset://sounds/...` на проверенные официальные звуковые идентификаторы Roblox. Введение многослойного звука `playEpicImpact()` (суб-бас + пробивной транзиент + 3D-звук), разлетающихся осколков `spawnDebrisBlast()` и пульсирующей виньетки `cinematicVignettePulse()`. Ультимейты и Godmode всех 8 фракций переведены на кинематографический уровень.
+  - `Studio DataStore Graceful Fallback`: Мгновенное детектирование ошибки `StudioAccessToApisNotAllowed` в Roblox Studio и автоматическое переключение на локальный in-memory `studioMockStore`, исключающее 3-секундные задержки при спавне и спам предупреждений об отмене сохранения.
   - `Mobile Performance & Memory (Step 4)`: Детектирование мобильных устройств (`UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled`), отключение динамических теней `PointLight.Shadows` на мобильных устройствах для устранения просадок FPS, ограничение радиуса света до 24 studs, адаптивный лимит камней `MAX_ACTIVE_ROCKS` (14 на смартфонах / 24 на ПК), масштабирование залпов частиц `getQualityScale()`, гарантированная очистка `screenFlash` через `Debris`.
   - `AbilityVFX (Step 3 Hotfix)`: Исключение коллизии луча `getGroundPosition` с персонажами всех игроков (`Players:GetPlayers()`), устранение дублирования кратеров и Z-Fighting через `customCrater`, сохранение поворота цилиндрических падающих пропов (`rot = prop.CFrame.Rotation`) и безопасные fallback-значения для `originPos` и `lookVector`.
   - `MonetizationService`: Изоляция кэша `processedReceipts` по каждому игроку (`[UserId][receiptKey]`) и очистка на `PlayerRemoving`, устраняющая утечку памяти и кросс-пользовательские коллизии.

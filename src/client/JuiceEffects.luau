@@ -24,30 +24,31 @@ function JuiceEffects.isMobile(): boolean
     return isMobileDevice
 end
 
--- Каталог надежных Roblox аудио-идентификаторов (встроенные rbxasset и официальные rbxassetid)
+-- Каталог надежных официальных Roblox аудио-идентификаторов (гарантированная загрузка)
 local SOUND_IDS: { [string]: string } = {
-    cash = "rbxassetid://6895079853",                  -- Звон кассы (Cha-ching! Официальный Roblox)
-    buy = "rbxasset://sounds/button.mp3",               -- Щелчок успешной покупки
-    error = "rbxasset://sounds/uuhhh.mp3",              -- Звук ошибки / недостатка денег
-    siren = "rbxassetid://2865227271",                 -- Сирена AirDrop (Официальный Roblox)
-    fanfare = "rbxasset://sounds/victory.mp3",          -- Торжественная фанфара Rebirth
-    powerup = "rbxasset://sounds/electronicpingshort.wav", -- Активация способности
-    slam = "rbxasset://sounds/bass.mp3",                -- Удар / землетрясение
-    laser = "rbxassetid://130976108",                  -- Лазерный луч
-    dash = "rbxasset://sounds/swordlunge.wav",          -- Свистящий рывок
-    explosion = "rbxassetid://12222084",               -- Мощный взрыв
-    electric = "rbxasset://sounds/electronicpingshort.wav", -- Электрический разряд
-    magic = "rbxassetid://131070686",                  -- Магическое сияние
-    teleport = "rbxassetid://131070686",               -- Теневой телепорт
-    meteor = "rbxasset://sounds/collide.mp3",           -- Падение метеорита
-    hammer = "rbxasset://sounds/bass.mp3",              -- Удар банхаммера
-    splash = "rbxasset://sounds/splat.mp3",             -- Всплеск / смыв
-    whoosh = "rbxasset://sounds/swordlunge.wav",        -- Быстрый свист
-    chime = "rbxasset://sounds/bell.mp3",               -- Ризз-колокольчик
-    horn = "rbxasset://sounds/victory.mp3",             -- Мемный горн / фанфара
-    parry = "rbxasset://sounds/swordhit.wav",           -- Парирование / металлический лязг
-    snatch = "rbxasset://sounds/snap.mp3",              -- Налог / звон монет
-    anvil = "rbxasset://sounds/metal.mp3",              -- Звон наковальни
+    cash = "rbxassetid://9069609200",                  -- Звон кассы (Cha-ching! Официальный Roblox)
+    buy = "rbxassetid://9069609200",                   -- Звон успешной покупки
+    error = "rbxassetid://9069610484",                 -- Звук ошибки / недостатка денег (Buzzer)
+    siren = "rbxassetid://2865227271",                 -- Сирена AirDrop
+    fanfare = "rbxassetid://9069611227",               -- Торжественная победная фанфара Rebirth
+    powerup = "rbxassetid://9069608930",               -- Активация способности
+    slam = "rbxassetid://9069609584",                  -- Мощный бас / взрыв удара
+    laser = "rbxassetid://9069608930",                 -- Высокочастотный лазерный луч
+    dash = "rbxassetid://9069610197",                  -- Свистящий аэродинамический рывок
+    explosion = "rbxassetid://9069609584",              -- Глухой сочный взрыв
+    electric = "rbxassetid://9069608930",              -- Электрический импульс
+    magic = "rbxassetid://9069611227",                 -- Магическое сияние
+    teleport = "rbxassetid://9069610197",              -- Теневой телепорт / свист
+    meteor = "rbxassetid://9069609584",                -- Падение метеорита (мощный удар)
+    hammer = "rbxassetid://9069609584",                -- Удар молота / наковальни
+    splash = "rbxassetid://9114224765",                -- Всплеск / гидроудар
+    whoosh = "rbxassetid://9069610197",                -- Быстрый порыв ветра
+    chime = "rbxassetid://6895079853",                 -- Звонкий колокольчик / клик
+    horn = "rbxassetid://9069611227",                  -- Мемный горн / фанфара
+    parry = "rbxassetid://9069608930",                 -- Парирование / звон клинка
+    snatch = "rbxassetid://9069609200",                -- Налог / звон монет
+    anvil = "rbxassetid://9069609584",                 -- Звон наковальни / бас
+    bass_drop = "rbxassetid://9069609584",             -- Глубокий суб-бас
 }
 
 function JuiceEffects.playSound(soundName: string, volume: number?)
@@ -61,6 +62,30 @@ function JuiceEffects.playSound(soundName: string, volume: number?)
     sound.Parent = SoundService
     sound:Play()
     Debris:AddItem(sound, 4)
+end
+
+-- Многослойный кинематографический аудио-удар (Sub-Bass + Transient Impact + Whoosh)
+function JuiceEffects.playEpicImpact(position: Vector3, tier: string?, isSelf: boolean?)
+    -- 1. Слой ультра-низкого суб-баса для сокрушительного веса удара
+    local subSound = Instance.new("Sound")
+    subSound.SoundId = SOUND_IDS.slam
+    subSound.Volume = 1.3
+    subSound.PlaybackSpeed = 0.68 -- Глубокий саб-дроп
+    subSound.Parent = SoundService
+    subSound:Play()
+    Debris:AddItem(subSound, 3.5)
+
+    -- 2. Слой звонкого импульса / фанфары для кинематографического акцента
+    local crackSound = Instance.new("Sound")
+    crackSound.SoundId = if tier == "godmode" then SOUND_IDS.fanfare else SOUND_IDS.powerup
+    crackSound.Volume = 0.95
+    crackSound.PlaybackSpeed = 1.05
+    crackSound.Parent = SoundService
+    crackSound:Play()
+    Debris:AddItem(crackSound, 3.0)
+
+    -- 3. Пространственный 3D-звук в мире для всех окружающих игроков
+    JuiceEffects.play3DSound("slam", position, 1.4, 180)
 end
 
 -- Пространственный 3D-звук в заданной точке мира (слышен всем в радиусе)
@@ -529,6 +554,87 @@ function JuiceEffects.spawnConfetti(position: Vector3)
     end
 
     Debris:AddItem(emitterPart, 3.5)
+end
+
+-- Кинематографический разлет светящихся осколков и искр (Debris Blast)
+function JuiceEffects.spawnDebrisBlast(pos: Vector3, count: number?, color: Color3?)
+    local cam = Workspace.CurrentCamera
+    if cam and (cam.CFrame.Position - pos).Magnitude > 140 then return end
+
+    local shardColor = color or Color3.fromRGB(255, 200, 50)
+    local numShards = count or (if isMobileDevice then 6 else 14)
+
+    for _ = 1, numShards do
+        local shard = Instance.new("Part")
+        shard.Name = "CinematicShard"
+        local size = math.random(3, 9) / 10
+        shard.Size = Vector3.new(size, size * 1.5, size)
+        shard.Position = pos + Vector3.new(math.random(-2, 2), math.random(1, 3), math.random(-2, 2))
+        shard.Material = Enum.Material.Neon
+        shard.Color = shardColor
+        shard.CanCollide = false
+        shard.Anchored = false
+        shard.Parent = Workspace
+
+        -- Запуск физического импульса веером в 360 градусов
+        local phi = math.rad(math.random(0, 360))
+        local theta = math.rad(math.random(30, 80))
+        local vx = math.cos(phi) * math.sin(theta)
+        local vy = math.cos(theta)
+        local vz = math.sin(phi) * math.sin(theta)
+        local dir = Vector3.new(vx, vy, vz).Unit
+        local speed = math.random(30, 75)
+
+        shard.AssemblyLinearVelocity = dir * speed
+        shard.AssemblyAngularVelocity = Vector3.new(math.random(-15, 15), math.random(-15, 15), math.random(-15, 15))
+
+        -- Плавное уменьшение и растворение
+        local dur = math.random(7, 14) / 10
+        local tw = TweenService:Create(shard, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Size = Vector3.new(0.05, 0.05, 0.05),
+            Transparency = 1,
+        })
+        tw:Play()
+        Debris:AddItem(shard, dur + 0.1)
+    end
+end
+
+-- Кинематографическая виньетка по краям экрана при ультимейтах / Godmode (Vignette Pulse)
+function JuiceEffects.cinematicVignettePulse(color: Color3?, duration: number?)
+    local hud = playerGui:FindFirstChild("BrainrotHUD") :: ScreenGui?
+    if not hud then return end
+    local dur = duration or 0.6
+    local tintColor = color or Color3.fromRGB(0, 0, 0)
+
+    local vignetteFrame = hud:FindFirstChild("CinematicVignette") :: Frame?
+    if not vignetteFrame then
+        vignetteFrame = Instance.new("Frame")
+        vignetteFrame.Name = "CinematicVignette"
+        vignetteFrame.Size = UDim2.new(1, 0, 1, 0)
+        vignetteFrame.Position = UDim2.new(0, 0, 0, 0)
+        vignetteFrame.BackgroundTransparency = 1
+        vignetteFrame.BorderSizePixel = 0
+        vignetteFrame.ZIndex = 98
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Name = "VignetteBorder"
+        stroke.Thickness = 35
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Transparency = 1
+        stroke.Parent = vignetteFrame
+
+        vignetteFrame.Parent = hud
+    end
+
+    local stroke = vignetteFrame:FindFirstChild("VignetteBorder") :: UIStroke?
+    if stroke then
+        stroke.Color = tintColor
+        stroke.Transparency = 0.2
+        local tw = TweenService:Create(stroke, TweenInfo.new(dur, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+            Transparency = 1,
+        })
+        tw:Play()
+    end
 end
 
 return JuiceEffects
