@@ -71,7 +71,16 @@ function CinematicCamera.resetCamera()
     if not cam then return end
 
     local char = localPlayer and localPlayer.Character
+    local root = if char then char:FindFirstChild("HumanoidRootPart") :: BasePart? else nil
     local hum = if char then char:FindFirstChildOfClass("Humanoid") else nil
+
+    -- Гарантированный возврат ракурса за спину персонажа (вид от 3-го лица),
+    -- предотвращающий застревание камеры на лице при возврате в Custom
+    if root and isCinematicActive then
+        local lookVec = root.CFrame.LookVector
+        local backCamPos = root.Position - lookVec * 12.5 + Vector3.new(0, 3.2, 0)
+        cam.CFrame = CFrame.lookAt(backCamPos, root.Position + Vector3.new(0, 1.5, 0))
+    end
 
     cam.CameraType = Enum.CameraType.Custom
     if hum then

@@ -24,31 +24,31 @@ function JuiceEffects.isMobile(): boolean
     return isMobileDevice
 end
 
--- Каталог надежных официальных Roblox аудио-идентификаторов (гарантированная загрузка)
+-- Каталог надежных официальных и встроенных Roblox аудио-идентификаторов (гарантированная загрузка)
 local SOUND_IDS: { [string]: string } = {
-    cash = "rbxassetid://131070686",                  -- Легендарный чистый звон кассы "Ча-чинг!" (Roblox Classic)
+    cash = "rbxassetid://6895079853",                  -- Приятный кристальный звон ауры/монет (UI Bell)
     buy = "rbxassetid://6895079853",                   -- Мягкий приятный кристальный клик покупки
-    error = "rbxassetid://9069610484",                 -- Звук ошибки / недостатка денег (Buzzer)
-    siren = "rbxassetid://2865227271",                 -- Сирена AirDrop
-    fanfare = "rbxassetid://9069611227",               -- Торжественная победная фанфара Rebirth
-    powerup = "rbxassetid://9069608930",               -- Активация способности
-    slam = "rbxassetid://9069609584",                  -- Мощный бас / взрыв удара
-    laser = "rbxassetid://9069608930",                 -- Высокочастотный лазерный луч
-    dash = "rbxassetid://9069610197",                  -- Свистящий аэродинамический рывок
-    explosion = "rbxassetid://9069609584",              -- Глухой сочный взрыв
-    electric = "rbxassetid://9069608930",              -- Электрический импульс
-    magic = "rbxassetid://9069611227",                 -- Магическое сияние
-    teleport = "rbxassetid://9069610197",              -- Теневой телепорт / свист
-    meteor = "rbxassetid://9069609584",                -- Падение метеорита (мощный удар)
-    hammer = "rbxassetid://9069609584",                -- Удар молота / наковальни
-    splash = "rbxassetid://9114224765",                -- Всплеск / гидроудар
-    whoosh = "rbxassetid://9069610197",                -- Быстрый порыв ветра
+    error = "rbxasset://sounds/button.mp3",            -- Щелчок ошибки / кнопки
+    siren = "rbxasset://sounds/volume_slider.ogg",     -- Сигнал тревоги
+    fanfare = "rbxassetid://6895079853",               -- Торжественный звон победы
+    powerup = "rbxassetid://6895079853",               -- Активация способности
+    slam = "rbxasset://sounds/impact_explosion_03.mp3", -- Настоящий мощный взрыв удара
+    laser = "rbxasset://sounds/volume_slider.ogg",     -- Высокочастотный импульс энергии
+    dash = "rbxasset://sounds/action_jump.mp3",        -- Свистящий аэродинамический рывок
+    explosion = "rbxasset://sounds/impact_explosion_03.mp3", -- Глухой сочный взрыв
+    electric = "rbxasset://sounds/volume_slider.ogg",  -- Электрический импульс
+    magic = "rbxassetid://6895079853",                 -- Магическое сияние
+    teleport = "rbxasset://sounds/action_jump.mp3",    -- Теневой телепорт / свист
+    meteor = "rbxasset://sounds/impact_explosion_03.mp3", -- Падение метеорита (мощный удар)
+    hammer = "rbxasset://sounds/impact_explosion_03.mp3", -- Удар молота / наковальни
+    splash = "rbxasset://sounds/impact_water.mp3",     -- Всплеск / гидроудар
+    whoosh = "rbxasset://sounds/action_jump.mp3",      -- Быстрый порыв ветра
     chime = "rbxassetid://6895079853",                 -- Звонкий колокольчик / клик
-    horn = "rbxassetid://9069611227",                  -- Мемный горн / фанфара
-    parry = "rbxassetid://9069608930",                 -- Парирование / звон клинка
-    snatch = "rbxassetid://131070686",                 -- Налог / звон монет
-    anvil = "rbxassetid://9069609584",                 -- Звон наковальни / бас
-    bass_drop = "rbxassetid://9069609584",             -- Глубокий суб-бас
+    horn = "rbxassetid://6895079853",                  -- Мелодичный акцент
+    parry = "rbxassetid://6895079853",                 -- Парирование / звон клинка
+    snatch = "rbxassetid://6895079853",                -- Сбор ауры
+    anvil = "rbxasset://sounds/impact_explosion_03.mp3", -- Удар наковальни
+    bass_drop = "rbxasset://sounds/impact_explosion_03.mp3", -- Глубокий бас взрыва
 }
 
 function JuiceEffects.playSound(soundName: string, volume: number?)

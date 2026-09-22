@@ -1228,24 +1228,24 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     -- 7. RIZZLER & GRONK (Hypnotic Romance / Magenta & Roses)
     elseif fId == "Rizzler" then
         if slot == "base" then
-            -- Unspoken Rizz (Розовый всплеск очарования + романтический жест)
-            if casterChar then CharacterAnimator.playRizzlerFlourish(casterChar, 0.8) end
+            -- Unspoken Rizz (Розовый всплеск очарования + романтический жест рука к сердцу)
+            if casterChar then CharacterAnimator.playRizzlerFlourish(casterChar, 0.32) end
             spawnTexturedShockwave(pos, 18, Color3.fromRGB(255, 105, 180), 0.5)
             JuiceEffects.spawnLightBurst(pos, Color3.fromRGB(255, 105, 180), 14, 28, 0.2)
             JuiceEffects.play3DSound("chime", pos, 1.0)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "❤️ UNSPOKEN RIZZ!", Color3.fromRGB(255, 105, 180))
 
         elseif slot == "tactical" then
-            -- Ризз Гипноз (Концентрические кольца любви + флуриш)
-            if casterChar then CharacterAnimator.playRizzlerFlourish(casterChar, 0.9) end
+            -- Ризз Гипноз (Концентрические кольца любви + гипнотический пасс обеими руками)
+            if casterChar then CharacterAnimator.playHypnoHands(casterChar, 0.35) end
             spawnMagicCircle(pos, Color3.fromRGB(255, 20, 147), 0.8)
             createPillarOfLight(pos, 10, 4, Color3.fromRGB(255, 105, 180), 0.5)
             JuiceEffects.play3DSound("magic", pos, 0.9)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 4, 0), "🌀 РИЗЗ ГИПНОЗ!", Color3.fromRGB(255, 105, 180))
 
         elseif slot == "ultimate" then
-            -- Взрыв Сверхризза (Ослепительная розовая вспышка + жест и кинематографический наезд)
-            if casterChar then CharacterAnimator.playRizzlerFlourish(casterChar, 1.3) end
+            -- Взрыв Сверхризза (Ослепительная розовая вспышка + поклон джентльмена и кинематографический наезд)
+            if casterChar then CharacterAnimator.playGentlemanBow(casterChar, 0.4) end
             if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.45, 4.2, 14) end
             spawnAnticipationVortex(pos, Color3.fromRGB(255, 105, 180), 0.25)
             spawnTexturedShockwave(pos, 36, Color3.fromRGB(255, 20, 147), 0.75)
@@ -1262,8 +1262,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             end
 
         elseif slot == "special" then
-            -- Cupid's Brainrot Arrow (Стрела Купидона + жест)
-            if casterChar then CharacterAnimator.playRizzlerFlourish(casterChar, 0.9) end
+            -- Cupid's Brainrot Arrow (Стрела Купидона + поза лучника)
+            if casterChar then CharacterAnimator.playArcherDraw(casterChar, 0.35) end
             spawnVolumetricLaser(pos + Vector3.new(0, 2, 0), pos + lookVector * 34 + Vector3.new(0, 2, 0), Color3.fromRGB(255, 20, 147), 0.8, 0.35)
             JuiceEffects.play3DSound("laser", pos, 1.0)
             JuiceEffects.play3DSound("chime", pos, 0.9)
@@ -1271,7 +1271,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
 
         elseif slot == "mobility" then
             -- Лепестковый Блинк (Элегантный рывок в вихре роз)
-            if casterChar then CharacterAnimator.playDashPose(casterChar, 0.35, false) end
+            if casterChar then CharacterAnimator.playDashPose(casterChar, 0.22, false) end
             performDashImpulse(casterChar, lookVector, 95, 0.28, 10)
             spawnTexturedShockwave(pos, 12, Color3.fromRGB(255, 20, 147), 0.3)
             JuiceEffects.play3DSound("dash", pos, 0.9)
@@ -1279,8 +1279,8 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             if isSelf then JuiceEffects.fovPulse(15, 0.35) end
 
         elseif slot == "godmode" then
-            -- Аура Гипер-Ризза 999+ (Культовый флуриш и динамический ракурс)
-            if casterChar then CharacterAnimator.playRizzlerFlourish(casterChar, 1.6) end
+            -- Аура Гипер-Ризза 999+ (Светский поклон и динамический ракурс)
+            if casterChar then CharacterAnimator.playGentlemanBow(casterChar, 0.45) end
             if isSelf and casterChar then CinematicCamera.focusCutIn(casterChar, 0.5, 4.5, -12) end
             spawnMagicCircle(pos, Color3.fromRGB(255, 20, 147), 1.2)
             spawnTexturedShockwave(pos, 45, Color3.fromRGB(255, 105, 180), 0.9)

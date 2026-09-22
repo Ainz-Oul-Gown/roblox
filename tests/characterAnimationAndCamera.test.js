@@ -305,6 +305,20 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         const totalPlayCalls = (content.match(/CharacterAnimator\.play\w+/g) || []).length;
         assert.ok(totalPlayCalls >= 48, `Must have at least 48 CharacterAnimator.play calls across all slots (found ${totalPlayCalls})`);
     });
+
+    test('CinematicCamera.resetCamera restores third-person perspective behind player', () => {
+        const content = fs.readFileSync(cameraPath, 'utf8');
+        assert.ok(content.includes('root.Position - lookVec * 12.5'), 'Camera must position behind character back in resetCamera');
+        assert.ok(content.includes('CFrame.lookAt(backCamPos'), 'Camera must look at character upper body from behind');
+    });
+
+    test('CharacterAnimator exports diverse Rizzler animations without straight-arm salute', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('CharacterAnimator.playHypnoHands'), 'Must export playHypnoHands');
+        assert.ok(content.includes('CharacterAnimator.playArcherDraw'), 'Must export playArcherDraw');
+        assert.ok(content.includes('CharacterAnimator.playGentlemanBow'), 'Must export playGentlemanBow');
+        assert.ok(!content.includes('math.rad(130), math.rad(-20), math.rad(40)'), 'Must not raise arm straight diagonally');
+    });
 });
 
 
