@@ -468,6 +468,8 @@ local function spawnFallingSkyProp(targetPos: Vector3, propBuilder: () -> BasePa
         CFrame = CFrame.new(targetPos) * rot,
     })
     tween:Play()
+    -- C13 FIX: Debris safety fallback (в случае если tween.Completed не сработает)
+    Debris:AddItem(prop, fallTime + 1.0)
     tween.Completed:Connect(function()
         if prop and prop.Parent then
             prop:Destroy()

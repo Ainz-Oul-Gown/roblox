@@ -23,10 +23,14 @@ test('P0-02: FanumTax stolen cash uses addCashRaw (no multiplier)', () => {
     assert.ok(src.includes('TycoonService.addCashRaw(player, 2500)'), 'Skibidi special must use addCashRaw for fixed reward');
 });
 
-// === P0-03: Mewing MaxHealth cap ===
-test('P0-03: Mewing tactical ability caps MaxHealth at 250', () => {
+// === P0-03: Mewing tactical ability (A4 FIX: ReflectDamage + KnockbackImmune) ===
+test('P0-03: Mewing tactical ability uses ReflectDamage + KnockbackImmune', () => {
     const src = fs.readFileSync(path.join(__dirname, '../src/server/AbilityService.luau'), 'utf8');
-    assert.ok(src.includes('math.min(hum.MaxHealth + 30, 250)'), 'Must cap MaxHealth at 250');
+    // A4 FIX: replaced MaxHealth+30 with ReflectDamage 40% + KnockbackImmune
+    assert.ok(src.includes('SetAttribute("ReflectDamage", 0.4)'), 'Must set ReflectDamage attribute');
+    assert.ok(src.includes('SetAttribute("KnockbackImmune", true)'), 'Must set KnockbackImmune attribute');
+    // CaseOh special still caps MaxHealth at 250
+    assert.ok(src.includes('math.min(hum.MaxHealth + 50, 250)'), 'CaseOh special must cap MaxHealth at 250');
 });
 
 // === P0-04: Receipt persistence ===
