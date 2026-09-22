@@ -8,6 +8,7 @@
     - Сжатие угла обзора (FOV Compression 70 -> 48) с последующим взрывным отскоком
     - Низкий ракурс (Low-Angle Slam) для эпичных падающих ударов сверху вниз
     - Гарантированное восстановление управления Custom Camera при любых прерываниях
+    - Защита от клиппинга в стены спереди и сзади через рейкасты
 ]=]
 
 local Workspace = game:GetService("Workspace")
@@ -20,7 +21,7 @@ local CinematicCamera = {}
 
 local activeCameraThread: thread? = nil
 local activeCameraTween: Tween? = nil
-local originalFOV: number = 70
+local originalFOV: number? = nil
 local isCinematicActive = false
 
 -- Получение текущей камеры
@@ -50,7 +51,11 @@ function CinematicCamera.resetCamera()
     if hum then
         cam.CameraSubject = hum
     end
-    cam.FieldOfView = originalFOV
+
+    -- Восстанавливаем исходный угол обзора игрока только если синематик модифицировал его
+    if isCinematicActive and originalFOV then
+        cam.FieldOfView = originalFOV
+    end
     isCinematicActive = false
 end
 
@@ -67,7 +72,9 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
     if not isCinematicActive then
         originalFOV = cam.FieldOfView
     end
+    local cachedFOV = originalFOV or cam.FieldOfView
     CinematicCamera.resetCamera()
+    originalFOV = cachedFOV
     isCinematicActive = true
 
     local dur = duration or 0.55
@@ -84,11 +91,11 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
     local maxDist = dist
     local hit = Workspace:Raycast(targetFocusPoint, faceDir * (dist * 1.5), rayParams)
     if hit then
-        maxDist = math.clamp(hit.Distance - 0.6, 2.0, dist)
+        maxDist = math.clamp(hit.Distance - 0.4, 0.8, dist)
     end
 
-    local startCamPos = targetFocusPoint + faceDir * (maxDist * 1.2) + Vector3.new(0, 0.4, 0)
-    local targetCamPos = targetFocusPoint + faceDir * maxDist + Vector3.new(0, 0.2, 0)
+    local startCamPos = targetFocusPoint + faceDir * maxDist + Vector3.new(0, 0.4, 0)
+    local targetCamPos = targetFocusPoint + faceDir * (maxDist * 0.85) + Vector3.new(0, 0.2, 0)
 
     cam.CameraType = Enum.CameraType.Scriptable
     cam.CFrame = CFrame.lookAt(startCamPos, targetFocusPoint) * CFrame.Angles(0, 0, roll)
@@ -97,7 +104,7 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
     local tweenInfo = TweenInfo.new(dur, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
     local twPos = TweenService:Create(cam, tweenInfo, {
         CFrame = CFrame.lookAt(targetCamPos, targetFocusPoint) * CFrame.Angles(0, 0, roll),
-        FieldOfView = math.clamp(originalFOV - 18, 42, 65),
+        FieldOfView = math.clamp(cachedFOV - 18, 42, 65),
     })
     activeCameraTween = twPos
     twPos:Play()
@@ -133,13 +140,15 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
     if not isCinematicActive then
         originalFOV = cam.FieldOfView
     end
+    local cachedFOV = originalFOV or cam.FieldOfView
     CinematicCamera.resetCamera()
+    originalFOV = cachedFOV
     isCinematicActive = true
 
     local dur = duration or 0.6
     local focusPoint = root.Position + Vector3.new(0, 4, 0)
 
-    -- Рейкаст для проверки уровня пола под камерой (предотвращает проваливание под землю/перекрытие)
+    -- Рейкаст для проверки уровня пола под камерой (предотвращает проваливание под землю)
     local rayParams = RaycastParams.new()
     rayParams.FilterType = Enum.RaycastFilterType.Exclude
     rayParams.FilterDescendantsInstances = { targetCharacter }
@@ -153,13 +162,21 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
         end
     end
 
-    local lowCamPos = root.Position - root.CFrame.LookVector * 12 + Vector3.new(0, groundOffset, 0)
+    -- Рейкаст назад: предотвращает пробитие стен арены/базы позади игрока
+    local backDir = -root.CFrame.LookVector
+    local desiredDist = 12
+    local backHit = Workspace:Raycast(root.Position, backDir * desiredDist, rayParams)
+    if backHit then
+        desiredDist = math.clamp(backHit.Distance - 0.6, 2.0, desiredDist)
+    end
+
+    local lowCamPos = root.Position + backDir * desiredDist + Vector3.new(0, groundOffset, 0)
 
     cam.CameraType = Enum.CameraType.Scriptable
     cam.CFrame = CFrame.lookAt(lowCamPos, focusPoint) * CFrame.Angles(0, 0, math.rad(6))
 
     local tw = TweenService:Create(cam, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        FieldOfView = math.clamp(originalFOV - 12, 45, 65),
+        FieldOfView = math.clamp(cachedFOV - 12, 45, 65),
     })
     activeCameraTween = tw
     tw:Play()
@@ -177,7 +194,9 @@ CinematicCamera.safeReset = CinematicCamera.resetCamera
 
 -- Автоматический сброс камеры при гибели или респавне локального персонажа
 local function bindCharacter(char: Model)
-    CinematicCamera.resetCamera()
+    if isCinematicActive then
+        CinematicCamera.resetCamera()
+    end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if hum then
         hum.Died:Connect(function()

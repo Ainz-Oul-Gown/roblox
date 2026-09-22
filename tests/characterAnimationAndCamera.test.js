@@ -15,7 +15,7 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(content.startsWith('--!strict'), 'CharacterAnimator.luau must start with --!strict');
     });
 
-    test('CharacterAnimator exports all required procedural poses including SHHH gesture', () => {
+    test('CharacterAnimator exports all required procedural poses including SHHH gesture and stopAnimation', () => {
         const content = fs.readFileSync(animatorPath, 'utf8');
         const requiredFunctions = [
             'CharacterAnimator.playShhhPose',
@@ -27,6 +27,7 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
             'CharacterAnimator.playSpinSalute',
             'CharacterAnimator.playMoneySnatch',
             'CharacterAnimator.restoreJoints',
+            'CharacterAnimator.stopAnimation',
         ];
 
         for (const fn of requiredFunctions) {
@@ -40,6 +41,13 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(content.includes('LeftUpperArm') && content.includes('Left Shoulder'), 'Must support R15 and R6 left arm joints');
         assert.ok(content.includes('UpperTorso') && content.includes('RootJoint'), 'Must support R15 and R6 torso/waist joints');
         assert.ok(content.includes('originalC0Cache'), 'Must cache original joint C0s to prevent permanent deformation');
+    });
+
+    test('CharacterAnimator cancels active joint tweens to prevent limb jitter and clashing', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('activeJointTweens'), 'Must track active joint tweens');
+        assert.ok(content.includes('prev:Cancel()'), 'Must cancel previous active tween on the joint before playing new tween');
+        assert.ok(content.includes('activeAnimTokens[character] = (activeAnimTokens[character] or 0) + 1'), 'restoreJoints must invalidate token to cancel delayed attack phases');
     });
 
     test('CinematicCamera.luau exists and exports camera director functions', () => {
@@ -66,10 +74,11 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(content.includes('Enum.CameraType.Custom'), 'CinematicCamera must safely restore CameraType to Custom');
     });
 
-    test('AbilityVFX imports and invokes CharacterAnimator and CinematicCamera', () => {
+    test('AbilityVFX imports and invokes CharacterAnimator and CinematicCamera with explosiveSnapBack', () => {
         const content = fs.readFileSync(vfxPath, 'utf8');
         assert.ok(content.includes('CharacterAnimator') && content.includes('pcall(require, animModule)'), 'AbilityVFX must require CharacterAnimator');
         assert.ok(content.includes('CinematicCamera') && content.includes('pcall(require, cameraModule)'), 'AbilityVFX must require CinematicCamera');
+        assert.ok(content.includes('CinematicCamera.explosiveSnapBack'), 'AbilityVFX must invoke CinematicCamera.explosiveSnapBack on impacts');
 
         // Verify Sigma ultimate uses playShhhPose and focusCutIn
         const sigmaMatch = content.match(/fId == "Sigma"[\s\S]*?slot == "ultimate"[\s\S]*?CharacterAnimator\.playShhhPose[\s\S]*?CinematicCamera\.focusCutIn/);
@@ -86,6 +95,9 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         // Verify TungTung ultimate uses playHammerSwing and focusCutIn
         const tungTungMatch = content.match(/fId == "TungTung"[\s\S]*?slot == "ultimate"[\s\S]*?CharacterAnimator\.playHammerSwing[\s\S]*?CinematicCamera\.focusCutIn/);
         assert.ok(tungTungMatch, 'TungTung ultimate must trigger CharacterAnimator.playHammerSwing and CinematicCamera.focusCutIn');
+
+        // Verify debug console spam print is removed
+        assert.ok(!content.includes('[AbilityVFX] Playing %s VFX for %s'), 'AbilityVFX must not contain debug spam print');
     });
 
     test('CharacterAnimator uses weak tables for cache to prevent memory leaks on death/respawn', () => {
@@ -95,7 +107,7 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
 
     test('CharacterAnimator supports R6 torso animations via rootJoint fallback', () => {
         const content = fs.readFileSync(animatorPath, 'utf8');
-        assert.ok(content.includes('joints.waist or joints.rootJoint'), 'Must fallback to rootJoint when waist is nil for R6 torso animation');
+        assert.ok(content.includes('joints.waist or joints.rootJoint') || content.includes('joints.rootJoint or joints.waist'), 'Must support rootJoint fallback for torso animation');
     });
 
     test('CinematicCamera guards against FOV drift and hooks CharacterAdded for reset', () => {
@@ -110,10 +122,11 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(content.includes('activeCameraTween:Cancel()'), 'CinematicCamera.resetCamera must cancel activeCameraTween');
     });
 
-    test('CinematicCamera performs raycast occlusion checks for walls and floors', () => {
+    test('CinematicCamera performs raycast occlusion checks for front, floor, and rear walls', () => {
         const content = fs.readFileSync(cameraPath, 'utf8');
         assert.ok(content.includes('Workspace:Raycast(targetFocusPoint'), 'focusCutIn must raycast to avoid clipping through base walls');
-        assert.ok(content.includes('Workspace:Raycast(root.Position'), 'groundSlamPerspective must raycast to avoid placing camera under floor');
+        assert.ok(content.includes('Workspace:Raycast(root.Position, Vector3.new(0, -6, 0)'), 'groundSlamPerspective must raycast to avoid placing camera under floor');
+        assert.ok(content.includes('Workspace:Raycast(root.Position, backDir'), 'groundSlamPerspective must raycast backwards to avoid pushing camera into rear walls');
     });
 
     test('CinematicCamera hooks Humanoid.Died for immediate camera restoration upon player death', () => {
@@ -134,5 +147,3 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(poseStarts && poseStarts.length >= 8, 'All 8 signature poses must call restoreJoints at start');
     });
 });
-
-

@@ -551,8 +551,6 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     local fId = if factionId and factionId ~= "" then factionId else "Skibidi"
     local casterChar = if caster then caster.Character else nil
 
-    print(string.format("[AbilityVFX] Playing %s VFX for %s (slot: %s, isSelf: %s)", fId, tostring(caster and caster.Name), tostring(slot), tostring(isSelf)))
-
     -- 1. SKIBIDI TOILET (Hydro-Chaos & Gold / Porcelain)
     if fId == "Skibidi" then
         if slot == "base" then
@@ -589,7 +587,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.play3DSound("splash", pos, 1.3)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🌀 МЕГА-СМЫВ 3000!", Color3.fromRGB(0, 220, 255))
             if isSelf then
-                JuiceEffects.traumaShake(0.85)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 20, 0.85)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(0, 180, 255), 0.25)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(0, 180, 255), 0.7)
                 JuiceEffects.hitstop(0.05)
@@ -692,7 +690,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🤫🧏 BYE BYE!", Color3.fromRGB(0, 240, 255))
             if isSelf then
-                JuiceEffects.traumaShake(0.9)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 20, 0.9)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(0, 220, 255), 0.7)
                 JuiceEffects.hitstop(0.06)
                 JuiceEffects.cameraKick(-lookVector, 0.7)
@@ -737,7 +735,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.playEpicImpact(pos, "godmode", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "👑 АЛЬФА ДОМИНАЦИЯ!", Color3.fromRGB(0, 240, 255))
             if isSelf then
-                JuiceEffects.traumaShake(1.25)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 22, 1.0)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(0, 240, 255), 0.4)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(0, 240, 255), 0.85)
                 JuiceEffects.hitstop(0.06)
@@ -780,7 +778,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🤫 СИГМА ДОМИНАЦИЯ!", Color3.fromRGB(231, 76, 60))
             if isSelf then
-                JuiceEffects.traumaShake(0.9)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 20, 0.9)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(231, 76, 60), 0.3)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(231, 76, 60), 0.7)
             end
@@ -813,7 +811,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.playEpicImpact(pos, "godmode", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "⚡ BRAZILIAN PHONK OVERLOAD!", Color3.fromRGB(231, 76, 60))
             if isSelf then
-                JuiceEffects.traumaShake(1.3)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 24, 1.2)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(231, 76, 60), 0.4)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(142, 68, 173), 0.85)
             end
@@ -888,7 +886,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.play3DSound("cash", pos, 1.3)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🍕 НАЛОГОВЫЙ АУДИТ!", Color3.fromRGB(241, 196, 15))
             if isSelf then
-                JuiceEffects.traumaShake(0.85)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 18, 0.85)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(241, 196, 15), 0.25)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(241, 196, 15), 0.7)
             end
@@ -938,7 +936,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
                 JuiceEffects.play3DSound("cash", pos, 1.4)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "🍕 МЕГА-ФАНУМ ПИРШЕСТВО!", Color3.fromRGB(255, 215, 0))
                 if isSelf then
-                    JuiceEffects.traumaShake(1.35)
+                    CinematicCamera.explosiveSnapBack(JuiceEffects, 24, 1.2)
                     JuiceEffects.screenBloomFlash(Color3.fromRGB(241, 196, 15), 0.4)
                     JuiceEffects.cinematicVignettePulse(Color3.fromRGB(241, 196, 15), 0.85)
                 end
@@ -976,7 +974,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "💜 КАТАКЛИЗМ ГРИМАСА!", Color3.fromRGB(168, 85, 247))
             if isSelf then
-                JuiceEffects.traumaShake(0.9)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 20, 0.9)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(155, 89, 182), 0.3)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(142, 68, 173), 0.7)
             end
@@ -1035,7 +1033,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.play3DSound("electric", pos, 1.3)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "💀 РИТУАЛ 23 ИЮНЯ!", Color3.fromRGB(168, 85, 247))
             if isSelf then
-                JuiceEffects.traumaShake(1.35)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 24, 1.2)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(142, 68, 173), 0.45)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(74, 35, 90), 0.85)
                 JuiceEffects.hitstop(0.07)
@@ -1092,7 +1090,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
                 JuiceEffects.playEpicImpact(pos, "ultimate", isSelf)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 6, 0), "☄️ МЕТЕОРИТ КЕЙСОХА!", Color3.fromRGB(230, 126, 34))
                 if isSelf then
-                    JuiceEffects.traumaShake(1.25)
+                    CinematicCamera.explosiveSnapBack(JuiceEffects, 24, 1.2)
                     JuiceEffects.screenBloomFlash(Color3.fromRGB(230, 126, 34), 0.35)
                     JuiceEffects.cinematicVignettePulse(Color3.fromRGB(230, 126, 34), 0.75)
                 end
@@ -1156,7 +1154,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.playEpicImpact(pos, "godmode", isSelf)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "🌍 СМЕЩЕНИЕ ЗЕМНОЙ ОСИ!", Color3.fromRGB(241, 196, 15))
             if isSelf then
-                JuiceEffects.traumaShake(1.4)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 28, 1.4)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(230, 126, 34), 0.45)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(241, 196, 15), 0.85)
                 JuiceEffects.hitstop(0.08)
@@ -1194,7 +1192,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.play3DSound("chime", pos, 1.3)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "💖 ВЗРЫВ СВЕРХРИЗЗА!", Color3.fromRGB(255, 105, 180))
             if isSelf then
-                JuiceEffects.traumaShake(0.8)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 18, 0.8)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 105, 180), 0.3)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(255, 105, 180), 0.7)
             end
@@ -1228,7 +1226,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.play3DSound("chime", pos, 1.5)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "💋 АУРА ГИПЕР-РИЗЗА 999+!", Color3.fromRGB(255, 20, 147))
             if isSelf then
-                JuiceEffects.traumaShake(1.15)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 22, 1.1)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(255, 105, 180), 0.4)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(255, 20, 147), 0.85)
             end
@@ -1282,7 +1280,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
             JuiceEffects.play3DSound("electric", pos, 1.1)
             JuiceEffects.showFloatingText(pos + Vector3.new(0, 5, 0), "🌪️ ИТАЛЬЯНСКИЙ ТОРНАДО!", Color3.fromRGB(46, 204, 113))
             if isSelf then
-                JuiceEffects.traumaShake(0.85)
+                CinematicCamera.explosiveSnapBack(JuiceEffects, 20, 0.85)
                 JuiceEffects.screenBloomFlash(Color3.fromRGB(46, 204, 113), 0.3)
                 JuiceEffects.cinematicVignettePulse(Color3.fromRGB(46, 204, 113), 0.7)
                 JuiceEffects.hitstop(0.07)
@@ -1347,7 +1345,7 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
                 JuiceEffects.play3DSound("electric", pos, 1.3)
                 JuiceEffects.showFloatingText(pos + Vector3.new(0, 7, 0), "🌋 ЯРОСТЬ ВУЛКАНА ЭТНА!", Color3.fromRGB(230, 126, 34))
                 if isSelf then
-                    JuiceEffects.traumaShake(1.35)
+                    CinematicCamera.explosiveSnapBack(JuiceEffects, 26, 1.3)
                     JuiceEffects.screenBloomFlash(Color3.fromRGB(230, 126, 34), 0.45)
                     JuiceEffects.cinematicVignettePulse(Color3.fromRGB(192, 57, 43), 0.85)
                     JuiceEffects.hitstop(0.07)

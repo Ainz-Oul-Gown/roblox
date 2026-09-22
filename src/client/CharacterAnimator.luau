@@ -13,6 +13,7 @@
     - FanumTax Money Snatch (агрессивный бросок руками вперед и загребание)
 
     Автоматически восстанавливает исходную позу (Joint C0) без сбоев и багов анимации ходьбы.
+    Предотвращает конфликты твинов через activeJointTweens.
 ]=]
 
 local TweenService = game:GetService("TweenService")
@@ -33,6 +34,21 @@ local CharacterAnimator = {}
 -- Кэш исходных C0 суставов для каждого персонажа (слабые ключи предотвращают утечки памяти при респавне)
 local originalC0Cache: { [Motor6D]: CFrame } = setmetatable({}, { __mode = "k" })
 local activeAnimTokens: { [Model]: number } = setmetatable({}, { __mode = "k" })
+local activeJointTweens: { [Motor6D]: Tween } = setmetatable({}, { __mode = "k" })
+
+-- Безопасный запуск твина сустава с отменой предыдущего
+local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame): Tween
+    local prev = activeJointTweens[joint]
+    if prev then
+        prev:Cancel()
+        activeJointTweens[joint] = nil
+    end
+    local tw = TweenService:Create(joint, tweenInfo, { C0 = targetC0 })
+    activeJointTweens[joint] = tw
+    tw:Play()
+    return tw
+end
+CharacterAnimator.tweenJoint = tweenJoint
 
 -- Поиск и классификация суставов персонажа (R15 и R6)
 local function getJoints(character: Model): JointMap
@@ -85,22 +101,28 @@ local function getJoints(character: Model): JointMap
 end
 CharacterAnimator.getJoints = getJoints
 
--- Безопасный возврат суставов в исходное состояние
+-- Безопасный возврат суставов в исходное состояние с инвалидацией отложенных фаз
 local function restoreJoints(character: Model, joints: JointMap, tweenTime: number?)
+    -- Инкремент токена отменяет любые незавершенные task.delay фаз удара
+    activeAnimTokens[character] = (activeAnimTokens[character] or 0) + 1
     local t = tweenTime or 0.25
     for _, joint in pairs(joints :: any) do
         if typeof(joint) == "Instance" and joint:IsA("Motor6D") then
             local origC0 = originalC0Cache[joint]
             if origC0 and joint.Parent then
-                local tw = TweenService:Create(joint, TweenInfo.new(t, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    C0 = origC0,
-                })
-                tw:Play()
+                tweenJoint(joint, TweenInfo.new(t, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), origC0)
             end
         end
     end
 end
 CharacterAnimator.restoreJoints = restoreJoints
+
+-- Принудительная остановка любой анимации (для оглушений, рэгдолла и смерти)
+function CharacterAnimator.stopAnimation(character: Model)
+    if not character or not character:IsA("Model") then return end
+    local joints = getJoints(character)
+    restoreJoints(character, joints, 0.1)
+end
 
 -- 1. Жест "SHHH" / Мьюинг (Палец к губам, фиксация подбородка, легкий наклон головы)
 function CharacterAnimator.playShhhPose(character: Model, duration: number?)
@@ -118,28 +140,19 @@ function CharacterAnimator.playShhhPose(character: Model, duration: number?)
             then orig * CFrame.Angles(math.rad(105), math.rad(-25), math.rad(45)) * CFrame.new(-0.2, 0.2, -0.3)
             else orig * CFrame.Angles(math.rad(115), math.rad(-30), math.rad(50))
 
-        local tw = TweenService:Create(joints.rightShoulder, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            C0 = targetC0,
-        })
-        tw:Play()
+        tweenJoint(joints.rightShoulder, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), targetC0)
     end
 
     -- Сгибание правого локтя к губам (R15)
     if joints.rightElbow then
         local orig = originalC0Cache[joints.rightElbow] or joints.rightElbow.C0
-        local tw = TweenService:Create(joints.rightElbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(85), 0, 0),
-        })
-        tw:Play()
+        tweenJoint(joints.rightElbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(85), 0, 0))
     end
 
     -- Голова наклоняется слегка вперед и вбок (Mewing looksmaxing)
     if joints.neck then
         local orig = originalC0Cache[joints.neck] or joints.neck.C0
-        local tw = TweenService:Create(joints.neck, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(-12), math.rad(8), math.rad(-8)),
-        })
-        tw:Play()
+        tweenJoint(joints.neck, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-12), math.rad(8), math.rad(-8)))
     end
 
     -- Удержание позы и плавный возврат
@@ -162,30 +175,20 @@ function CharacterAnimator.playGigachadFlex(character: Model, duration: number?)
     -- Обе руки в позу двойного бицепса
     if joints.rightShoulder then
         local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
-        local tw = TweenService:Create(joints.rightShoulder, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(85), math.rad(25), math.rad(75)),
-        })
-        tw:Play()
+        tweenJoint(joints.rightShoulder, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(85), math.rad(25), math.rad(75)))
     end
     if joints.leftShoulder then
         local orig = originalC0Cache[joints.leftShoulder] or joints.leftShoulder.C0
-        local tw = TweenService:Create(joints.leftShoulder, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(85), math.rad(-25), math.rad(-75)),
-        })
-        tw:Play()
+        tweenJoint(joints.leftShoulder, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(85), math.rad(-25), math.rad(-75)))
     end
 
     if joints.rightElbow then
         local orig = originalC0Cache[joints.rightElbow] or joints.rightElbow.C0
-        TweenService:Create(joints.rightElbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(95), 0, 0),
-        }):Play()
+        tweenJoint(joints.rightElbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(95), 0, 0))
     end
     if joints.leftElbow then
         local orig = originalC0Cache[joints.leftElbow] or joints.leftElbow.C0
-        TweenService:Create(joints.leftElbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(95), 0, 0),
-        }):Play()
+        tweenJoint(joints.leftElbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(95), 0, 0))
     end
 
     -- Торс прогибается назад (поддержка R15 Waist и R6 RootJoint)
@@ -193,9 +196,7 @@ function CharacterAnimator.playGigachadFlex(character: Model, duration: number?)
     if torsoJoint then
         local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
         local archAngle = if joints.isR15 then math.rad(-15) else math.rad(15)
-        TweenService:Create(torsoJoint, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(archAngle, 0, 0),
-        }):Play()
+        tweenJoint(torsoJoint, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(archAngle, 0, 0))
     end
 
     task.delay(dur, function()
@@ -217,24 +218,17 @@ function CharacterAnimator.playSigmaTilt(character: Model, duration: number?)
     if joints.neck then
         local orig = originalC0Cache[joints.neck] or joints.neck.C0
         -- Резкий кивок и наклон
-        local tw = TweenService:Create(joints.neck, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(-18), math.rad(-15), math.rad(-22)),
-        })
-        tw:Play()
+        tweenJoint(joints.neck, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-18), math.rad(-15), math.rad(-22)))
     end
 
-    -- Руки скрещиваются или отводятся назад в доминантную стойку
+    -- Руки отводятся назад в доминантную стойку
     if joints.rightShoulder then
         local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
-        TweenService:Create(joints.rightShoulder, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(-25), 0, math.rad(15)),
-        }):Play()
+        tweenJoint(joints.rightShoulder, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-25), 0, math.rad(15)))
     end
     if joints.leftShoulder then
         local orig = originalC0Cache[joints.leftShoulder] or joints.leftShoulder.C0
-        TweenService:Create(joints.leftShoulder, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(-25), 0, math.rad(-15)),
-        }):Play()
+        tweenJoint(joints.leftShoulder, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-25), 0, math.rad(-15)))
     end
 
     task.delay(dur, function()
@@ -256,23 +250,17 @@ function CharacterAnimator.playGroundPound(character: Model, duration: number?)
     -- Фаза 1: Замах обеими руками над головой
     if joints.rightShoulder then
         local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
-        TweenService:Create(joints.rightShoulder, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(160), 0, math.rad(-15)),
-        }):Play()
+        tweenJoint(joints.rightShoulder, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(160), 0, math.rad(-15)))
     end
     if joints.leftShoulder then
         local orig = originalC0Cache[joints.leftShoulder] or joints.leftShoulder.C0
-        TweenService:Create(joints.leftShoulder, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(160), 0, math.rad(15)),
-        }):Play()
+        tweenJoint(joints.leftShoulder, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(160), 0, math.rad(15)))
     end
     local torsoJoint = joints.waist or joints.rootJoint
     if torsoJoint then
         local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
         local windupAngle = if joints.isR15 then math.rad(-20) else math.rad(20)
-        TweenService:Create(torsoJoint, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(windupAngle, 0, 0),
-        }):Play()
+        tweenJoint(torsoJoint, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(windupAngle, 0, 0))
     end
 
     -- Фаза 2: Сокрушительный удар вниз
@@ -281,23 +269,17 @@ function CharacterAnimator.playGroundPound(character: Model, duration: number?)
 
         if joints.rightShoulder then
             local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
-            TweenService:Create(joints.rightShoulder, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                C0 = orig * CFrame.Angles(math.rad(-30), 0, math.rad(-15)),
-            }):Play()
+            tweenJoint(joints.rightShoulder, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), orig * CFrame.Angles(math.rad(-30), 0, math.rad(-15)))
         end
         if joints.leftShoulder then
             local orig = originalC0Cache[joints.leftShoulder] or joints.leftShoulder.C0
-            TweenService:Create(joints.leftShoulder, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                C0 = orig * CFrame.Angles(math.rad(-30), 0, math.rad(15)),
-            }):Play()
+            tweenJoint(joints.leftShoulder, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), orig * CFrame.Angles(math.rad(-30), 0, math.rad(15)))
         end
         local slamTorso = joints.waist or joints.rootJoint
         if slamTorso then
             local orig = originalC0Cache[slamTorso] or slamTorso.C0
             local slamAngle = if joints.isR15 then math.rad(35) else math.rad(-35)
-            TweenService:Create(slamTorso, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                C0 = orig * CFrame.Angles(slamAngle, 0, 0),
-            }):Play()
+            tweenJoint(slamTorso, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), orig * CFrame.Angles(slamAngle, 0, 0))
         end
     end)
 
@@ -320,17 +302,13 @@ function CharacterAnimator.playHammerSwing(character: Model, duration: number?)
     -- Замах вправо-назад
     if joints.rightShoulder then
         local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
-        TweenService:Create(joints.rightShoulder, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(120), math.rad(-60), math.rad(30)),
-        }):Play()
+        tweenJoint(joints.rightShoulder, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(120), math.rad(-60), math.rad(30)))
     end
     local torsoJoint = joints.waist or joints.rootJoint
     if torsoJoint then
         local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
         local windupRot = if joints.isR15 then CFrame.Angles(0, math.rad(-35), 0) else CFrame.Angles(0, 0, math.rad(-35))
-        TweenService:Create(torsoJoint, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * windupRot,
-        }):Play()
+        tweenJoint(torsoJoint, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * windupRot)
     end
 
     -- Рассекающий рубящий удар вперед
@@ -339,17 +317,13 @@ function CharacterAnimator.playHammerSwing(character: Model, duration: number?)
 
         if joints.rightShoulder then
             local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
-            TweenService:Create(joints.rightShoulder, TweenInfo.new(0.15, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-                C0 = orig * CFrame.Angles(math.rad(-20), math.rad(70), math.rad(-20)),
-            }):Play()
+            tweenJoint(joints.rightShoulder, TweenInfo.new(0.15, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-20), math.rad(70), math.rad(-20)))
         end
         local swingTorso = joints.waist or joints.rootJoint
         if swingTorso then
             local orig = originalC0Cache[swingTorso] or swingTorso.C0
             local swingRot = if joints.isR15 then CFrame.Angles(0, math.rad(45), 0) else CFrame.Angles(0, 0, math.rad(45))
-            TweenService:Create(swingTorso, TweenInfo.new(0.15, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-                C0 = orig * swingRot,
-            }):Play()
+            tweenJoint(swingTorso, TweenInfo.new(0.15, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), orig * swingRot)
         end
     end)
 
@@ -372,25 +346,19 @@ function CharacterAnimator.playRizzlerFlourish(character: Model, duration: numbe
     -- Правая рука поправляет волосы и плавно вытягивается вперед
     if joints.rightShoulder then
         local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
-        TweenService:Create(joints.rightShoulder, TweenInfo.new(0.28, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(130), math.rad(-20), math.rad(40)),
-        }):Play()
+        tweenJoint(joints.rightShoulder, TweenInfo.new(0.28, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(130), math.rad(-20), math.rad(40)))
     end
     if joints.neck then
         local orig = originalC0Cache[joints.neck] or joints.neck.C0
-        TweenService:Create(joints.neck, TweenInfo.new(0.28, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(-8), math.rad(18), math.rad(15)),
-        }):Play()
+        tweenJoint(joints.neck, TweenInfo.new(0.28, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(-8), math.rad(18), math.rad(15)))
     end
 
-    -- Плавный взмах в сторону камеры
+    -- Плавный взмах в сторону цели
     task.delay(0.32, function()
         if activeAnimTokens[character] ~= token or not character.Parent then return end
         if joints.rightShoulder then
             local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
-            TweenService:Create(joints.rightShoulder, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                C0 = orig * CFrame.Angles(math.rad(70), math.rad(30), math.rad(25)),
-            }):Play()
+            tweenJoint(joints.rightShoulder, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(70), math.rad(30), math.rad(25)))
         end
     end)
 
@@ -401,7 +369,7 @@ function CharacterAnimator.playRizzlerFlourish(character: Model, duration: numbe
     end)
 end
 
--- 7. Skibidi Spin & Salute (Вращение корпуса на 720° с армейским салютом)
+-- 7. Skibidi Spin & Salute (Вращение всего корпуса вокруг вертикальной оси с армейским салютом)
 function CharacterAnimator.playSpinSalute(character: Model, duration: number?)
     if not character or not character:IsA("Model") then return end
     local joints = getJoints(character)
@@ -413,35 +381,25 @@ function CharacterAnimator.playSpinSalute(character: Model, duration: number?)
     -- Армейский салют правой рукой
     if joints.rightShoulder then
         local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
-        TweenService:Create(joints.rightShoulder, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(115), math.rad(-30), math.rad(65)),
-        }):Play()
+        tweenJoint(joints.rightShoulder, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(115), math.rad(-30), math.rad(65)))
     end
     if joints.rightElbow then
         local orig = originalC0Cache[joints.rightElbow] or joints.rightElbow.C0
-        TweenService:Create(joints.rightElbow, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(110), 0, 0),
-        }):Play()
+        tweenJoint(joints.rightElbow, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(110), 0, 0))
     end
 
-    -- Вихревое вращение торса (waist для R15 / rootJoint для R6 вокруг вертикальной оси)
-    local spinJoint = joints.waist or joints.rootJoint
+    -- Вращение всего аватара: используем rootJoint (LowerTorso.Root для R15 / HRP.RootJoint для R6)
+    local spinJoint = joints.rootJoint or joints.waist
     if spinJoint then
         local orig = originalC0Cache[spinJoint] or spinJoint.C0
-        local rot180 = if joints.isR15 then CFrame.Angles(0, math.rad(180), 0) else CFrame.Angles(0, 0, math.rad(180))
-        local rotN179 = if joints.isR15 then CFrame.Angles(0, math.rad(-179), 0) else CFrame.Angles(0, 0, math.rad(-179))
+        local rot180 = if (joints.isR15 and spinJoint == joints.waist) then CFrame.Angles(0, math.rad(180), 0) else CFrame.Angles(0, 0, math.rad(180))
+        local rotN179 = if (joints.isR15 and spinJoint == joints.waist) then CFrame.Angles(0, math.rad(-179), 0) else CFrame.Angles(0, 0, math.rad(-179))
         task.spawn(function()
-            local tw1 = TweenService:Create(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {
-                C0 = orig * rot180,
-            })
-            tw1:Play()
+            local tw1 = tweenJoint(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), orig * rot180)
             tw1.Completed:Wait()
             if activeAnimTokens[character] == token and spinJoint and spinJoint.Parent then
                 spinJoint.C0 = orig * rotN179
-                local tw2 = TweenService:Create(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {
-                    C0 = orig,
-                })
-                tw2:Play()
+                tweenJoint(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), orig)
             end
         end)
     end
@@ -462,18 +420,14 @@ function CharacterAnimator.playMoneySnatch(character: Model, duration: number?)
     local token = (activeAnimTokens[character] or 0) + 1
     activeAnimTokens[character] = token
 
-    -- Руки выбрасываются вперед (схватить ауру/бургер)
+    -- Руки выбрасываются вперед
     if joints.rightShoulder then
         local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
-        TweenService:Create(joints.rightShoulder, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(85), math.rad(-15), 0),
-        }):Play()
+        tweenJoint(joints.rightShoulder, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(85), math.rad(-15), 0))
     end
     if joints.leftShoulder then
         local orig = originalC0Cache[joints.leftShoulder] or joints.leftShoulder.C0
-        TweenService:Create(joints.leftShoulder, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            C0 = orig * CFrame.Angles(math.rad(85), math.rad(15), 0),
-        }):Play()
+        tweenJoint(joints.leftShoulder, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(85), math.rad(15), 0))
     end
 
     -- Загребание назад к груди
@@ -481,15 +435,11 @@ function CharacterAnimator.playMoneySnatch(character: Model, duration: number?)
         if activeAnimTokens[character] ~= token or not character.Parent then return end
         if joints.rightShoulder then
             local orig = originalC0Cache[joints.rightShoulder] or joints.rightShoulder.C0
-            TweenService:Create(joints.rightShoulder, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                C0 = orig * CFrame.Angles(math.rad(45), math.rad(25), math.rad(35)),
-            }):Play()
+            tweenJoint(joints.rightShoulder, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(45), math.rad(25), math.rad(35)))
         end
         if joints.leftShoulder then
             local orig = originalC0Cache[joints.leftShoulder] or joints.leftShoulder.C0
-            TweenService:Create(joints.leftShoulder, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                C0 = orig * CFrame.Angles(math.rad(45), math.rad(-25), math.rad(-35)),
-            }):Play()
+            tweenJoint(joints.leftShoulder, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(45), math.rad(-25), math.rad(-35)))
         end
     end)
 
