@@ -32,6 +32,23 @@ local function getCamera(): Camera?
     return Workspace.CurrentCamera
 end
 
+-- Параметры рейкаста: исключаем всех персонажей игроков во избежание окклюзии в тесном PvP
+local function getCameraRayParams(targetCharacter: Model?): RaycastParams
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    local excludeList: { Instance } = {}
+    if targetCharacter then
+        table.insert(excludeList, targetCharacter)
+    end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character then
+            table.insert(excludeList, p.Character)
+        end
+    end
+    rayParams.FilterDescendantsInstances = excludeList
+    return rayParams
+end
+
 -- Безопасный сброс камеры в дефолтный режим
 function CinematicCamera.resetCamera()
     if cameraUpdateConnection then
@@ -46,6 +63,7 @@ function CinematicCamera.resetCamera()
 
     if activeCameraTween then
         activeCameraTween:Cancel()
+        activeCameraTween:Destroy()
         activeCameraTween = nil
     end
 
@@ -60,9 +78,9 @@ function CinematicCamera.resetCamera()
         cam.CameraSubject = hum
     end
 
-    -- Восстанавливаем исходный угол обзора игрока с защитой от искажений
+    -- Восстанавливаем исходный угол обзора игрока с защитой от искажений (до 105 FOV)
     if isCinematicActive and originalFOV then
-        cam.FieldOfView = math.clamp(originalFOV, 65, 75)
+        cam.FieldOfView = math.clamp(originalFOV, 60, 105)
     end
     isCinematicActive = false
 end
@@ -78,7 +96,7 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
     if not root then return end
 
     if not isCinematicActive then
-        originalFOV = math.clamp(cam.FieldOfView, 65, 75)
+        originalFOV = math.clamp(cam.FieldOfView, 60, 105)
     end
     local cachedFOV = originalFOV or DEFAULT_BASE_FOV
     CinematicCamera.resetCamera()
@@ -92,9 +110,7 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
 
     -- Рейкаст для предотвращения клиппинга камеры в стены базы
     local faceDir = root.CFrame.LookVector
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    rayParams.FilterDescendantsInstances = { targetCharacter }
+    local rayParams = getCameraRayParams(targetCharacter)
 
     local maxDist = dist
     local hit = Workspace:Raycast(targetFocusPoint, faceDir * (dist * 1.5), rayParams)
@@ -115,7 +131,7 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
     activeCameraTween = twFOV
     twFOV:Play()
 
-    -- Динамическое сопровождение персонажа в RenderStepped во избежание отставания камеры при движении
+    -- Динамическое сопровождение персонажа в RenderStepped с защитой от пробития стен
     local startTime = os.clock()
     cameraUpdateConnection = RunService.RenderStepped:Connect(function()
         if not targetCharacter.Parent or not root.Parent then
@@ -127,6 +143,13 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
         local progress = math.clamp((os.clock() - startTime) / dur, 0, 1)
         local currentDist = maxDist * (1 - progress * 0.15)
         local camPos = currentFocus + currentFace * currentDist + Vector3.new(0, 0.4 - progress * 0.2, 0)
+
+        -- Динамическая проверка окклюзии при перемещении в реальном времени
+        local dynRay = Workspace:Raycast(currentFocus, (camPos - currentFocus), rayParams)
+        if dynRay then
+            camPos = currentFocus + (camPos - currentFocus).Unit * math.clamp(dynRay.Distance - 0.3, 0.8, currentDist)
+        end
+
         cam.CFrame = CFrame.lookAt(camPos, currentFocus) * CFrame.Angles(0, 0, roll)
     end)
 
@@ -159,7 +182,7 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
     if not root then return end
 
     if not isCinematicActive then
-        originalFOV = math.clamp(cam.FieldOfView, 65, 75)
+        originalFOV = math.clamp(cam.FieldOfView, 60, 105)
     end
     local cachedFOV = originalFOV or DEFAULT_BASE_FOV
     CinematicCamera.resetCamera()
@@ -170,9 +193,7 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
     local focusPoint = root.Position + Vector3.new(0, 4, 0)
 
     -- Рейкаст для проверки уровня пола под камерой (предотвращает проваливание под землю)
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    rayParams.FilterDescendantsInstances = { targetCharacter }
+    local rayParams = getCameraRayParams(targetCharacter)
 
     local groundOffset = -2.5
     local floorHit = Workspace:Raycast(root.Position, Vector3.new(0, -6, 0), rayParams)
@@ -202,7 +223,7 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
     activeCameraTween = tw
     tw:Play()
 
-    -- Динамическое удержание ракурса при перемещении и прыжках
+    -- Динамическое удержание ракурса при перемещении и прыжках с защитой от пробития стен
     cameraUpdateConnection = RunService.RenderStepped:Connect(function()
         if not targetCharacter.Parent or not root.Parent then
             CinematicCamera.resetCamera()
@@ -212,6 +233,12 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
         local currentFocus = currentRootPos + Vector3.new(0, 4, 0)
         local curBackDir = -root.CFrame.LookVector
         local camPos = currentRootPos + curBackDir * desiredDist + Vector3.new(0, groundOffset, 0)
+
+        local dynRay = Workspace:Raycast(currentFocus, (camPos - currentFocus), rayParams)
+        if dynRay then
+            camPos = currentFocus + (camPos - currentFocus).Unit * math.clamp(dynRay.Distance - 0.4, 1.5, desiredDist)
+        end
+
         cam.CFrame = CFrame.lookAt(camPos, currentFocus) * CFrame.Angles(0, 0, math.rad(6))
     end)
 

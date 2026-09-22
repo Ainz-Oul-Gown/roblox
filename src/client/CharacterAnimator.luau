@@ -35,12 +35,14 @@ local CharacterAnimator = {}
 local originalC0Cache: { [Motor6D]: CFrame } = setmetatable({}, { __mode = "k" })
 local activeAnimTokens: { [Model]: number } = setmetatable({}, { __mode = "k" })
 local activeJointTweens: { [Motor6D]: Tween } = setmetatable({}, { __mode = "k" })
+local deadConnections: { [Humanoid]: RBXScriptConnection } = setmetatable({}, { __mode = "k" })
 
--- Безопасный запуск твина сустава с отменой предыдущего
+-- Безопасный запуск твина сустава с отменой предыдущего и освобождением ресурсов C++
 local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame): Tween
     local prev = activeJointTweens[joint]
     if prev then
         prev:Cancel()
+        prev:Destroy()
         activeJointTweens[joint] = nil
     end
     local tw = TweenService:Create(joint, tweenInfo, { C0 = targetC0 })
@@ -49,6 +51,7 @@ local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame
         if activeJointTweens[joint] == tw then
             activeJointTweens[joint] = nil
         end
+        tw:Destroy()
     end)
     tw:Play()
     return tw
@@ -87,8 +90,14 @@ local function getJoints(character: Model): JointMap
         local upperTorso = character:FindFirstChild("UpperTorso")
         if upperTorso then joints.waist = upperTorso:FindFirstChild("Waist") :: Motor6D? end
 
-        local lowerTorso = character:FindFirstChild("LowerTorso")
-        if lowerTorso then joints.rootJoint = lowerTorso:FindFirstChild("Root") :: Motor6D? end
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            joints.rootJoint = (hrp:FindFirstChild("Root") or hrp:FindFirstChild("RootJoint")) :: Motor6D?
+        end
+        if not joints.rootJoint then
+            local lowerTorso = character:FindFirstChild("LowerTorso")
+            if lowerTorso then joints.rootJoint = lowerTorso:FindFirstChild("Root") :: Motor6D? end
+        end
     else
         -- R6 аватар
         local torso = character:FindFirstChild("Torso")
@@ -108,6 +117,14 @@ local function getJoints(character: Model): JointMap
         if typeof(joint) == "Instance" and joint:IsA("Motor6D") and not originalC0Cache[joint] then
             originalC0Cache[joint] = joint.C0
         end
+    end
+
+    -- Автоматический сброс анимации при гибели персонажа во избежание застывания трупа в неестественной позе
+    local hum = character:FindFirstChildOfClass("Humanoid")
+    if hum and not deadConnections[hum] then
+        deadConnections[hum] = hum.Died:Connect(function()
+            CharacterAnimator.stopAnimation(character)
+        end)
     end
 
     return joints
@@ -208,8 +225,10 @@ function CharacterAnimator.playGigachadFlex(character: Model, duration: number?)
     local torsoJoint = joints.waist or joints.rootJoint
     if torsoJoint then
         local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
-        local archAngle = if joints.isR15 then math.rad(-15) else math.rad(15)
-        tweenJoint(torsoJoint, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(archAngle, 0, 0))
+        local rot = if joints.isR15
+            then CFrame.Angles(math.rad(-15), 0, 0)
+            else CFrame.Angles(0, math.rad(-15), 0) -- В R6 RootJoint pitch управляется осью Y
+        tweenJoint(torsoJoint, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * rot)
     end
 
     task.delay(dur, function()
@@ -272,8 +291,10 @@ function CharacterAnimator.playGroundPound(character: Model, duration: number?)
     local torsoJoint = joints.waist or joints.rootJoint
     if torsoJoint then
         local orig = originalC0Cache[torsoJoint] or torsoJoint.C0
-        local windupAngle = if joints.isR15 then math.rad(-20) else math.rad(20)
-        tweenJoint(torsoJoint, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(windupAngle, 0, 0))
+        local rot = if joints.isR15
+            then CFrame.Angles(math.rad(-20), 0, 0)
+            else CFrame.Angles(0, math.rad(-20), 0)
+        tweenJoint(torsoJoint, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * rot)
     end
 
     -- Фаза 2: Сокрушительный удар вниз
@@ -291,8 +312,10 @@ function CharacterAnimator.playGroundPound(character: Model, duration: number?)
         local slamTorso = joints.waist or joints.rootJoint
         if slamTorso then
             local orig = originalC0Cache[slamTorso] or slamTorso.C0
-            local slamAngle = if joints.isR15 then math.rad(35) else math.rad(-35)
-            tweenJoint(slamTorso, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), orig * CFrame.Angles(slamAngle, 0, 0))
+            local rot = if joints.isR15
+                then CFrame.Angles(math.rad(35), 0, 0)
+                else CFrame.Angles(0, math.rad(35), 0)
+            tweenJoint(slamTorso, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), orig * rot)
         end
     end)
 
@@ -401,12 +424,12 @@ function CharacterAnimator.playSpinSalute(character: Model, duration: number?)
         tweenJoint(joints.rightElbow, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), orig * CFrame.Angles(math.rad(110), 0, 0))
     end
 
-    -- Вращение всего аватара: используем rootJoint (LowerTorso.Root для R15 / HRP.RootJoint для R6)
+    -- Вращение всего аватара: используем rootJoint (HRP.Root для R15 / HRP.RootJoint для R6)
     local spinJoint = joints.rootJoint or joints.waist
     if spinJoint then
         local orig = originalC0Cache[spinJoint] or spinJoint.C0
-        local rot180 = if (joints.isR15 and spinJoint == joints.waist) then CFrame.Angles(0, math.rad(180), 0) else CFrame.Angles(0, 0, math.rad(180))
-        local rotN179 = if (joints.isR15 and spinJoint == joints.waist) then CFrame.Angles(0, math.rad(-179), 0) else CFrame.Angles(0, 0, math.rad(-179))
+        local rot180 = if joints.isR15 then CFrame.Angles(0, math.rad(180), 0) else CFrame.Angles(0, 0, math.rad(180))
+        local rotN179 = if joints.isR15 then CFrame.Angles(0, math.rad(-179), 0) else CFrame.Angles(0, 0, math.rad(-179))
         task.spawn(function()
             local tw1 = tweenJoint(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), orig * rot180)
             local state = tw1.Completed:Wait()

@@ -158,7 +158,33 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         const content = fs.readFileSync(cameraPath, 'utf8');
         assert.ok(content.includes('RunService.RenderStepped:Connect'), 'CinematicCamera must dynamically track character via RenderStepped');
         assert.ok(content.includes('cameraUpdateConnection:Disconnect()'), 'CinematicCamera.resetCamera must disconnect RenderStepped update');
-        assert.ok(content.includes('math.clamp(originalFOV, 65, 75)'), 'CinematicCamera must clamp originalFOV on restore to prevent distortion');
+        assert.ok(content.includes('math.clamp(originalFOV, 60, 105)'), 'CinematicCamera must clamp originalFOV on restore to prevent distortion');
+    });
+
+    test('CharacterAnimator cleans up C++ Tween instances with Destroy on cancel and completion', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('prev:Destroy()'), 'Must destroy previous tween instance on cancellation');
+        assert.ok(content.includes('tw:Destroy()'), 'Must destroy completed tween instance');
+    });
+
+    test('CharacterAnimator resolves R15 Root joint from HumanoidRootPart and connects Humanoid.Died', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('joints.rootJoint = (hrp:FindFirstChild("Root")'), 'Must resolve R15 Root joint from HumanoidRootPart');
+        assert.ok(content.includes('deadConnections[hum] = hum.Died:Connect'), 'Must hook Humanoid.Died to safely stop animation on death');
+    });
+
+    test('CharacterAnimator correctly rotates R6 RootJoint around local Y axis for torso pitch', () => {
+        const content = fs.readFileSync(animatorPath, 'utf8');
+        assert.ok(content.includes('CFrame.Angles(0, math.rad(-15), 0)'), 'R6 torso arch in gigachad flex must rotate around local Y axis');
+        assert.ok(content.includes('CFrame.Angles(0, math.rad(-20), 0)'), 'R6 torso windup in ground pound must rotate around local Y axis');
+        assert.ok(content.includes('CFrame.Angles(0, math.rad(35), 0)'), 'R6 torso slam in ground pound must rotate around local Y axis');
+    });
+
+    test('CinematicCamera excludes all players and cleans up tweens with Destroy', () => {
+        const content = fs.readFileSync(cameraPath, 'utf8');
+        assert.ok(content.includes('activeCameraTween:Destroy()'), 'CinematicCamera.resetCamera must destroy activeCameraTween');
+        assert.ok(content.includes('Players:GetPlayers()'), 'CinematicCamera must exclude other players from occlusion raycasts');
+        assert.ok(content.includes('dynRay'), 'CinematicCamera must perform real-time dynamic occlusion raycast in RenderStepped');
     });
 
     test('AbilityVFX loader uses non-blocking lookups without stalling client initialization', () => {
