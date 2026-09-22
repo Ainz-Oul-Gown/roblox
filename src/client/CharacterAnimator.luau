@@ -42,7 +42,9 @@ local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame
     local prev = activeJointTweens[joint]
     if prev then
         prev:Cancel()
-        prev:Destroy()
+        pcall(function()
+            prev:Destroy()
+        end)
         activeJointTweens[joint] = nil
     end
     local tw = TweenService:Create(joint, tweenInfo, { C0 = targetC0 })
@@ -51,7 +53,9 @@ local function tweenJoint(joint: Motor6D, tweenInfo: TweenInfo, targetC0: CFrame
         if activeJointTweens[joint] == tw then
             activeJointTweens[joint] = nil
         end
-        tw:Destroy()
+        pcall(function()
+            tw:Destroy()
+        end)
     end)
     tw:Play()
     return tw
@@ -123,6 +127,10 @@ local function getJoints(character: Model): JointMap
     local hum = character:FindFirstChildOfClass("Humanoid")
     if hum and not deadConnections[hum] then
         deadConnections[hum] = hum.Died:Connect(function()
+            if deadConnections[hum] then
+                deadConnections[hum]:Disconnect()
+                deadConnections[hum] = nil
+            end
             CharacterAnimator.stopAnimation(character)
         end)
     end
@@ -428,12 +436,13 @@ function CharacterAnimator.playSpinSalute(character: Model, duration: number?)
     local spinJoint = joints.rootJoint or joints.waist
     if spinJoint then
         local orig = originalC0Cache[spinJoint] or spinJoint.C0
-        local rot180 = if joints.isR15 then CFrame.Angles(0, math.rad(180), 0) else CFrame.Angles(0, 0, math.rad(180))
-        local rotN179 = if joints.isR15 then CFrame.Angles(0, math.rad(-179), 0) else CFrame.Angles(0, 0, math.rad(-179))
-        task.spawn(function()
-            local tw1 = tweenJoint(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), orig * rot180)
-            local state = tw1.Completed:Wait()
-            if state == Enum.PlaybackState.Completed and activeAnimTokens[character] == token and isCharacterAlive(character) and spinJoint and spinJoint.Parent then
+        -- И в R15 (Root), и в R6 (RootJoint) локальная ось Z направлена вверх (Yaw)
+        local rot180 = CFrame.Angles(0, 0, math.rad(180))
+        local rotN179 = CFrame.Angles(0, 0, math.rad(-179))
+        tweenJoint(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), orig * rot180)
+        -- Безопасный переход фазы через task.delay вместо блокирующего tw.Completed:Wait() исключает утечку потоков
+        task.delay(0.2, function()
+            if activeAnimTokens[character] == token and isCharacterAlive(character) and spinJoint and spinJoint.Parent then
                 spinJoint.C0 = orig * rotN179
                 tweenJoint(spinJoint, TweenInfo.new(0.2, Enum.EasingStyle.Linear), orig)
             end

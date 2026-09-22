@@ -96,7 +96,8 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
     if not root then return end
 
     if not isCinematicActive then
-        originalFOV = math.clamp(cam.FieldOfView, 60, 105)
+        -- Фиксируем стабильный базовый FOV во избежание искажения от активных импульсов fovPulse
+        originalFOV = DEFAULT_BASE_FOV
     end
     local cachedFOV = originalFOV or DEFAULT_BASE_FOV
     CinematicCamera.resetCamera()
@@ -115,7 +116,7 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
     local maxDist = dist
     local hit = Workspace:Raycast(targetFocusPoint, faceDir * (dist * 1.5), rayParams)
     if hit then
-        maxDist = math.clamp(hit.Distance - 0.4, 0.8, dist)
+        maxDist = math.clamp(hit.Distance - 0.4, 1.8, dist)
     end
 
     local startCamPos = targetFocusPoint + faceDir * maxDist + Vector3.new(0, 0.4, 0)
@@ -144,10 +145,10 @@ function CinematicCamera.focusCutIn(targetCharacter: Model, duration: number?, z
         local currentDist = maxDist * (1 - progress * 0.15)
         local camPos = currentFocus + currentFace * currentDist + Vector3.new(0, 0.4 - progress * 0.2, 0)
 
-        -- Динамическая проверка окклюзии при перемещении в реальном времени
+        -- Динамическая проверка окклюзии при перемещении в реальном времени (минимум 1.8 стада во избежание пробития черепа)
         local dynRay = Workspace:Raycast(currentFocus, (camPos - currentFocus), rayParams)
         if dynRay then
-            camPos = currentFocus + (camPos - currentFocus).Unit * math.clamp(dynRay.Distance - 0.3, 0.8, currentDist)
+            camPos = currentFocus + (camPos - currentFocus).Unit * math.clamp(dynRay.Distance - 0.3, 1.8, currentDist)
         end
 
         cam.CFrame = CFrame.lookAt(camPos, currentFocus) * CFrame.Angles(0, 0, roll)
@@ -182,7 +183,8 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
     if not root then return end
 
     if not isCinematicActive then
-        originalFOV = math.clamp(cam.FieldOfView, 60, 105)
+        -- Фиксируем стабильный базовый FOV во избежание искажения от активных импульсов fovPulse
+        originalFOV = DEFAULT_BASE_FOV
     end
     local cachedFOV = originalFOV or DEFAULT_BASE_FOV
     CinematicCamera.resetCamera()
@@ -232,7 +234,12 @@ function CinematicCamera.groundSlamPerspective(targetCharacter: Model, duration:
         local currentRootPos = root.Position
         local currentFocus = currentRootPos + Vector3.new(0, 4, 0)
         local curBackDir = -root.CFrame.LookVector
-        local camPos = currentRootPos + curBackDir * desiredDist + Vector3.new(0, groundOffset, 0)
+
+        -- Динамическая проверка уровня пола в реальном времени во избежание проваливания под землю при падении
+        local curFloorHit = Workspace:Raycast(currentRootPos, Vector3.new(0, -12, 0), rayParams)
+        local curGroundY = if curFloorHit then curFloorHit.Position.Y + 0.8 else currentRootPos.Y + groundOffset
+        local rawY = math.max(currentRootPos.Y + groundOffset, curGroundY)
+        local camPos = Vector3.new(currentRootPos.X, rawY, currentRootPos.Z) + curBackDir * desiredDist
 
         local dynRay = Workspace:Raycast(currentFocus, (camPos - currentFocus), rayParams)
         if dynRay then

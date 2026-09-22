@@ -545,7 +545,10 @@ function AbilityVFX.play(caster: Player, factionId: string, slot: string, origin
     local pos = originPos or Vector3.zero
     local lookVector = if lookDir and lookDir.Magnitude > 0 then lookDir.Unit else Vector3.new(0, 0, -1)
     local fId = if factionId and factionId ~= "" then factionId else "Skibidi"
-    local casterChar = if caster then caster.Character else nil
+    local rawCasterChar = if caster then caster.Character else nil
+    -- C16 & P0 FIX: LOD-отсев процедурных анимаций во избежание перегрузки C++ TweenService
+    local shouldAnimate = rawCasterChar ~= nil and (isSelf or isWithinLOD(pos))
+    local casterChar = if shouldAnimate then rawCasterChar else nil
 
     -- 1. SKIBIDI TOILET (Hydro-Chaos & Gold / Porcelain)
     if fId == "Skibidi" then

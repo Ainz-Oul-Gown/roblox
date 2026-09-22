@@ -147,11 +147,13 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(poseStarts && poseStarts.length >= 8, 'All 8 signature poses must call restoreJoints at start');
     });
 
-    test('CharacterAnimator guards callbacks with isCharacterAlive and cleans up completed tweens', () => {
+    test('CharacterAnimator guards callbacks with isCharacterAlive, prevents thread leaks via task.delay, and cleans up tweens', () => {
         const content = fs.readFileSync(animatorPath, 'utf8');
         assert.ok(content.includes('isCharacterAlive(character)'), 'CharacterAnimator must check isCharacterAlive in delayed phases');
         assert.ok(content.includes('tw.Completed:Connect'), 'CharacterAnimator must disconnect/clear completed tweens');
-        assert.ok(content.includes('state == Enum.PlaybackState.Completed'), 'CharacterAnimator.playSpinSalute must check for PlaybackState.Completed');
+        assert.ok(content.includes('activeAnimTokens[character] == token and isCharacterAlive(character)'), 'CharacterAnimator.playSpinSalute must validate activeAnimTokens and isCharacterAlive');
+        assert.ok(!content.includes('tw1.Completed:Wait()'), 'CharacterAnimator.playSpinSalute must not block threads with Wait to prevent thread leaks');
+        assert.ok(content.includes('deadConnections[hum]:Disconnect()'), 'CharacterAnimator must disconnect and clear deadConnections on death');
     });
 
     test('CinematicCamera uses RenderStepped dynamic tracking and clamps FOV against leaks', () => {
@@ -159,6 +161,7 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(content.includes('RunService.RenderStepped:Connect'), 'CinematicCamera must dynamically track character via RenderStepped');
         assert.ok(content.includes('cameraUpdateConnection:Disconnect()'), 'CinematicCamera.resetCamera must disconnect RenderStepped update');
         assert.ok(content.includes('math.clamp(originalFOV, 60, 105)'), 'CinematicCamera must clamp originalFOV on restore to prevent distortion');
+        assert.ok(content.includes('originalFOV = DEFAULT_BASE_FOV'), 'CinematicCamera must anchor originalFOV to DEFAULT_BASE_FOV to prevent FOV drift');
     });
 
     test('CharacterAnimator cleans up C++ Tween instances with Destroy on cancel and completion', () => {
@@ -185,12 +188,15 @@ describe('CharacterAnimator and CinematicCamera System Tests', () => {
         assert.ok(content.includes('activeCameraTween:Destroy()'), 'CinematicCamera.resetCamera must destroy activeCameraTween');
         assert.ok(content.includes('Players:GetPlayers()'), 'CinematicCamera must exclude other players from occlusion raycasts');
         assert.ok(content.includes('dynRay'), 'CinematicCamera must perform real-time dynamic occlusion raycast in RenderStepped');
+        assert.ok(content.includes('1.8, currentDist'), 'CinematicCamera.focusCutIn must enforce min 1.8 studs distance to prevent head clipping');
+        assert.ok(content.includes('curFloorHit'), 'CinematicCamera.groundSlamPerspective must dynamically check floor height in RenderStepped');
     });
 
-    test('AbilityVFX loader uses non-blocking lookups without stalling client initialization', () => {
+    test('AbilityVFX loader uses non-blocking lookups and implements LOD culling for animations', () => {
         const content = fs.readFileSync(vfxPath, 'utf8');
         assert.ok(!content.includes('WaitForChild("CharacterAnimator", 2)'), 'AbilityVFX must not stall with WaitForChild timeout on animator');
         assert.ok(!content.includes('WaitForChild("CinematicCamera", 2)'), 'AbilityVFX must not stall with WaitForChild timeout on camera');
+        assert.ok(content.includes('shouldAnimate = rawCasterChar ~= nil and (isSelf or isWithinLOD(pos))'), 'AbilityVFX must implement LOD culling for procedural character animations');
     });
 });
 
