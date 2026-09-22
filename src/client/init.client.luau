@@ -15,20 +15,20 @@ screenGui.Name = "BrainrotHUD"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
-local abilityEvent = ReplicatedStorage:WaitForChild("AbilityEvent", 15) :: any :: RemoteEvent?
-local claimPlotEvent = ReplicatedStorage:WaitForChild("ClaimPlotEvent", 15) :: any :: RemoteEvent?
-local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent", 15) :: any :: RemoteEvent?
-local vaultUpdatedEvent = ReplicatedStorage:WaitForChild("VaultUpdatedEvent", 15) :: any :: RemoteEvent?
-local withdrawEvent = ReplicatedStorage:WaitForChild("WithdrawEvent", 15) :: any :: RemoteEvent?
-local pvpKillEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15) :: any :: RemoteEvent?
-local airDropEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15) :: any :: RemoteEvent?
-local adminGiveCashEvent = ReplicatedStorage:WaitForChild("AdminGiveCashEvent", 15) :: any :: RemoteEvent?
-local rebirthEvent = ReplicatedStorage:WaitForChild("RebirthEvent", 15) :: any :: RemoteEvent?
-local abilityVFXEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15) :: any :: RemoteEvent?
-local equippedPetsEvent = ReplicatedStorage:WaitForChild("EquippedPetsEvent", 15) :: any :: RemoteEvent?
-local openEggEvent = ReplicatedStorage:WaitForChild("OpenEggEvent", 15) :: any :: RemoteEvent?
-local claimPlaytimeEvent = ReplicatedStorage:WaitForChild("ClaimPlaytimeRewardEvent", 15) :: any :: RemoteEvent?
-local claimDailyEvent = ReplicatedStorage:WaitForChild("ClaimDailyRewardEvent", 15) :: any :: RemoteEvent?
+local abilityEvent = ReplicatedStorage:WaitForChild("AbilityEvent", 15) :: any :: RemoteEvent
+local claimPlotEvent = ReplicatedStorage:WaitForChild("ClaimPlotEvent", 15) :: any :: RemoteEvent
+local plotStateEvent = ReplicatedStorage:WaitForChild("PlotStateEvent", 15) :: any :: RemoteEvent
+local vaultUpdatedEvent = ReplicatedStorage:WaitForChild("VaultUpdatedEvent", 15) :: any :: RemoteEvent
+local withdrawEvent = ReplicatedStorage:WaitForChild("WithdrawEvent", 15) :: any :: RemoteEvent
+local pvpKillEvent = ReplicatedStorage:WaitForChild("PvPKillEvent", 15) :: any :: RemoteEvent
+local airDropEvent = ReplicatedStorage:WaitForChild("AirDropEvent", 15) :: any :: RemoteEvent
+local adminGiveCashEvent = ReplicatedStorage:WaitForChild("AdminGiveCashEvent", 15) :: any :: RemoteEvent
+local rebirthEvent = ReplicatedStorage:WaitForChild("RebirthEvent", 15) :: any :: RemoteEvent
+local abilityVFXEvent = ReplicatedStorage:WaitForChild("AbilityVFXEvent", 15) :: any :: RemoteEvent
+local equippedPetsEvent = ReplicatedStorage:WaitForChild("EquippedPetsEvent", 15) :: any :: RemoteEvent
+local openEggEvent = ReplicatedStorage:WaitForChild("OpenEggEvent", 15) :: any :: RemoteEvent
+local claimPlaytimeEvent = ReplicatedStorage:WaitForChild("ClaimPlaytimeRewardEvent", 15) :: any :: RemoteEvent
+local claimDailyEvent = ReplicatedStorage:WaitForChild("ClaimDailyRewardEvent", 15) :: any :: RemoteEvent
 
 -- Безопасная загрузка JuiceEffects (поддержка как script, так и script.Parent)
 local juiceModule = script:FindFirstChild("JuiceEffects")

@@ -22,7 +22,7 @@ local AIRDROP_INTERVAL_SEC = 210
 local AIRDROP_REWARD = 10000
 
 local function getOrCreateRemote(name: string): RemoteEvent
-    local existing = ReplicatedStorage:FindFirstChild(name) :: any :: RemoteEvent?
+    local existing = ReplicatedStorage:FindFirstChild(name) :: any :: RemoteEvent
     if existing then return existing end
     local remote = Instance.new("RemoteEvent")
     remote.Name = name

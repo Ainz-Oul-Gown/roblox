@@ -30,7 +30,7 @@ local AbilityService = {}
 export type AbilitySlot = "base" | "tactical" | "ultimate" | "special" | "mobility" | "godmode"
 
 local function getOrCreateRemote(name: string): RemoteEvent
-    local existing = ReplicatedStorage:FindFirstChild(name) :: any :: RemoteEvent?
+    local existing = ReplicatedStorage:FindFirstChild(name) :: any :: RemoteEvent
     if existing then return existing end
     local remote = Instance.new("RemoteEvent")
     remote.Name = name

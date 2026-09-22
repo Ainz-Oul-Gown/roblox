@@ -37,7 +37,7 @@ local function sanitizeNum(val: number): number
 end
 
 local function getOrCreateRemote(name: string): RemoteEvent
-    local existing = ReplicatedStorage:FindFirstChild(name) :: any :: RemoteEvent?
+    local existing = ReplicatedStorage:FindFirstChild(name) :: any :: RemoteEvent
     if existing then return existing end
     local remote = Instance.new("RemoteEvent")
     remote.Name = name
